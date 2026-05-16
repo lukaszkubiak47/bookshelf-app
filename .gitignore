@@ -427,3 +427,10 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Node / Vue
+node_modules/
+dist/
+.env
+.env.local
+*.local
