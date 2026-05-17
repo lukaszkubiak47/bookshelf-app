@@ -19,5 +19,7 @@ namespace Bookshelf.API.Services
         Task<List<UserBookDto>> GetRecentAsync(int limit = 5);
 
         Task<List<UserBookDto>> GetMyAsync(Guid userId);
+
+        Task<UserBookDto> CreateAsync(Guid userId, CreateUserBookDto dto);
     }
 }

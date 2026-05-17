@@ -1,7 +1,8 @@
-﻿using System.Security.Claims;
+﻿using Bookshelf.API.Models.DTOs.UserBooks;
 using Bookshelf.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Bookshelf.API.Controllers
 {
@@ -66,6 +67,25 @@ namespace Bookshelf.API.Controllers
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var result = await _service.GetMyAsync(userId);
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Wystaw książkę na półce (wymaga JWT)
+        /// </summary>
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> Create([FromBody] CreateUserBookDto dto)
+        {
+            try
+            {
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var result = await _service.CreateAsync(userId, dto);
+                return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

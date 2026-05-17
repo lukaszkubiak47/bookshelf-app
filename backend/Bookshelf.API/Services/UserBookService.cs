@@ -62,7 +62,7 @@ namespace Bookshelf.API.Services
             {
                 "oldest" => query.OrderBy(ub => ub.CreatedAt),
                 "title" => query.OrderBy(ub => ub.Book.Title),
-                _ => query.OrderByDescending(ub => ub.CreatedAt) // "newest" - domyślne
+                _ => query.OrderByDescending(ub => ub.CreatedAt) //domyśle "newest"
             };
 
             // Liczenie i paginacja
@@ -115,6 +115,53 @@ namespace Bookshelf.API.Services
                 .OrderByDescending(ub => ub.CreatedAt)
                 .Select(ub => MapToDto(ub))
                 .ToListAsync();
+        }
+
+        public async Task<UserBookDto> CreateAsync(Guid userId, CreateUserBookDto dto)
+        {
+            // Sprawdź czy książka istnieje w bazie
+            var book = await _db.Books
+                .Include(b => b.Genre)
+                .FirstOrDefaultAsync(b => b.Id == dto.BookId);
+
+            if (book == null)
+                throw new InvalidOperationException("Nie znaleziono książki o podanym ID");
+
+            // Walidacja: cena wymagana tylko dla sprzedaży
+            if (dto.TransactionType == "sale" && dto.Price == null)
+                throw new InvalidOperationException("Dla sprzedaży wymagana jest cena");
+
+            // Walidacja: cena tylko dla sprzedaży
+            if (dto.TransactionType != "sale" && dto.Price != null)
+                throw new InvalidOperationException("Cena jest dozwolona tylko dla sprzedaży");
+
+            // Walidacja: warunki wymiany tylko dla swap
+            if (dto.TransactionType != "swap" && !string.IsNullOrEmpty(dto.ExchangeCondition))
+                throw new InvalidOperationException("Warunki wymiany są dozwolone tylko dla wymiany");
+
+            // Tworzenie nowej oferty
+            var userBook = new UserBook
+            {
+                UserId = userId,
+                BookId = dto.BookId,
+                Status = "available",
+                TransactionType = dto.TransactionType,
+                Price = dto.Price,
+                ExchangeCondition = dto.ExchangeCondition,
+                ExchangeDetails = dto.ExchangeDetails
+            };
+
+            _db.UserBooks.Add(userBook);
+            await _db.SaveChangesAsync();
+
+            // Pobranie oferty pełnymi danymi (Book + User + Genre) do zwrotu
+            var created = await _db.UserBooks
+                .Include(ub => ub.Book)
+                    .ThenInclude(b => b.Genre)
+                .Include(ub => ub.User)
+                .FirstAsync(ub => ub.Id == userBook.Id);
+
+            return MapToDto(created);
         }
 
         private static UserBookDto MapToDto(UserBook ub)
