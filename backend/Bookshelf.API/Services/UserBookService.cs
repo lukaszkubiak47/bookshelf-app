@@ -117,9 +117,10 @@ namespace Bookshelf.API.Services
                 .ToListAsync();
         }
 
+
         public async Task<UserBookDto> CreateAsync(Guid userId, CreateUserBookDto dto)
         {
-            // Sprawdź czy książka istnieje w bazie
+            // Czy książka istnieje w bazie
             var book = await _db.Books
                 .Include(b => b.Genre)
                 .FirstOrDefaultAsync(b => b.Id == dto.BookId);
@@ -224,6 +225,31 @@ namespace Bookshelf.API.Services
             await _db.SaveChangesAsync();
 
             return MapToDto(userBook);
+        }
+
+        public async Task DeleteAsync(Guid userId, Guid userBookId)
+        {
+            // Pobierz ofertę z bazy (z transakcjami żeby sprawdzić czy są aktywne)
+            var userBook = await _db.UserBooks
+                .Include(ub => ub.TransactionRequests)
+                .FirstOrDefaultAsync(ub => ub.Id == userBookId);
+
+            if (userBook == null)
+                throw new KeyNotFoundException("Nie znaleziono oferty o podanym ID");
+
+            // KRYTYCZNE: sprawdź czy zalogowany user jest właścicielem
+            if (userBook.UserId != userId)
+                throw new UnauthorizedAccessException("Możesz usuwać tylko swoje oferty");
+
+            // Sprawdź czy nie ma aktywnej transakcji
+            var hasActiveTransaction = userBook.TransactionRequests
+                .Any(tr => tr.Status == "accepted");
+
+            if (hasActiveTransaction)
+                throw new InvalidOperationException("Nie można usunąć oferty z aktywną transakcją. Najpierw ją zakończ.");
+
+            _db.UserBooks.Remove(userBook);
+            await _db.SaveChangesAsync();
         }
 
         private static UserBookDto MapToDto(UserBook ub)
