@@ -1,4 +1,5 @@
 ﻿using Bookshelf.API.Data;
+using Bookshelf.API.Exceptions;
 using Bookshelf.API.Models.DTOs.Auth;
 using Bookshelf.API.Models.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -20,11 +21,11 @@ namespace Bookshelf.API.Services
         {
             // Sprawdź czy email już istnieje
             if (await _db.Users.AnyAsync(u => u.Email == dto.Email))
-                throw new InvalidOperationException("Użytkownik z tym adresem email już istnieje");
+                throw new ConflictException("Użytkownik z tym adresem email już istnieje");
 
             // Sprawdź czy username już istnieje
             if (await _db.Users.AnyAsync(u => u.Username == dto.Username))
-                throw new InvalidOperationException("Ten nick jest już zajęty");
+                throw new ConflictException("Ten nick jest już zajęty");
 
             // Stwórz nowego użytkownika z zahashowanym hasłem
             var user = new User
@@ -55,7 +56,7 @@ namespace Bookshelf.API.Services
 
             // Sprawdź czy istnieje i czy hasło się zgadza
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-                throw new UnauthorizedAccessException("Nieprawidłowy email lub hasło");
+                throw new UnauthorizedException("Nieprawidłowy email lub hasło");
 
             // Wygeneruj token i zwróć
             return new AuthResponseDto

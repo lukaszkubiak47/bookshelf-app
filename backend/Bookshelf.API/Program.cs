@@ -1,10 +1,11 @@
-using System.Text;
 using Bookshelf.API.Configuration;
 using Bookshelf.API.Data;
+using Bookshelf.API.Middleware;
 using Bookshelf.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,6 +73,9 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+// Globalna obsługa wyjątków: MUSI być pierwszym middleware w pipeline, więć tego proszę NIE RUSZAĆ!!!!! 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
