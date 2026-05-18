@@ -70,6 +70,33 @@ namespace Bookshelf.API.Controllers
         }
 
         /// <summary>
+        /// Edytuj swoją ofertę (wymaga JWT)
+        /// </summary>
+        [HttpPut("{id:guid}")]
+        [Authorize]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserBookDto dto)
+        {
+            try
+            {
+                var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var result = await _service.UpdateAsync(userId, id, dto);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Wystaw książkę na półce (wymaga JWT)
         /// </summary>
         [HttpPost]

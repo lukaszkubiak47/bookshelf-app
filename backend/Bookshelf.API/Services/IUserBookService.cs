@@ -21,5 +21,7 @@ namespace Bookshelf.API.Services
         Task<List<UserBookDto>> GetMyAsync(Guid userId);
 
         Task<UserBookDto> CreateAsync(Guid userId, CreateUserBookDto dto);
+
+        Task<UserBookDto> UpdateAsync(Guid userId, Guid userBookId, UpdateUserBookDto dto);
     }
 }

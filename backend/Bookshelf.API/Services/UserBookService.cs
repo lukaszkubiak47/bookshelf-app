@@ -164,6 +164,68 @@ namespace Bookshelf.API.Services
             return MapToDto(created);
         }
 
+        public async Task<UserBookDto> UpdateAsync(Guid userId, Guid userBookId, UpdateUserBookDto dto)
+        {
+            // Pobierz ofertę z bazy
+            var userBook = await _db.UserBooks
+                .Include(ub => ub.Book)
+                    .ThenInclude(b => b.Genre)
+                .Include(ub => ub.User)
+                .FirstOrDefaultAsync(ub => ub.Id == userBookId);
+
+            if (userBook == null)
+                throw new KeyNotFoundException("Nie znaleziono oferty o podanym ID");
+
+            // KRYTYCZNE: sprawdź czy zalogowany user jest właścicielem
+            if (userBook.UserId != userId)
+                throw new UnauthorizedAccessException("Możesz edytować tylko swoje oferty");
+
+            // Docelowy typ transakcji (nowy lub stary jeśli nie zmieniany)
+            var newType = dto.TransactionType ?? userBook.TransactionType;
+            var newPrice = dto.Price ?? userBook.Price;
+            var newExchangeCondition = dto.ExchangeCondition ?? userBook.ExchangeCondition;
+
+            // Walidacje biznesowe (te same co przy Create, ale dla nowych wartości)
+            if (newType == "sale" && newPrice == null)
+                throw new InvalidOperationException("Dla sprzedaży wymagana jest cena");
+
+            if (newType != "sale" && newPrice != null)
+                throw new InvalidOperationException("Cena jest dozwolona tylko dla sprzedaży");
+
+            if (newType != "swap" && !string.IsNullOrEmpty(newExchangeCondition))
+                throw new InvalidOperationException("Warunki wymiany są dozwolone tylko dla wymiany");
+
+            // Zastosuj zmiany
+            if (dto.TransactionType != null)
+                userBook.TransactionType = dto.TransactionType;
+
+            if (dto.Price != null)
+                userBook.Price = dto.Price;
+
+            if (dto.ExchangeCondition != null)
+                userBook.ExchangeCondition = dto.ExchangeCondition;
+
+            if (dto.ExchangeDetails != null)
+                userBook.ExchangeDetails = dto.ExchangeDetails;
+
+            // Specjalne czyszczenie: jeśli zmieniono typ, wyczyść nieadekwatne pola
+            if (dto.TransactionType != null)
+            {
+                if (userBook.TransactionType != "sale")
+                    userBook.Price = null;
+
+                if (userBook.TransactionType != "swap")
+                {
+                    userBook.ExchangeCondition = null;
+                    userBook.ExchangeDetails = null;
+                }
+            }
+
+            await _db.SaveChangesAsync();
+
+            return MapToDto(userBook);
+        }
+
         private static UserBookDto MapToDto(UserBook ub)
         {
             return new UserBookDto
