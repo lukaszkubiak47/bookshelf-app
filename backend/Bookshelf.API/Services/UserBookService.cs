@@ -1,5 +1,4 @@
 ﻿using Bookshelf.API.Data;
-using Bookshelf.API.Exceptions;
 using Bookshelf.API.Models.DTOs.Common;
 using Bookshelf.API.Models.DTOs.UserBooks;
 using Bookshelf.API.Models.Entities;
@@ -121,25 +120,25 @@ namespace Bookshelf.API.Services
 
         public async Task<UserBookDto> CreateAsync(Guid userId, CreateUserBookDto dto)
         {
-            // Sprawdź czy książka istnieje w bazie
+            // Czy książka istnieje w bazie
             var book = await _db.Books
                 .Include(b => b.Genre)
                 .FirstOrDefaultAsync(b => b.Id == dto.BookId);
 
             if (book == null)
-                throw new NotFoundException("Nie znaleziono książki o podanym ID");
+                throw new InvalidOperationException("Nie znaleziono książki o podanym ID");
 
             // Walidacja: cena wymagana tylko dla sprzedaży
             if (dto.TransactionType == "sale" && dto.Price == null)
-                throw new BadRequestException("Dla sprzedaży wymagana jest cena");
+                throw new InvalidOperationException("Dla sprzedaży wymagana jest cena");
 
             // Walidacja: cena tylko dla sprzedaży
             if (dto.TransactionType != "sale" && dto.Price != null)
-                throw new BadRequestException("Cena jest dozwolona tylko dla sprzedaży");
+                throw new InvalidOperationException("Cena jest dozwolona tylko dla sprzedaży");
 
             // Walidacja: warunki wymiany tylko dla swap
             if (dto.TransactionType != "swap" && !string.IsNullOrEmpty(dto.ExchangeCondition))
-                throw new BadRequestException("Warunki wymiany są dozwolone tylko dla wymiany");
+                throw new InvalidOperationException("Warunki wymiany są dozwolone tylko dla wymiany");
 
             // Tworzenie nowej oferty
             var userBook = new UserBook
@@ -176,11 +175,11 @@ namespace Bookshelf.API.Services
                 .FirstOrDefaultAsync(ub => ub.Id == userBookId);
 
             if (userBook == null)
-                throw new NotFoundException("Nie znaleziono oferty o podanym ID");
+                throw new KeyNotFoundException("Nie znaleziono oferty o podanym ID");
 
             // KRYTYCZNE: sprawdź czy zalogowany user jest właścicielem
             if (userBook.UserId != userId)
-                throw new ForbiddenException("Możesz edytować tylko swoje oferty");
+                throw new UnauthorizedAccessException("Możesz edytować tylko swoje oferty");
 
             // Docelowy typ transakcji (nowy lub stary jeśli nie zmieniany)
             var newType = dto.TransactionType ?? userBook.TransactionType;
@@ -189,13 +188,13 @@ namespace Bookshelf.API.Services
 
             // Walidacje biznesowe (te same co przy Create, ale dla nowych wartości)
             if (newType == "sale" && newPrice == null)
-                throw new BadRequestException("Dla sprzedaży wymagana jest cena");
+                throw new InvalidOperationException("Dla sprzedaży wymagana jest cena");
 
             if (newType != "sale" && newPrice != null)
-                throw new BadRequestException("Cena jest dozwolona tylko dla sprzedaży");
+                throw new InvalidOperationException("Cena jest dozwolona tylko dla sprzedaży");
 
             if (newType != "swap" && !string.IsNullOrEmpty(newExchangeCondition))
-                throw new BadRequestException("Warunki wymiany są dozwolone tylko dla wymiany");
+                throw new InvalidOperationException("Warunki wymiany są dozwolone tylko dla wymiany");
 
             // Zastosuj zmiany
             if (dto.TransactionType != null)
@@ -236,18 +235,18 @@ namespace Bookshelf.API.Services
                 .FirstOrDefaultAsync(ub => ub.Id == userBookId);
 
             if (userBook == null)
-                throw new NotFoundException("Nie znaleziono oferty o podanym ID");
+                throw new KeyNotFoundException("Nie znaleziono oferty o podanym ID");
 
             // KRYTYCZNE: sprawdź czy zalogowany user jest właścicielem
             if (userBook.UserId != userId)
-                throw new ForbiddenException("Możesz usuwać tylko swoje oferty");
+                throw new UnauthorizedAccessException("Możesz usuwać tylko swoje oferty");
 
             // Sprawdź czy nie ma aktywnej transakcji
             var hasActiveTransaction = userBook.TransactionRequests
                 .Any(tr => tr.Status == "accepted");
 
             if (hasActiveTransaction)
-                throw new ConflictException("Nie można usunąć oferty z aktywną transakcją. Najpierw ją zakończ.");
+                throw new InvalidOperationException("Nie można usunąć oferty z aktywną transakcją. Najpierw ją zakończ.");
 
             _db.UserBooks.Remove(userBook);
             await _db.SaveChangesAsync();

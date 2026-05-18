@@ -21,18 +21,32 @@ namespace Bookshelf.API.Controllers
         [HttpPost("register")]
         public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto dto)
         {
-            var result = await _authService.RegisterAsync(dto);
-            return Created("", result);
+            try
+            {
+                var result = await _authService.RegisterAsync(dto);
+                return Created("", result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
         }
 
         /// <summary>
-        /// Logowanie: zwraca JWT token
+        /// Logowanie — zwraca JWT token
         /// </summary>
         [HttpPost("login")]
         public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto dto)
         {
-            var result = await _authService.LoginAsync(dto);
-            return Ok(result);
+            try
+            {
+                var result = await _authService.LoginAsync(dto);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
         }
     }
 }
