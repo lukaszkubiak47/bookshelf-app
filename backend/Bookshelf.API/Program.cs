@@ -21,6 +21,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserBookService, UserBookService>();
+builder.Services.AddScoped<ITransactionService, TransactionService>();
 
 // AUTENTYKACJA JWT
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
