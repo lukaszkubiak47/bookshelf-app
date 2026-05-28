@@ -1,0 +1,124 @@
+/* src/assets/main.css */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #FAF7F2;
+  --surface: #FFFFFF;
+  --primary: #2D6A4F;
+  --primary-h: #245A42;
+  --accent: #D4A843;
+  --blue: #2C5F8A;
+  --text-1: #2C1810;
+  --text-2: #7A6652;
+  --text-3: #B5A090;
+  --border: #E8DDD4;
+  --tag-bg: #F0E8DF;
+  --shadow: 0 2px 8px rgba(44,24,16,.08);
+  --shadow-h: 0 4px 16px rgba(44,24,16,.12);
+  --r-card: 12px;
+  --r-btn: 8px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text-1);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Reużywalne style przycisków */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 22px;
+  border-radius: var(--r-btn);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s ease;
+  text-decoration: none;
+  border: none;
+  white-space: nowrap;
+  letter-spacing: .1px;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+}
+
+  .btn-outline:hover {
+    background: var(--primary);
+    color: #fff;
+  }
+
+.btn-filled {
+  background: var(--primary);
+  color: #fff;
+  border: 1.5px solid var(--primary);
+}
+
+  .btn-filled:hover {
+    background: var(--primary-h);
+    border-color: var(--primary-h);
+  }
+
+.btn-lg {
+  padding: 14px 32px;
+  font-size: 16px;
+}
+
+/* Klasy animacji Scroll-In */
+.anim {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+
+  .anim.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+.anim-d1 {
+  transition-delay: .08s;
+}
+
+.anim-d2 {
+  transition-delay: .16s;
+}
+
+.anim-d3 {
+  transition-delay: .24s;
+}
+
+.anim-d4 {
+  transition-delay: .32s;
+}
+
+.anim-d5 {
+  transition-delay: .40s;
+}
+
+/* Efekt Ripple dla przycisków */
+@keyframes ripple {
+  to {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
