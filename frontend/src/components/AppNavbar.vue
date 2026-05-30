@@ -13,11 +13,11 @@
       Bookshelf
     </a>
     <ul class="nav-links">
-      <li><a href="#" class="active">Strona główna</a></li>
-      <li><a href="#">Przeglądaj książki</a></li>
+      <li><RouterLink to="/">Strona główna</RouterLink></li>
+      <li><RouterLink to="/przegladanie">Przeglądaj książki</RouterLink></li>
     </ul>
     <div class="nav-actions">
-      <button class="btn btn-filled">Dołącz</button>
+      <RouterLink to="/logowanie" class="btn btn-filled">Dołącz</RouterLink>
     </div>
   </nav>
 </template>

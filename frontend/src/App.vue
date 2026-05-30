@@ -1,8 +1,8 @@
 <script setup>
   //import { ref, onMounted } from 'vue'
-  import HomeView from './views/HomeView.vue'
   import AppNavbar from './components/AppNavbar.vue'
   import AppFooter from './components/AppFooter.vue'
+  import { RouterView } from 'vue-router'
   /*
   // 1. Definiujemy reaktywne zmienne dla stanu zalogowania i danych użytkownika
   const isLoggedIn = ref(false)
@@ -53,7 +53,7 @@
     <!--  1. v-if jest AuthView = brak 2. zalogowany: avatar + @username + wyloguj; niezalogowany: zaloguj się + dołącz -->
     <main>
     <!-- 1. Jesli niezalogowany to nie da sie wejsc na ProfileView -->
-    <HomeView />
+    <RouterView />
     </main>
     <!-- 1. v-if jest AuthView = brak 2. do AuthView dodac "© 2025 Bookshelf. Wszystkie prawa zastrzeżone.", analogicznie jak jest w stopce*/ -->
     <AppFooter />
