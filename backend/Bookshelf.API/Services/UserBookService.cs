@@ -42,7 +42,8 @@ namespace Bookshelf.API.Services
 
             if (!string.IsNullOrWhiteSpace(genre))
             {
-                query = query.Where(ub => ub.Book.Genre != null && ub.Book.Genre.Name == genre);
+                var genres = genre.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                query = query.Where(ub => ub.Book.Genre != null && genres.Contains(ub.Book.Genre.Name));
             }
 
             if (!string.IsNullOrWhiteSpace(city))
