@@ -22,27 +22,3 @@
     </select>
   </div>
 </template>
-
-<style scoped>
-  .filters {
-    display: flex;
-    gap: 8px;
-  }
-
-  .filter-select {
-    padding: 7px 10px;
-    border: 1.5px solid var(--border);
-    border-radius: var(--r-btn);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    color: var(--text-1);
-    background: var(--surface);
-    outline: none;
-    cursor: pointer;
-    transition: border-color .2s;
-  }
-
-    .filter-select:focus {
-      border-color: var(--primary);
-    }
-</style>

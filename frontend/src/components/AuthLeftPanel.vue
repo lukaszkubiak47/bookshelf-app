@@ -1,3 +1,25 @@
+<script setup>
+  import { T, P } from '../assets/constants';
+
+  const books = [
+    { id: 17, title: 'Mistrz i Małgorzata', author: 'M. Bułhakow', badge: 'Do wymiany', badgeColor: T.gold, badgeTxt: T.t1 },
+    { id: 43, title: 'Dżuma', author: 'A. Camus', badge: 'Do wypożyczenia', badgeColor: T.green, badgeTxt: 'white' },
+    { id: 28, title: 'Sto lat samotności', author: 'G.G. Márquez', badge: 'Do sprzedaży', badgeColor: '#2C5F8A', badgeTxt: 'white' },
+  ];
+
+  const spreads = [
+    { transform: 'rotate(-9deg) translate(-22px, 10px)', z: 1, float: 'float-a' },
+    { transform: 'rotate(1deg)  translate(4px, -4px)', z: 3, float: 'float-c' },
+    { transform: 'rotate(9deg)  translate(22px, 6px)', z: 2, float: 'float-b' },
+  ];
+
+  const stats = [
+    { icon: 'book', value: '2 847', label: 'książek' },
+    { icon: 'users', value: '1 203', label: 'użytkowników' },
+    { icon: 'repeat', value: '4 521', label: 'transakcji' },
+  ];
+</script>
+
 <template>
   <div class="left-panel" :style="{
     flex: '0 0 50%',
@@ -28,7 +50,7 @@
     }" />
 
     <div :style="{ textAlign: 'center', position: 'relative', zIndex: 2 }">
-      <div :style="{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '13px', marginBottom: '14px' }">
+      <RouterLink to="/" :style="{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '13px', marginBottom: '14px', textDecoration: 'none'}">
         <div :style="{
           width: '50px', height: '50px', borderRadius: '13px',
           background: 'rgba(255,255,255,0.14)',
@@ -40,7 +62,7 @@
         <span :style="{ fontFamily: '\'Playfair Display\', serif', fontSize: '34px', fontWeight: 700, color: 'white', letterSpacing: '-0.5px' }">
           Bookshelf
         </span>
-      </div>
+      </RouterLink>
       <p :style="{ color: 'rgba(255,255,255,0.6)', fontSize: '15px', fontWeight: 300, letterSpacing: '0.8px' }">
         Świat książek w Twoich rękach
       </p>
@@ -107,23 +129,3 @@
     </div>
   </div>
 </template>
-
-<script setup>import { T, P } from '../assets/constants';
-
-const books = [
-  { id: 17, title: 'Mistrz i Małgorzata', author: 'M. Bułhakow', badge: 'Do wymiany', badgeColor: T.gold, badgeTxt: T.t1 },
-  { id: 43, title: 'Dżuma', author: 'A. Camus', badge: 'Do wypożyczenia', badgeColor: T.green, badgeTxt: 'white' },
-  { id: 28, title: 'Sto lat samotności', author: 'G.G. Márquez', badge: 'Do sprzedaży', badgeColor: '#2C5F8A', badgeTxt: 'white' },
-];
-
-const spreads = [
-  { transform: 'rotate(-9deg) translate(-22px, 10px)', z: 1, float: 'float-a' },
-  { transform: 'rotate(1deg)  translate(4px, -4px)',   z: 3, float: 'float-c' },
-  { transform: 'rotate(9deg)  translate(22px, 6px)',   z: 2, float: 'float-b' },
-];
-
-const stats = [
-  { icon: 'book', value: '2 847', label: 'książek' },
-  { icon: 'users', value: '1 203', label: 'użytkowników' },
-  { icon: 'repeat', value: '4 521', label: 'transakcji' },
-];</script>

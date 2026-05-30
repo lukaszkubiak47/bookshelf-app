@@ -1,3 +1,39 @@
+<script setup>
+  import { ref, computed } from 'vue';
+  import { T, P } from '../assets/constants.js';
+
+  const props = defineProps({
+    label: String,
+    type: { type: String, default: 'text' },
+    icon: String,
+    placeholder: String,
+    modelValue: String,
+    state: { type: String, default: 'idle' },
+    error: String
+  });
+
+  defineEmits(['update:modelValue', 'blur']);
+
+  const showPw = ref(false);
+
+  const inputType = computed(() => {
+    if (props.type === 'password') {
+      return showPw.value ? 'text' : 'password';
+    }
+    return props.type;
+  });
+
+  const hasRightSpace = computed(() => {
+    return props.type === 'password' || props.state !== 'idle';
+  });
+
+  const iconColor = computed(() => {
+    if (props.state === 'error') return T.danger;
+    if (props.state === 'success') return T.success;
+    return T.t3;
+  });
+</script>
+
 <template>
   <div :style="{ display: 'flex', flexDirection: 'column', gap: '5px' }">
     <label v-if="label" :style="{ fontSize: '12px', fontWeight: 500, color: T.t2, letterSpacing: '0.3px', userSelect: 'none' }">
@@ -39,37 +75,3 @@
     <slot />
   </div>
 </template>
-
-<script setup>import { ref, computed } from 'vue';
-import { T, P } from '../assets/constants.js';
-
-const props = defineProps({
-  label: String,
-  type: { type: String, default: 'text' },
-  icon: String,
-  placeholder: String,
-  modelValue: String,
-  state: { type: String, default: 'idle' },
-  error: String
-});
-
-defineEmits(['update:modelValue', 'blur']);
-
-const showPw = ref(false);
-
-const inputType = computed(() => {
-  if (props.type === 'password') {
-    return showPw.value ? 'text' : 'password';
-  }
-  return props.type;
-});
-
-const hasRightSpace = computed(() => {
-  return props.type === 'password' || props.state !== 'idle';
-});
-
-const iconColor = computed(() => {
-  if (props.state === 'error') return T.danger;
-  if (props.state === 'success') return T.success;
-  return T.t3;
-});</script>

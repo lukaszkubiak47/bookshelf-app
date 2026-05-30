@@ -1,3 +1,88 @@
+<script setup>
+  import { ref, reactive, computed } from 'vue';
+  import { T, P } from '../assets/constants.js';
+  import FormField from './FormField.vue';
+
+  defineEmits(['switch']);
+
+  const v = reactive({
+    firstName: '', lastName: '', username: '', email: '', city: '', password: '', confirmPw: '',
+  });
+  const terms = ref(false);
+  const touched = reactive({
+    firstName: false, lastName: false, username: false, email: false, city: false, password: false, confirmPw: false, terms: false
+  });
+
+  const shaking = ref(false);
+  const loading = ref(false);
+  const done = ref(false);
+  const hov = ref(false);
+
+  const strColor = ['', T.danger, T.warning, T.gold, T.success];
+  const strLabel = ['', 'Słabe', 'Mierne', 'Dobre', 'Silne'];
+
+  const pwStrength = computed(() => {
+    if (!v.password) return 0;
+    let s = 0;
+    if (v.password.length >= 8) s++;
+    if (/[A-Z]/.test(v.password)) s++;
+    if (/[0-9]/.test(v.password)) s++;
+    if (/[^A-Za-z0-9]/.test(v.password)) s++;
+    return s;
+  });
+
+  const errors = computed(() => {
+    const e = {};
+    if (!v.firstName) e.firstName = 'Wymagane';
+    if (!v.lastName) e.lastName = 'Wymagane';
+    if (!v.username) e.username = 'Nick jest wymagany';
+    else if (v.username.length < 3) e.username = 'Min. 3 znaki';
+    else if (!/^[a-zA-Z0-9_]+$/.test(v.username)) e.username = 'Tylko litery, cyfry i _';
+
+    if (!v.email) e.email = 'Email jest wymagany';
+    else if (!/\S+@\S+\.\S+/.test(v.email)) e.email = 'Nieprawidłowy format';
+
+    if (!v.password) e.password = 'Hasło jest wymagane';
+    else if (v.password.length < 8) e.password = 'Min. 8 znaków';
+
+    if (!v.confirmPw) e.confirmPw = 'Potwierdź hasło';
+    else if (v.password !== v.confirmPw) e.confirmPw = 'Hasła nie pasują';
+
+    if (!terms.value) e.terms = 'Akceptacja wymagana';
+    return e;
+  });
+
+  const termsErr = computed(() => touched.terms && !!errors.value.terms);
+
+  const fs = (key) => {
+    if (!touched[key]) return { state: 'idle' };
+    if (errors.value[key]) return { state: 'error', error: errors.value[key] };
+    if (key === 'terms' ? terms.value : v[key]) return { state: 'success' };
+    return { state: 'idle' };
+  };
+
+  const blur = (key) => { touched[key] = true; };
+  const toggleTerms = (e) => {
+    terms.value = e.target.checked;
+    touched.terms = true;
+  };
+
+  const submit = async () => {
+    Object.keys(touched).forEach(k => { touched[k] = true; });
+
+    if (Object.keys(errors.value).length > 0) {
+      shaking.value = true;
+      setTimeout(() => { shaking.value = false; }, 600);
+      return;
+    }
+
+    loading.value = true;
+    await new Promise(r => setTimeout(r, 1600));
+    loading.value = false;
+    done.value = true;
+  };
+</script>
+
 <template>
   <div v-if="done" :style="{ textAlign: 'center', padding: '20px 0', animation: 'fadeScaleIn 0.4s ease both' }">
     <div :style="{
@@ -99,86 +184,3 @@
     </div>
   </form>
 </template>
-
-<script setup>import { ref, reactive, computed } from 'vue';
-import { T, P } from '../assets/constants.js';
-import FormField from './FormField.vue';
-
-defineEmits(['switch']);
-
-const v = reactive({
-  firstName: '', lastName: '', username: '', email: '', city: '', password: '', confirmPw: '',
-});
-const terms = ref(false);
-const touched = reactive({
-  firstName: false, lastName: false, username: false, email: false, city: false, password: false, confirmPw: false, terms: false
-});
-
-const shaking = ref(false);
-const loading = ref(false);
-const done = ref(false);
-const hov = ref(false);
-
-const strColor = ['', T.danger, T.warning, T.gold, T.success];
-const strLabel = ['', 'Słabe', 'Mierne', 'Dobre', 'Silne'];
-
-const pwStrength = computed(() => {
-  if (!v.password) return 0;
-  let s = 0;
-  if (v.password.length >= 8) s++;
-  if (/[A-Z]/.test(v.password)) s++;
-  if (/[0-9]/.test(v.password)) s++;
-  if (/[^A-Za-z0-9]/.test(v.password)) s++;
-  return s;
-});
-
-const errors = computed(() => {
-  const e = {};
-  if (!v.firstName) e.firstName = 'Wymagane';
-  if (!v.lastName) e.lastName = 'Wymagane';
-  if (!v.username) e.username = 'Nick jest wymagany';
-  else if (v.username.length < 3) e.username = 'Min. 3 znaki';
-  else if (!/^[a-zA-Z0-9_]+$/.test(v.username)) e.username = 'Tylko litery, cyfry i _';
-
-  if (!v.email) e.email = 'Email jest wymagany';
-  else if (!/\S+@\S+\.\S+/.test(v.email)) e.email = 'Nieprawidłowy format';
-
-  if (!v.password) e.password = 'Hasło jest wymagane';
-  else if (v.password.length < 8) e.password = 'Min. 8 znaków';
-
-  if (!v.confirmPw) e.confirmPw = 'Potwierdź hasło';
-  else if (v.password !== v.confirmPw) e.confirmPw = 'Hasła nie pasują';
-
-  if (!terms.value) e.terms = 'Akceptacja wymagana';
-  return e;
-});
-
-const termsErr = computed(() => touched.terms && !!errors.value.terms);
-
-const fs = (key) => {
-  if (!touched[key]) return { state: 'idle' };
-  if (errors.value[key]) return { state: 'error', error: errors.value[key] };
-  if (key === 'terms' ? terms.value : v[key]) return { state: 'success' };
-  return { state: 'idle' };
-};
-
-const blur = (key) => { touched[key] = true; };
-const toggleTerms = (e) => {
-  terms.value = e.target.checked;
-  touched.terms = true;
-};
-
-const submit = async () => {
-  Object.keys(touched).forEach(k => { touched[k] = true; });
-
-  if (Object.keys(errors.value).length > 0) {
-    shaking.value = true;
-    setTimeout(() => { shaking.value = false; }, 600);
-    return;
-  }
-
-  loading.value = true;
-  await new Promise(r => setTimeout(r, 1600));
-  loading.value = false;
-  done.value = true;
-};</script>

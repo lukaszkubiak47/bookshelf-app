@@ -9,6 +9,3 @@
   <SecondSectionHomeView />
   <ThirdSectionHomeView />
 </template>
-
-<style scoped>
-</style>

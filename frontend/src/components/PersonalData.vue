@@ -1,3 +1,78 @@
+<script setup>
+  import { ref, reactive } from 'vue';
+
+  const props = defineProps({
+    user: { type: Object, required: true }
+  });
+
+  const emit = defineEmits(['update:user', 'notify']);
+
+  const isEditMode = ref(false);
+  const isDragging = ref(false);
+  const fileInput = ref(null);
+  const customAvatar = ref(null);
+  const selectedPreset = ref(15);
+
+  const form = reactive({ name: '', surname: '', nick: '', city: '', bio: '', avatar: '' });
+  const errors = reactive({ name: false, surname: false });
+
+  const enterEditMode = () => {
+    Object.assign(form, { ...props.user });
+    errors.name = false;
+    errors.surname = false;
+    isEditMode.value = true;
+  };
+
+  const cancelEdit = () => {
+    isEditMode.value = false;
+  };
+
+  const selectPreset = (id) => {
+    selectedPreset.value = id;
+    customAvatar.value = null;
+    form.avatar = `https://i.pravatar.cc/108?img=${id}`;
+  };
+
+  const triggerFileInput = () => {
+    if (!customAvatar.value) fileInput.value.click();
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files[0]) loadFile(e.target.files[0]);
+  };
+
+  const handleDrop = (e) => {
+    isDragging.value = false;
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadFile(file);
+  };
+
+  const loadFile = (file) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      customAvatar.value = ev.target.result;
+      form.avatar = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeCustomAvatar = () => {
+    customAvatar.value = null;
+    form.avatar = props.user.avatar;
+  };
+
+  const saveChanges = () => {
+    errors.name = !form.name.trim();
+    errors.surname = !form.surname.trim();
+
+    if (errors.name || errors.surname) return;
+
+    emit('update:user', { ...props.user, ...form });
+    isEditMode.value = false;
+    emit('notify', { message: 'Dane zostały zapisane ✓', type: 'success' });
+  };
+</script>
+
 <template>
   <div class="card">
     <div class="card-header">
@@ -131,467 +206,3 @@
     </div>
   </div>
 </template>
-
-<script setup>import { ref, reactive } from 'vue';
-
-const props = defineProps({
-  user: { type: Object, required: true }
-});
-
-const emit = defineEmits(['update:user', 'notify']);
-
-const isEditMode = ref(false);
-const isDragging = ref(false);
-const fileInput = ref(null);
-const customAvatar = ref(null);
-const selectedPreset = ref(15);
-
-const form = reactive({ name: '', surname: '', nick: '', city: '', bio: '', avatar: '' });
-const errors = reactive({ name: false, surname: false });
-
-const enterEditMode = () => {
-  Object.assign(form, { ...props.user });
-  errors.name = false;
-  errors.surname = false;
-  isEditMode.value = true;
-};
-
-const cancelEdit = () => {
-  isEditMode.value = false;
-};
-
-const selectPreset = (id) => {
-  selectedPreset.value = id;
-  customAvatar.value = null;
-  form.avatar = `https://i.pravatar.cc/108?img=${id}`;
-};
-
-const triggerFileInput = () => {
-  if (!customAvatar.value) fileInput.value.click();
-};
-
-const handleFileChange = (e) => {
-  if (e.target.files[0]) loadFile(e.target.files[0]);
-};
-
-const handleDrop = (e) => {
-  isDragging.value = false;
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) loadFile(file);
-};
-
-const loadFile = (file) => {
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    customAvatar.value = ev.target.result;
-    form.avatar = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-};
-
-const removeCustomAvatar = () => {
-  customAvatar.value = null;
-  form.avatar = props.user.avatar;
-};
-
-const saveChanges = () => {
-  errors.name = !form.name.trim();
-  errors.surname = !form.surname.trim();
-
-  if (errors.name || errors.surname) return;
-
-  emit('update:user', { ...props.user, ...form });
-  isEditMode.value = false;
-  emit('notify', { message: 'Dane zostały zapisane ✓', type: 'success' });
-};</script>
-
-<style scoped>
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r-card);
-    box-shadow: var(--shadow);
-    overflow: hidden;
-  }
-
-  .card-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .card-title {
-    font-family: 'Playfair Display',serif;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-1);
-  }
-
-  .card-subtitle {
-    font-size: 12px;
-    color: var(--text-3);
-    margin-top: 2px;
-  }
-
-  .card-body {
-    padding: 24px;
-  }
-
-  .form-grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-
-  .form-field {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-
-    .form-field.full {
-      grid-column: 1/-1;
-    }
-
-  .form-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-3);
-    text-transform: uppercase;
-    letter-spacing: .5px;
-  }
-
-  .input-wrap {
-    position: relative;
-  }
-
-  .input-icon {
-    position: absolute;
-    right: 11px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-3);
-    display: flex;
-    pointer-events: none;
-  }
-
-  .form-input {
-    width: 100%;
-    padding: 9px 13px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    font-family: 'DM Sans',sans-serif;
-    font-size: 14px;
-    color: var(--text-1);
-    background: var(--bg);
-    outline: none;
-    transition: all .2s;
-  }
-
-    .form-input:focus {
-      border-color: var(--primary);
-      background: #fff;
-      box-shadow: 0 0 0 3px rgba(45,106,79,.09);
-    }
-
-    .form-input.readonly {
-      background: var(--tag-bg);
-      color: var(--text-2);
-      cursor: not-allowed;
-      padding-right: 36px;
-    }
-
-    .form-input.error {
-      border-color: var(--danger);
-    }
-
-  .form-error {
-    font-size: 11px;
-    color: var(--danger);
-    display: none;
-    margin-top: 2px;
-  }
-
-    .form-error.show {
-      display: block;
-    }
-
-  .nick-prefix {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-3);
-    font-size: 14px;
-    pointer-events: none;
-  }
-
-  .form-input.with-prefix {
-    padding-left: 24px;
-  }
-
-  .form-footer {
-    padding-top: 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    padding: 9px 22px;
-    border-radius: var(--r-btn);
-    font-family: 'DM Sans',sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all .2s;
-    border: none;
-    white-space: nowrap;
-  }
-
-  .btn-filled {
-    background: var(--primary);
-    color: #fff;
-    border: 1.5px solid var(--primary);
-  }
-
-    .btn-filled:hover {
-      background: var(--primary-h);
-    }
-
-  .btn-outline {
-    background: transparent;
-    border: 1.5px solid var(--primary);
-    color: var(--primary);
-  }
-
-    .btn-outline:hover {
-      background: var(--primary);
-      color: #fff;
-    }
-
-  .btn-sm {
-    padding: 6px 14px;
-    font-size: 13px;
-  }
-
-  .profile-data-grid {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .data-row {
-    display: grid;
-    grid-template-columns: 140px 1fr;
-    gap: 12px;
-    align-items: baseline;
-    padding: 11px 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-    .data-row:last-child {
-      border-bottom: none;
-    }
-
-  .data-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-3);
-    text-transform: uppercase;
-    letter-spacing: .5px;
-  }
-
-  .data-value {
-    font-size: 14px;
-    color: var(--text-1);
-    line-height: 1.5;
-  }
-
-  .edit-subsection-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-3);
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    margin-bottom: 14px;
-  }
-
-  .edit-subsection-divider {
-    height: 1px;
-    background: var(--border);
-    margin: 20px 0 0;
-  }
-
-  .avatar-picker-layout {
-    display: flex;
-    align-items: flex-start;
-    gap: 22px;
-  }
-
-  .current-av-col {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-
-  .current-av {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid var(--border);
-    box-shadow: var(--shadow);
-  }
-
-  .current-av-label {
-    font-size: 11px;
-    color: var(--text-3);
-    text-align: center;
-  }
-
-  .av-right {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .av-grid {
-    display: grid;
-    grid-template-columns: repeat(5,48px);
-    gap: 10px;
-    margin-bottom: 18px;
-  }
-
-  .av-opt {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 2.5px solid transparent;
-    transition: all .2s;
-    object-fit: cover;
-    display: block;
-  }
-
-    .av-opt:hover {
-      transform: scale(1.08);
-      border-color: var(--border);
-    }
-
-    .av-opt.selected {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(45,106,79,.25);
-    }
-
-  .av-check {
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    width: 17px;
-    height: 17px;
-    background: var(--primary);
-    border-radius: 50%;
-    border: 2px solid var(--surface);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .av-sep {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
-    color: var(--text-3);
-    font-size: 12px;
-  }
-
-    .av-sep::before, .av-sep::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-  .av-dropzone {
-    border: 2px dashed var(--border);
-    border-radius: 8px;
-    background: var(--bg);
-    padding: 18px 14px;
-    text-align: center;
-    cursor: pointer;
-    transition: all .2s;
-  }
-
-    .av-dropzone:hover {
-      border-color: var(--primary);
-      background: #f4fbf7;
-    }
-
-    .av-dropzone p {
-      font-size: 13px;
-      color: var(--text-2);
-      margin-top: 8px;
-    }
-
-    .av-dropzone span {
-      font-size: 11px;
-      color: var(--text-3);
-    }
-
-  .dz-link {
-    color: var(--primary);
-    font-weight: 500;
-  }
-
-  .av-preview {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-  }
-
-    .av-preview img {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid var(--primary);
-    }
-
-  .av-remove {
-    font-size: 11px;
-    color: var(--danger);
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: 'DM Sans',sans-serif;
-    transition: opacity .2s;
-  }
-
-    .av-remove:hover {
-      opacity: .7;
-    }
-
-  @media (max-width:600px) {
-    .form-grid-2 {
-      grid-template-columns: 1fr;
-    }
-
-    .av-grid {
-      grid-template-columns: repeat(5,44px);
-      gap: 8px;
-    }
-
-    .avatar-picker-layout {
-      flex-direction: column;
-    }
-  }
-</style>

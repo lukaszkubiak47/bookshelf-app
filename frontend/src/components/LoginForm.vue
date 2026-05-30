@@ -1,3 +1,52 @@
+<script setup>
+  import { ref, reactive, computed } from 'vue';
+  import { T, P } from '../assets/constants';
+  import FormField from './FormField.vue';
+
+  defineEmits(['switch']);
+
+  const v = reactive({ email: '', password: '' });
+  const touched = reactive({ email: false, password: false });
+  const shaking = ref(false);
+  const loading = ref(false);
+  const done = ref(false);
+  const hov = ref(false);
+
+  const errors = computed(() => {
+    const e = {};
+    if (!v.email) e.email = 'Email jest wymagany';
+    else if (!/\S+@\S+\.\S+/.test(v.email)) e.email = 'Nieprawidłowy format email';
+    if (!v.password) e.password = 'Hasło jest wymagane';
+    else if (v.password.length < 6) e.password = 'Hasło musi mieć min. 6 znaków';
+    return e;
+  });
+
+  const fs = (key) => {
+    if (!touched[key]) return { state: 'idle' };
+    if (errors.value[key]) return { state: 'error', error: errors.value[key] };
+    if (v[key]) return { state: 'success' };
+    return { state: 'idle' };
+  };
+
+  const blur = (key) => { touched[key] = true; };
+
+  const submit = async () => {
+    touched.email = true;
+    touched.password = true;
+
+    if (Object.keys(errors.value).length > 0) {
+      shaking.value = true;
+      setTimeout(() => { shaking.value = false; }, 600);
+      return;
+    }
+
+    loading.value = true;
+    await new Promise(r => setTimeout(r, 1400));
+    loading.value = false;
+    done.value = true;
+  };
+</script>
+
 <template>
   <div v-if="done" :style="{ textAlign: 'center', padding: '20px 0', animation: 'fadeScaleIn 0.4s ease both' }">
     <div :style="{
@@ -71,50 +120,3 @@
     </p>
   </form>
 </template>
-
-<script setup>import { ref, reactive, computed } from 'vue';
-import { T, P } from '../assets/constants';
-import FormField from './FormField.vue';
-
-defineEmits(['switch']);
-
-const v = reactive({ email: '', password: '' });
-const touched = reactive({ email: false, password: false });
-const shaking = ref(false);
-const loading = ref(false);
-const done = ref(false);
-const hov = ref(false);
-
-const errors = computed(() => {
-  const e = {};
-  if (!v.email) e.email = 'Email jest wymagany';
-  else if (!/\S+@\S+\.\S+/.test(v.email)) e.email = 'Nieprawidłowy format email';
-  if (!v.password) e.password = 'Hasło jest wymagane';
-  else if (v.password.length < 6) e.password = 'Hasło musi mieć min. 6 znaków';
-  return e;
-});
-
-const fs = (key) => {
-  if (!touched[key]) return { state: 'idle' };
-  if (errors.value[key]) return { state: 'error', error: errors.value[key] };
-  if (v[key]) return { state: 'success' };
-  return { state: 'idle' };
-};
-
-const blur = (key) => { touched[key] = true; };
-
-const submit = async () => {
-  touched.email = true;
-  touched.password = true;
-
-  if (Object.keys(errors.value).length > 0) {
-    shaking.value = true;
-    setTimeout(() => { shaking.value = false; }, 600);
-    return;
-  }
-
-  loading.value = true;
-  await new Promise(r => setTimeout(r, 1400));
-  loading.value = false;
-  done.value = true;
-};</script>

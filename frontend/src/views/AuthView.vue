@@ -1,3 +1,27 @@
+<script setup>
+  import { ref, computed } from 'vue';
+  import { T } from '../assets/constants.js';
+  import AuthLeftPanel from '../components/AuthLeftPanel.vue';
+  import LoginForm from '../components/LoginForm.vue';
+  import RegisterForm from '../components/RegisterForm.vue';
+
+  const mode = ref('login');
+  const prev = ref(null);
+  const viewKey = ref(0);
+
+  const switchTo = (next) => {
+    if (next === mode.value) return;
+    prev.value = mode.value;
+    mode.value = next;
+    viewKey.value += 1;
+  };
+
+  const animCls = computed(() => {
+    if (prev.value === null) return '';
+    return mode.value === 'register' ? 'anim-slide-right' : 'anim-slide-left';
+  });
+</script>
+
 <template>
   <div :style="{ display: 'flex', minHeight: '100vh' }">
     <AuthLeftPanel />
@@ -37,27 +61,3 @@
     </div>
   </div>
 </template>
-
-<script setup>
-  import { ref, computed } from 'vue';
-  import { T } from '../assets/constants.js';
-  import AuthLeftPanel from '../components/AuthLeftPanel.vue';
-  import LoginForm from '../components/LoginForm.vue';
-  import RegisterForm from '../components/RegisterForm.vue';
-
-  const mode = ref('login');
-  const prev = ref(null);
-  const viewKey = ref(0);
-
-  const switchTo = (next) => {
-    if (next === mode.value) return;
-    prev.value = mode.value;
-    mode.value = next;
-    viewKey.value += 1;
-  };
-
-  const animCls = computed(() => {
-    if (prev.value === null) return '';
-    return mode.value === 'register' ? 'anim-slide-right' : 'anim-slide-left';
-  });
-</script>
