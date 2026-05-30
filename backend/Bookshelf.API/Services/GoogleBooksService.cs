@@ -36,8 +36,14 @@ namespace Bookshelf.API.Services
 
             var url = $"{GoogleBooksBaseUrl}?q={Uri.EscapeDataString(normalizedQuery)}&maxResults={MaxResults}";
 
-            // Google zwraca mocno zagniezdzony JSON, dlatego mapujemy go przez prywatne klasy odpowiedzi.
-            var response = await _http.GetFromJsonAsync<GoogleBooksResponse>(url);
+            // Pobierz odpowiedz jawnie, zeby obsluzyc limity i inne bledy Google bez 500 z naszego API.
+            var httpResponse = await _http.GetAsync(url);
+
+            if (!httpResponse.IsSuccessStatusCode)
+                throw new ServiceUnavailableException("Google Books API jest chwilowo niedostepne albo zwrocilo limit zapytan");
+
+            // Google zwraca mocno zagniezdzony JSON, dlatego mapujemy go przez klasy odpowiedzi.
+            var response = await httpResponse.Content.ReadFromJsonAsync<GoogleBooksResponse>();
             var results = MapResults(response);
 
             // Cache na 24h ogranicza liczbe requestow do Google i przyspiesza powtarzane wyszukiwania.
@@ -90,13 +96,13 @@ namespace Bookshelf.API.Services
                 ?? identifiers.FirstOrDefault()?.Identifier;
         }
 
-        private class GoogleBooksResponse
+        public class GoogleBooksResponse
         {
             [JsonPropertyName("items")]
             public List<GoogleBookItem>? Items { get; set; }
         }
 
-        private class GoogleBookItem
+        public class GoogleBookItem
         {
             [JsonPropertyName("id")]
             public string? Id { get; set; }
@@ -105,7 +111,7 @@ namespace Bookshelf.API.Services
             public GoogleVolumeInfo? VolumeInfo { get; set; }
         }
 
-        private class GoogleVolumeInfo
+        public class GoogleVolumeInfo
         {
             [JsonPropertyName("title")]
             public string? Title { get; set; }
@@ -123,13 +129,13 @@ namespace Bookshelf.API.Services
             public List<GoogleIndustryIdentifier>? IndustryIdentifiers { get; set; }
         }
 
-        private class GoogleImageLinks
+        public class GoogleImageLinks
         {
             [JsonPropertyName("thumbnail")]
             public string? Thumbnail { get; set; }
         }
 
-        private class GoogleIndustryIdentifier
+        public class GoogleIndustryIdentifier
         {
             [JsonPropertyName("type")]
             public string? Type { get; set; }
