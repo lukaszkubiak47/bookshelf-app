@@ -1,13 +1,13 @@
 <script setup>
-  import FirstSection from '../components/FirstSection.vue'
-  import SecondSection from '../components/SecondSection.vue'
-  import ThirdSection from '../components/ThirdSection.vue'
+  import FirstSectionHomeView from '../components/FirstSectionHomeView.vue'
+  import SecondSectionHomeView from '../components/SecondSectionHomeView.vue'
+  import ThirdSectionHomeView from '../components/ThirdSectionHomeView.vue'
 </script>
 
 <template>
-  <FirstSection />
-  <SecondSection />
-  <ThirdSection />
+  <FirstSectionHomeView />
+  <SecondSectionHomeView />
+  <ThirdSectionHomeView />
 </template>
 
 <style scoped>

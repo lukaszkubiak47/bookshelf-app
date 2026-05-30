@@ -9,26 +9,26 @@
 
       <!-- LEFT -->
       <div class="hero-left">
-        <div class="hero-eyebrow anim">
+        <div class="hero-eyebrow">
           <span class="hero-eyebrow-dot"></span>
           Społeczność czytelników
         </div>
 
-        <h1 class="hero-title anim anim-d1">
+        <h1 class="hero-title">
           Twoje książki<br>znajdą <em>nowy dom</em>
         </h1>
 
-        <p class="hero-subtitle anim anim-d2">
+        <p class="hero-subtitle2">
           Wymieniaj, wypożyczaj i sprzedawaj książki lokalnie.
           Dołącz do społeczności czytelników.
         </p>
 
-        <div class="hero-ctas anim anim-d3">
+        <div class="hero-ctas">
           <button class="btn btn-filled btn-lg">Przeglądaj książki</button>
           <button class="btn btn-outline btn-lg">Dołącz za darmo</button>
         </div>
 
-        <div class="hero-stats anim anim-d4">
+        <div class="hero-stats">
           <div class="hero-stat">
             <span class="hero-stat-num">12 400+</span>
             <span class="hero-stat-label">Książek w obiegu</span>
@@ -47,7 +47,7 @@
       </div>
 
       <!-- RIGHT — decorative book grid -->
-      <div class="hero-right anim anim-d2">
+      <div class="hero-right">
         <div class="hero-blob"></div>
         <div class="hero-books">
           <div class="hero-book"><img src="https://picsum.photos/112/150?random=10" alt="Book cover"></div>
