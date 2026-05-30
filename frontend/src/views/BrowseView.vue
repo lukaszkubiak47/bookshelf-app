@@ -1,70 +1,4 @@
-<template>
-  <div class="page-wrapper">
-    <div class="page-header">
-      <h1 class="page-title">Przeglądaj książki</h1>
-      <span class="result-count">Znaleziono <strong>{{ filteredBooks.length }}</strong> ofert</span>
-    </div>
-
-    <div class="page-layout">
-      <BookFiltersBrowseView v-model:search="search"
-                   v-model:city="city"
-                   :types="stateTypes"
-                   :genres="stateGenres"
-                   :available-genres="availableGenres"
-                   :counts="typeCounts"
-                   @toggle-type="toggleType"
-                   @toggle-genre="toggleGenre"
-                   @reset="resetFilters" />
-
-      <main>
-        <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
-          <a href="Dodaj książkę.html" class="btn btn-filled">
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="7" y1="1" x2="7" y2="13" /><line x1="1" y1="7" x2="13" y2="7" /></svg>
-            Dodaj książkę
-          </a>
-        </div>
-
-        <div class="sort-bar">
-          <div class="sort-left">
-            <span class="sort-label">Sortuj:</span>
-            <select class="sort-select" v-model="sortBy">
-              <option value="newest">Najnowsze</option>
-              <option value="oldest">Najstarsze</option>
-              <option value="title">Tytuł A–Z</option>
-            </select>
-          </div>
-          <div class="view-toggle">
-            <button :class="['view-btn', { active: viewMode === 'grid' }]" @click="viewMode = 'grid'" title="Widok siatki">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="0" y="0" width="6" height="6" rx="1" /><rect x="8" y="0" width="6" height="6" rx="1" /><rect x="0" y="8" width="6" height="6" rx="1" /><rect x="8" y="8" width="6" height="6" rx="1" /></svg>
-            </button>
-            <button :class="['view-btn', { active: viewMode === 'list' }]" @click="viewMode = 'list'" title="Widok listy">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="0" y1="3" x2="14" y2="3" /><line x1="0" y1="7" x2="14" y2="7" /><line x1="0" y1="11" x2="14" y2="11" /></svg>
-            </button>
-          </div>
-        </div>
-
-        <div v-if="displayedBooks.length === 0" class="empty">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><line x1="16.5" y1="16.5" x2="22" y2="22" /></svg>
-          <p>Brak ofert pasujących do filtrów</p>
-        </div>
-
-        <div v-else :class="['books-grid', { 'list': viewMode === 'list' }]">
-          <BookCard v-for="book in displayedBooks"
-                    :key="book.id"
-                    :book="book"
-                    @select="openModal" />
-        </div>
-
-        <div class="load-more" v-if="filteredBooks.length > limit">
-          <button class="btn btn-outline" @click="limit += 6" style="min-width:200px">Załaduj więcej ofert</button>
-        </div>
-      </main>
-    </div>
-  </div>
-</template>
-
-<script setup>
-  import { ref, computed } from 'vue';
+<script setup>import { ref, computed } from 'vue';
   import BookFiltersBrowseView from '../components/BookFiltersBrowseView.vue';
   import BookCard from '../components/BookCard.vue';
 
@@ -165,6 +99,71 @@
     console.log("Otwieranie modala dla książki o ID:", id);
   };
 </script>
+
+<template>
+  <div class="page-wrapper">
+    <div class="page-header">
+      <h1 class="page-title">Przeglądaj książki</h1>
+      <span class="result-count">Znaleziono <strong>{{ filteredBooks.length }}</strong> ofert</span>
+    </div>
+
+    <div class="page-layout">
+      <BookFiltersBrowseView v-model:search="search"
+                   v-model:city="city"
+                   :types="stateTypes"
+                   :genres="stateGenres"
+                   :available-genres="availableGenres"
+                   :counts="typeCounts"
+                   @toggle-type="toggleType"
+                   @toggle-genre="toggleGenre"
+                   @reset="resetFilters" />
+
+      <main>
+        <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
+          <a href="Dodaj książkę.html" class="btn btn-filled">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="7" y1="1" x2="7" y2="13" /><line x1="1" y1="7" x2="13" y2="7" /></svg>
+            Dodaj książkę
+          </a>
+        </div>
+
+        <div class="sort-bar">
+          <div class="sort-left">
+            <span class="sort-label">Sortuj:</span>
+            <select class="sort-select" v-model="sortBy">
+              <option value="newest">Najnowsze</option>
+              <option value="oldest">Najstarsze</option>
+              <option value="title">Tytuł A–Z</option>
+            </select>
+          </div>
+          <div class="view-toggle">
+            <button :class="['view-btn', { active: viewMode === 'grid' }]" @click="viewMode = 'grid'" title="Widok siatki">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="0" y="0" width="6" height="6" rx="1" /><rect x="8" y="0" width="6" height="6" rx="1" /><rect x="0" y="8" width="6" height="6" rx="1" /><rect x="8" y="8" width="6" height="6" rx="1" /></svg>
+            </button>
+            <button :class="['view-btn', { active: viewMode === 'list' }]" @click="viewMode = 'list'" title="Widok listy">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="0" y1="3" x2="14" y2="3" /><line x1="0" y1="7" x2="14" y2="7" /><line x1="0" y1="11" x2="14" y2="11" /></svg>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="displayedBooks.length === 0" class="empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><line x1="16.5" y1="16.5" x2="22" y2="22" /></svg>
+          <p>Brak ofert pasujących do filtrów</p>
+        </div>
+
+        <div v-else :class="['books-grid', { 'list': viewMode === 'list' }]">
+          <BookCard v-for="book in displayedBooks"
+                    :key="book.id"
+                    :book="book"
+                    @select="openModal" />
+        </div>
+
+        <div class="load-more" v-if="filteredBooks.length > limit">
+          <button class="btn btn-outline" @click="limit += 6" style="min-width:200px">Załaduj więcej ofert</button>
+        </div>
+      </main>
+    </div>
+  </div>
+</template>
 
 <style>
   /* ── GLOBALNE STYLE (ZGODNE Z PROJEKTEM ROOT) ── */

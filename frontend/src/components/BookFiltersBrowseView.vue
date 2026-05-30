@@ -1,3 +1,16 @@
+<script setup>
+  defineProps({
+    search: String,
+    city: String,
+    types: Set,
+    genres: Set,
+    availableGenres: Array,
+    counts: Object
+  });
+
+  defineEmits(['update:search', 'update:city', 'toggle-type', 'toggle-genre', 'reset']);
+</script>
+
 <template>
   <aside class="sidebar">
     <div class="filter-header">
@@ -75,19 +88,6 @@
     </div>
   </aside>
 </template>
-
-<script setup>
-  defineProps({
-    search: String,
-    city: String,
-    types: Set,
-    genres: Set,
-    availableGenres: Array,
-    counts: Object
-  });
-
-  defineEmits(['update:search', 'update:city', 'toggle-type', 'toggle-genre', 'reset']);
-</script>
 
 <style scoped>
   .sidebar {

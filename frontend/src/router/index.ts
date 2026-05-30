@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import BrowseView from '../views/BrowseView.vue'
 import AuthView from '../views/AuthView.vue'
+import ShelfView from '../views/ShelfView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,6 +22,11 @@ const router = createRouter({
       path: '/logowanie',
       name: 'auth',
       component: AuthView
+    },
+    {
+      path: '/polka',
+      name: 'shelf',
+      component: ShelfView
     }
   ]
 })

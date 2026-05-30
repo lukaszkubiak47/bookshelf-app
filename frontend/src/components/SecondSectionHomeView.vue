@@ -1,6 +1,6 @@
 <script setup>
   // ── Hero animates immediately, staggered by delay classes ──
-  const heroEls = document.querySelectorAll('.hero .anim');
+  const heroEls = document.querySelectorAll('.hero');
   heroEls.forEach(el => {
     // small tick so the browser registers the initial state
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -18,7 +18,7 @@
     });
   }, { threshold: 0.1, rootMargin: '0px 0px -32px 0px' });
 
-  document.querySelectorAll('.anim:not(.hero .anim)').forEach(el => observer.observe(el));
+  document.querySelectorAll(':not(.hero)').forEach(el => observer.observe(el));
 
   // ── Button ripple feedback ──
   document.querySelectorAll('.btn').forEach(btn => {
@@ -49,8 +49,8 @@
   <section class="section">
     <div class="section-inner">
       <div class="section-header">
-        <h2 class="section-title anim">Świeże oferty</h2>
-        <a href="#" class="section-link anim">
+        <h2 class="section-title">Świeże oferty</h2>
+        <a href="#" class="section-link">
           Zobacz wszystkie
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M2 7h10M7 2l5 5-5 5" />
@@ -61,7 +61,7 @@
       <div class="books-grid">
 
         <!-- KARTA 1 -->
-        <div class="book-card-wrap anim anim-d1">
+        <div class="book-card-wrap">
           <div class="book-card">
             <div class="book-cover-wrap">
               <img src="https://picsum.photos/180/240?random=1" alt="Okładka" class="book-cover">
@@ -82,7 +82,7 @@
         </div>
 
         <!-- KARTA 2 -->
-        <div class="book-card-wrap anim anim-d2">
+        <div class="book-card-wrap">
           <div class="book-card">
             <div class="book-cover-wrap">
               <img src="https://picsum.photos/180/240?random=2" alt="Okładka" class="book-cover">
@@ -103,7 +103,7 @@
         </div>
 
         <!-- KARTA 3 -->
-        <div class="book-card-wrap anim anim-d3">
+        <div class="book-card-wrap">
           <div class="book-card">
             <div class="book-cover-wrap">
               <img src="https://picsum.photos/180/240?random=3" alt="Okładka" class="book-cover">
@@ -124,7 +124,7 @@
         </div>
 
         <!-- KARTA 4 -->
-        <div class="book-card-wrap anim anim-d4">
+        <div class="book-card-wrap">
           <div class="book-card">
             <div class="book-cover-wrap">
               <img src="https://picsum.photos/180/240?random=4" alt="Okładka" class="book-cover">
@@ -145,7 +145,7 @@
         </div>
 
         <!-- KARTA 5 -->
-        <div class="book-card-wrap anim anim-d5">
+        <div class="book-card-wrap">
           <div class="book-card">
             <div class="book-cover-wrap">
               <img src="https://picsum.photos/180/240?random=5" alt="Okładka" class="book-cover">
