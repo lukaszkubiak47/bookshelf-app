@@ -17,11 +17,15 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
 // SERWISY (DI)
+builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserBookService, UserBookService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddScoped<IGoogleBooksService, GoogleBooksService>();
+builder.Services.AddScoped<IBookService, BookService>();
 
 // AUTENTYKACJA JWT
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
