@@ -1,9 +1,15 @@
 <script setup>
   import { ref, reactive, computed } from 'vue';
+  import { useRouter } from 'vue-router';
   import { T, P } from '../assets/constants.js';
   import FormField from './FormField.vue';
+  import { useAuthStore } from '../stores/auth';
+  import { ApiError } from '../api/client';
 
   defineEmits(['switch']);
+
+  const router = useRouter();
+  const auth = useAuthStore();
 
   const v = reactive({
     firstName: '', lastName: '', username: '', email: '', city: '', password: '', confirmPw: '',
@@ -17,6 +23,7 @@
   const loading = ref(false);
   const done = ref(false);
   const hov = ref(false);
+  const apiError = ref('');
 
   const strColor = ['', T.danger, T.warning, T.gold, T.success];
   const strLabel = ['', 'Słabe', 'Mierne', 'Dobre', 'Silne'];
@@ -41,6 +48,8 @@
 
     if (!v.email) e.email = 'Email jest wymagany';
     else if (!/\S+@\S+\.\S+/.test(v.email)) e.email = 'Nieprawidłowy format';
+
+    if (!v.city?.trim()) e.city = 'Miasto jest wymagane';
 
     if (!v.password) e.password = 'Hasło jest wymagane';
     else if (v.password.length < 8) e.password = 'Min. 8 znaków';
@@ -77,9 +86,26 @@
     }
 
     loading.value = true;
-    await new Promise(r => setTimeout(r, 1600));
-    loading.value = false;
-    done.value = true;
+    apiError.value = '';
+
+    try {
+      await auth.register({
+        email: v.email,
+        password: v.password,
+        username: v.username,
+        firstName: v.firstName,
+        lastName: v.lastName,
+        city: v.city.trim(),
+      });
+      loading.value = false;
+      done.value = true;
+      setTimeout(() => router.push('/przegladanie'), 1200);
+    } catch (err) {
+      loading.value = false;
+      apiError.value = err instanceof ApiError ? err.message : 'Nie udało się utworzyć konta';
+      shaking.value = true;
+      setTimeout(() => { shaking.value = false; }, 600);
+    }
   };
 </script>
 
@@ -95,7 +121,7 @@
     <h3 :style="{ fontFamily: '\'Playfair Display\', serif', fontSize: '22px', fontWeight: 700, color: T.t1, marginBottom: '8px' }">
       Konto utworzone!
     </h3>
-    <p :style="{ color: T.t2, fontSize: '14px' }">Sprawdź swoją skrzynkę email, aby potwierdzić rejestrację.</p>
+    <p :style="{ color: T.t2, fontSize: '14px' }">Możesz od razu przeglądać i dodawać oferty.</p>
   </div>
 
   <form v-else @submit.prevent="submit" :class="{ 'anim-shake': shaking }" noValidate>
@@ -103,6 +129,10 @@
       Dołącz do nas
     </h2>
     <p :style="{ color: T.t2, fontSize: '14px', marginBottom: '22px' }">Stwórz konto w kilka sekund</p>
+
+    <p v-if="apiError" :style="{ fontSize: '13px', color: T.danger, marginBottom: '14px', padding: '10px 12px', background: '#FDEEEC', borderRadius: '8px' }">
+      {{ apiError }}
+    </p>
 
     <div :style="{ display: 'flex', flexDirection: 'column', gap: '13px' }">
       <div :style="{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }">

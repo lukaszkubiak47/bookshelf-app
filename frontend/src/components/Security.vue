@@ -1,5 +1,7 @@
 <script setup>
   import { ref, reactive, computed } from 'vue';
+  import { usersApi } from '../api/users';
+  import { ApiError } from '../api/client';
 
   const emit = defineEmits(['notify']);
 
@@ -45,20 +47,31 @@
     strength.text = level.text;
   };
 
-  const changePassword = () => {
+  const changePassword = async () => {
     errors.current = !passwords.current;
     errors.new = passwords.new.length < 8;
     errors.confirm = passwords.new !== passwords.confirm;
 
     if (errors.current || errors.new || errors.confirm) return;
 
-    // Czyszczenie pól po pomyślnym wysłaniu
-    Object.assign(passwords, { current: '', new: '', confirm: '' });
-    strength.width = '0';
-    strength.text = 'Wpisz hasło aby ocenić siłę';
-    strength.bg = '';
+    try {
+      await usersApi.changePassword({
+        currentPassword: passwords.current,
+        newPassword: passwords.new,
+      });
 
-    emit('notify', { message: 'Hasło zmienione ✓', type: 'success' });
+      Object.assign(passwords, { current: '', new: '', confirm: '' });
+      strength.width = '0';
+      strength.text = 'Wpisz hasło aby ocenić siłę';
+      strength.bg = '';
+
+      emit('notify', { message: 'Hasło zmienione ✓', type: 'success' });
+    } catch (err) {
+      emit('notify', {
+        message: err instanceof ApiError ? err.message : 'Nie udało się zmienić hasła',
+        type: 'error',
+      });
+    }
   };
 </script>
 

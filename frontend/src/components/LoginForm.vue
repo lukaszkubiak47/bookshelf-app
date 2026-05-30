@@ -1,9 +1,16 @@
 <script setup>
   import { ref, reactive, computed } from 'vue';
+  import { useRouter, useRoute } from 'vue-router';
   import { T, P } from '../assets/constants';
   import FormField from './FormField.vue';
+  import { useAuthStore } from '../stores/auth';
+  import { ApiError } from '../api/client';
 
   defineEmits(['switch']);
+
+  const router = useRouter();
+  const route = useRoute();
+  const auth = useAuthStore();
 
   const v = reactive({ email: '', password: '' });
   const touched = reactive({ email: false, password: false });
@@ -11,6 +18,7 @@
   const loading = ref(false);
   const done = ref(false);
   const hov = ref(false);
+  const apiError = ref('');
 
   const errors = computed(() => {
     const e = {};
@@ -41,9 +49,20 @@
     }
 
     loading.value = true;
-    await new Promise(r => setTimeout(r, 1400));
-    loading.value = false;
-    done.value = true;
+    apiError.value = '';
+
+    try {
+      await auth.login(v.email, v.password);
+      loading.value = false;
+      done.value = true;
+      const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/przegladanie';
+      setTimeout(() => router.push(redirect), 900);
+    } catch (err) {
+      loading.value = false;
+      apiError.value = err instanceof ApiError ? err.message : 'Nie udało się zalogować';
+      shaking.value = true;
+      setTimeout(() => { shaking.value = false; }, 600);
+    }
   };
 </script>
 
@@ -67,6 +86,10 @@
       Witaj z powrotem
     </h2>
     <p :style="{ color: T.t2, fontSize: '14px', marginBottom: '26px' }">Zaloguj się na swoje konto</p>
+
+    <p v-if="apiError" :style="{ fontSize: '13px', color: T.danger, marginBottom: '14px', padding: '10px 12px', background: '#FDEEEC', borderRadius: '8px' }">
+      {{ apiError }}
+    </p>
 
     <div :style="{ display: 'flex', flexDirection: 'column', gap: '16px' }">
       <FormField label="Email" type="email" icon="mail" placeholder="jan.kowalski@email.com"

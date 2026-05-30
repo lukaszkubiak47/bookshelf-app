@@ -1,5 +1,9 @@
 <script setup>
   import { ref, reactive, onMounted } from 'vue';
+  import { booksApi } from '../api/books';
+  import { userBooksApi } from '../api/userBooks';
+  import { mapBookSearchResult } from '../api/mappers';
+  import { ApiError } from '../api/client';
 
   /* ────── STAN APLIKACJI ────── */
   const currentStep = ref(1);
@@ -8,6 +12,8 @@
   const showResults = ref(false);
   const isManualOpen = ref(false);
   const showSuccess = ref(false);
+  const searchResults = ref([]);
+  const submitError = ref('');
 
   const form = reactive({
     selectedBook: null,
@@ -33,26 +39,25 @@
   const previewUrl = ref(null);
   const fileInput = ref(null);
 
-  /* Mockowane dane wyszukiwania */
-  const mockResults = [
-    { id: 1, title: "Wiedźmin: Ostatnie życzenie", author: "Andrzej Sapkowski", year: "1993", genre: "Fantasy", isbn: "978-83-7578-066-2", desc: "Zbiór opowiadań o wiedźminie Geralcie z Rivii — łowcy potworów.", img: 23 },
-    { id: 2, title: "Krew elfów", author: "Andrzej Sapkowski", year: "1994", genre: "Fantasy", isbn: "978-83-7578-068-6", desc: "Pierwsza pełnowymiarowa powieść z cyklu Wiedźmin.", img: 51 },
-    { id: 3, title: "Czas pogardy", author: "Andrzej Sapkowski", year: "1995", genre: "Fantasy", isbn: "978-83-7578-069-3", desc: "Ciri ucieka, Geralt walczy — drugi tom sagi.", img: 52 },
-    { id: 4, title: "Narrenturm", author: "Andrzej Sapkowski", year: "2002", genre: "Fantasy historyczne", isbn: "978-83-7469-104-6", desc: "Powieść historyczna osadzona w XV-wiecznej Europie.", img: 53 },
-    { id: 5, title: "Maladie i inne opowiadania", author: "Andrzej Sapkowski", year: "2012", genre: "Opowiadania", isbn: "978-83-7578-514-8", desc: "Zbiór fantastycznych opowiadań.", img: 54 }
-  ];
-
   /* ────── LOGIKA METOD ────── */
-  const runSearch = () => {
+  const runSearch = async () => {
     if (!searchQuery.value.trim()) return;
     isLoading.value = true;
     showResults.value = false;
     form.selectedBook = null;
+    submitError.value = '';
 
-    setTimeout(() => {
-      isLoading.value = false;
+    try {
+      const results = await booksApi.search(searchQuery.value.trim(), 10);
+      searchResults.value = results.map(mapBookSearchResult);
       showResults.value = true;
-    }, 680);
+    } catch {
+      searchResults.value = [];
+      submitError.value = 'Wyszukiwanie nie powiodło się';
+      showResults.value = true;
+    } finally {
+      isLoading.value = false;
+    }
   };
 
   const selectBook = (book) => {
@@ -65,21 +70,63 @@
     showResults.value = true;
   };
 
-  const submitManualForm = () => {
+  const submitManualForm = async () => {
     errors.title = !manualForm.title.trim();
     errors.author = !manualForm.author.trim();
     if (errors.title || errors.author) return;
 
-    form.selectedBook = {
-      title: manualForm.title,
-      author: manualForm.author,
-      year: '—',
-      genre: manualForm.genre,
-      isbn: manualForm.isbn || '—',
-      img: Math.floor(Math.random() * 80) + 20
+    submitError.value = '';
+    try {
+      const created = await booksApi.create({
+        title: manualForm.title.trim(),
+        author: manualForm.author.trim(),
+        description: manualForm.desc || undefined,
+        isbn: manualForm.isbn || undefined,
+        genreName: manualForm.genre,
+      });
+      form.selectedBook = mapBookSearchResult(created);
+      isManualOpen.value = false;
+      showResults.value = false;
+    } catch (err) {
+      submitError.value = err instanceof ApiError ? err.message : 'Nie udało się dodać książki';
+    }
+  };
+
+  const swapConditionMap = {
+    any: 'anything',
+    book: 'specific_book',
+    genre: 'genre',
+    free: 'free',
+  };
+
+  const publishOffer = async () => {
+    if (!form.selectedBook?.id || !form.offerType) return;
+    submitError.value = '';
+
+    const body = {
+      bookId: form.selectedBook.id,
+      transactionType: form.offerType,
     };
-    isManualOpen.value = false;
-    showResults.value = false;
+
+    if (form.offerType === 'sale') {
+      body.price = Number(form.offerDetails.price);
+    }
+
+    if (form.offerType === 'swap') {
+      body.exchangeCondition = swapConditionMap[form.offerDetails.swapLooking] ?? 'anything';
+      if (form.offerDetails.swapLooking === 'book') {
+        body.exchangeDetails = form.offerDetails.swapBookTitle || undefined;
+      } else if (form.offerDetails.swapLooking === 'genre') {
+        body.exchangeDetails = form.offerDetails.swapGenre;
+      }
+    }
+
+    try {
+      await userBooksApi.create(body);
+      showSuccess.value = true;
+    } catch (err) {
+      submitError.value = err instanceof ApiError ? err.message : 'Nie udało się dodać oferty';
+    }
   };
 
   /* Dropzone logic */
@@ -104,7 +151,7 @@
 
   /* Automatyczne wyszukiwanie po załadowaniu strony (1 do 1) */
   onMounted(() => {
-    setTimeout(() => { runSearch(); }, 400);
+    if (searchQuery.value.trim()) runSearch();
   });
 </script>
 
@@ -149,10 +196,10 @@
         </div>
 
         <div v-if="showResults && !isLoading" class="results-section">
-          <div class="results-label">5 wyników dla „{{ searchQuery }}”</div>
+          <div class="results-label">{{ searchResults.length }} wyników dla „{{ searchQuery }}”</div>
           <div class="results-list">
-            <div v-for="b in mockResults" :key="b.id" class="result-row" @click="selectBook(b)">
-              <img :src="`https://picsum.photos/52/70?random=${b.img}`" :alt="b.title" class="result-cover">
+            <div v-for="b in searchResults" :key="b.id" class="result-row" @click="selectBook(b)">
+              <img :src="b.coverUrl || `https://picsum.photos/52/70?random=${b.img}`" :alt="b.title" class="result-cover">
               <div class="result-info">
                 <div class="result-title">{{ b.title }}</div>
                 <div class="result-author">{{ b.author }}</div>
@@ -384,7 +431,8 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
             Wróć
           </button>
-          <button class="btn btn-filled btn-lg" :disabled="!form.offerType" @click="showSuccess = true">
+          <p v-if="submitError" style="color:var(--danger);font-size:13px;margin-bottom:12px">{{ submitError }}</p>
+          <button class="btn btn-filled btn-lg" :disabled="!form.offerType" @click="publishOffer">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12" /></svg>
             Dodaj na półkę
           </button>

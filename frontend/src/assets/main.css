@@ -503,6 +503,143 @@ body {
   flex-shrink: 0;
 }
 
+.nav-avatar-wrap {
+  position: relative;
+}
+
+.nav-avatar-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: border-color .18s, box-shadow .18s;
+}
+
+.nav-avatar-btn:hover {
+  border-color: #d4c4b4;
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.06);
+}
+
+.nav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.nav-avatar-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+.nav-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--text-3);
+  transition: transform .2s ease;
+}
+
+.nav-avatar-wrap.open .nav-chevron {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-h);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  pointer-events: none;
+  transition: opacity .16s ease, transform .16s ease;
+  z-index: 1100;
+}
+
+.nav-avatar-wrap.open .nav-dropdown {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: all;
+}
+
+.nav-dropdown .dd-head {
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-dropdown .dd-head strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.nav-dropdown .dd-head span {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.nav-dropdown .dd-head a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.nav-dropdown .dd-head a:hover {
+  text-decoration: underline;
+}
+
+.nav-dropdown .dd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  font-size: 13px;
+  color: var(--text-2);
+  text-decoration: none;
+  transition: background .14s;
+  border: none;
+  background: none;
+  width: 100%;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.nav-dropdown .dd-item:hover {
+  background: var(--tag-bg);
+  color: var(--text-1);
+}
+
+.nav-dropdown .dd-item.danger {
+  color: var(--danger);
+}
+
+.nav-dropdown .dd-item.danger:hover {
+  background: #fef0ee;
+  color: var(--danger);
+}
+
+.nav-dropdown .dd-divider {
+  height: 1px;
+  background: var(--border);
+}
+
 /* ── Hero (First Section) ── */
 .hero {
   min-height: calc(100vh - 60px);

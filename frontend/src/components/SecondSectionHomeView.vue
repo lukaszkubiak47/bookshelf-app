@@ -1,4 +1,26 @@
 <script setup>
+  import { ref, onMounted } from 'vue';
+  import { RouterLink } from 'vue-router';
+  import { userBooksApi } from '../api/userBooks';
+  import { mapUserBookToCard } from '../api/mappers';
+
+  const recentBooks = ref([]);
+  const loadingRecent = ref(true);
+
+  onMounted(async () => {
+    try {
+      const items = await userBooksApi.getRecent(5);
+      recentBooks.value = items.map(mapUserBookToCard);
+    } catch {
+      recentBooks.value = [];
+    } finally {
+      loadingRecent.value = false;
+    }
+  });
+
+  const badgeClass = (type) => ({ loan: 'badge-loan', swap: 'badge-swap', sale: 'badge-sale' }[type] || '');
+  const badgeText = (type) => ({ loan: 'Do wypożyczenia', swap: 'Do wymiany', sale: 'Do sprzedaży' }[type] || '');
+
   // ── Hero animates immediately, staggered by delay classes ──
   const heroEls = document.querySelectorAll('.hero');
   heroEls.forEach(el => {
@@ -50,121 +72,37 @@
     <div class="section-inner">
       <div class="section-header">
         <h2 class="section-title">Świeże oferty</h2>
-        <a href="#" class="section-link">
+        <RouterLink to="/przegladanie" class="section-link">
           Zobacz wszystkie
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M2 7h10M7 2l5 5-5 5" />
           </svg>
-        </a>
+        </RouterLink>
       </div>
 
-      <div class="books-grid">
+      <p v-if="loadingRecent" class="section-hint">Ładowanie ofert…</p>
+      <p v-else-if="recentBooks.length === 0" class="section-hint">Brak ofert — dodaj pierwszą książkę!</p>
 
-        <!-- KARTA 1 -->
-        <div class="book-card-wrap">
-          <div class="book-card">
+      <div v-else class="books-grid">
+        <div v-for="book in recentBooks" :key="book.id" class="book-card-wrap">
+          <RouterLink :to="'/przegladanie'" class="book-card">
             <div class="book-cover-wrap">
-              <img src="https://picsum.photos/180/240?random=1" alt="Okładka" class="book-cover">
-              <span class="book-badge badge-swap">Do wymiany</span>
-              <button class="book-action">Zobacz ofertę</button>
+              <img :src="book.coverUrl || `https://picsum.photos/180/240?random=${book.img}`" :alt="book.title" class="book-cover">
+              <span :class="['book-badge', badgeClass(book.type)]">{{ badgeText(book.type) }}</span>
+              <span class="book-action">Zobacz ofertę</span>
             </div>
             <div class="book-info">
-              <h4 class="book-title">Sto lat samotności</h4>
-              <p class="book-author">Gabriel García Márquez</p>
+              <h4 class="book-title">{{ book.title }}</h4>
+              <p class="book-author">{{ book.author }}</p>
             </div>
-          </div>
+          </RouterLink>
           <div class="book-meta">
-            <img src="https://i.pravatar.cc/40?img=1" alt="Avatar" class="meta-avatar">
+            <img :src="book.avatarUrl || `https://i.pravatar.cc/40?img=${book.av}`" :alt="book.owner" class="meta-avatar">
             <div class="meta-text">
-              <span class="meta-nick">@maria_kow</span> · Warszawa<br>2 godz. temu
+              <span class="meta-nick">@{{ book.owner }}</span> · {{ book.city }}
             </div>
           </div>
         </div>
-
-        <!-- KARTA 2 -->
-        <div class="book-card-wrap">
-          <div class="book-card">
-            <div class="book-cover-wrap">
-              <img src="https://picsum.photos/180/240?random=2" alt="Okładka" class="book-cover">
-              <span class="book-badge badge-loan" style="font-size: 9px">DO WYPOŻYCZENIA</span>
-              <button class="book-action">Zobacz ofertę</button>
-            </div>
-            <div class="book-info">
-              <h4 class="book-title">Diuna</h4>
-              <p class="book-author">Frank Herbert</p>
-            </div>
-          </div>
-          <div class="book-meta">
-            <img src="https://i.pravatar.cc/40?img=5" alt="Avatar" class="meta-avatar">
-            <div class="meta-text">
-              <span class="meta-nick">@piotr_n</span> · Kraków<br>3 godz. temu
-            </div>
-          </div>
-        </div>
-
-        <!-- KARTA 3 -->
-        <div class="book-card-wrap">
-          <div class="book-card">
-            <div class="book-cover-wrap">
-              <img src="https://picsum.photos/180/240?random=3" alt="Okładka" class="book-cover">
-              <span class="book-badge badge-sale">Do sprzedaży</span>
-              <button class="book-action">Zobacz ofertę</button>
-            </div>
-            <div class="book-info">
-              <h4 class="book-title">Wiedźmin: Ostatnie życzenie</h4>
-              <p class="book-author">Andrzej Sapkowski</p>
-            </div>
-          </div>
-          <div class="book-meta">
-            <img src="https://i.pravatar.cc/40?img=9" alt="Avatar" class="meta-avatar">
-            <div class="meta-text">
-              <span class="meta-nick">@agata_ww</span> · Gdańsk<br>5 godz. temu
-            </div>
-          </div>
-        </div>
-
-        <!-- KARTA 4 -->
-        <div class="book-card-wrap">
-          <div class="book-card">
-            <div class="book-cover-wrap">
-              <img src="https://picsum.photos/180/240?random=4" alt="Okładka" class="book-cover">
-              <span class="book-badge badge-swap">Do wymiany</span>
-              <button class="book-action">Zobacz ofertę</button>
-            </div>
-            <div class="book-info">
-              <h4 class="book-title">Mistrz i Małgorzata</h4>
-              <p class="book-author">Michaił Bułhakow</p>
-            </div>
-          </div>
-          <div class="book-meta">
-            <img src="https://i.pravatar.cc/40?img=3" alt="Avatar" class="meta-avatar">
-            <div class="meta-text">
-              <span class="meta-nick">@tomek_r</span> · Wrocław<br>8 godz. temu
-            </div>
-          </div>
-        </div>
-
-        <!-- KARTA 5 -->
-        <div class="book-card-wrap">
-          <div class="book-card">
-            <div class="book-cover-wrap">
-              <img src="https://picsum.photos/180/240?random=5" alt="Okładka" class="book-cover">
-              <span class="book-badge badge-loan" style="font-size: 9px">Do wypożyczenia</span>
-              <button class="book-action">Zobacz ofertę</button>
-            </div>
-            <div class="book-info">
-              <h4 class="book-title">Zbrodnia i kara</h4>
-              <p class="book-author">Fiodor Dostojewski</p>
-            </div>
-          </div>
-          <div class="book-meta">
-            <img src="https://i.pravatar.cc/40?img=7" alt="Avatar" class="meta-avatar">
-            <div class="meta-text">
-              <span class="meta-nick">@kasia_pzn</span> · Poznań<br>wczoraj
-            </div>
-          </div>
-        </div>
-
       </div><!-- /books-grid -->
     </div>
   </section>
