@@ -26,6 +26,7 @@ builder.Services.AddScoped<IUserBookService, UserBookService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<IGoogleBooksService, GoogleBooksService>();
 builder.Services.AddScoped<IBookService, BookService>();
+builder.Services.AddScoped<IStatsService, StatsService>();
 
 // AUTENTYKACJA JWT
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
