@@ -37,3 +37,12 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Visual Studio artifacts (nie naleza do projektu Vue)
+*.slnx
+Web.config
+*.csproj
+*.csproj.user
+bin/
+obj/
+.vs/
