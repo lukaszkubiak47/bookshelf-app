@@ -1,8 +1,10 @@
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using Bookshelf.API.Configuration;
 using Bookshelf.API.Exceptions;
 using Bookshelf.API.Models.DTOs.Books;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace Bookshelf.API.Services
 {
@@ -14,11 +16,16 @@ namespace Bookshelf.API.Services
 
         private readonly IMemoryCache _cache;
         private readonly HttpClient _http;
+        private readonly GoogleBooksSettings _settings;
 
-        public GoogleBooksService(IMemoryCache cache, IHttpClientFactory httpClientFactory)
+        public GoogleBooksService(
+            IMemoryCache cache,
+            IHttpClientFactory httpClientFactory,
+            IOptions<GoogleBooksSettings> settings)
         {
             _cache = cache;
             _http = httpClientFactory.CreateClient();
+            _settings = settings.Value;
         }
 
         public async Task<List<GoogleBookResultDto>> SearchAsync(string query)
@@ -34,7 +41,7 @@ namespace Bookshelf.API.Services
             if (_cache.TryGetValue(cacheKey, out List<GoogleBookResultDto>? cachedResults))
                 return cachedResults!;
 
-            var url = $"{GoogleBooksBaseUrl}?q={Uri.EscapeDataString(normalizedQuery)}&maxResults={MaxResults}";
+            var url = BuildSearchUrl(normalizedQuery);
 
             // Pobierz odpowiedz jawnie, zeby obsluzyc limity i inne bledy Google bez 500 z naszego API.
             var httpResponse = await _http.GetAsync(url);
@@ -76,6 +83,17 @@ namespace Bookshelf.API.Services
                 })
                 .Where(book => !string.IsNullOrWhiteSpace(book.GoogleBooksId))
                 .ToList();
+        }
+
+        private string BuildSearchUrl(string query)
+        {
+            // Klucz API trzymamy w konfiguracji / user-secrets, a nie na sztywno w kodzie.
+            var url = $"{GoogleBooksBaseUrl}?q={Uri.EscapeDataString(query)}&maxResults={MaxResults}";
+
+            if (!string.IsNullOrWhiteSpace(_settings.ApiKey))
+                url += $"&key={Uri.EscapeDataString(_settings.ApiKey)}";
+
+            return url;
         }
 
         private static string MapAuthors(List<string>? authors)

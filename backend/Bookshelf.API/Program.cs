@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // KONFIGURACJA 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+builder.Services.Configure<GoogleBooksSettings>(builder.Configuration.GetSection("GoogleBooks"));
 
 // BAZA DANYCH
 builder.Services.AddDbContext<AppDbContext>(options =>
