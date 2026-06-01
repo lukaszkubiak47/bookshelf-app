@@ -4,6 +4,9 @@ namespace Bookshelf.API.Services
 {
     public interface IBookService
     {
+        // Pobiera pojedyncza ksiazke z naszej bazy po Id.
+        Task<BookDto> GetByIdAsync(Guid id);
+
         // Dodaje ksiazke do naszej bazy albo zwraca istniejaca, jesli GoogleBooksId juz istnieje.
         Task<BookDto> CreateAsync(CreateBookDto dto);
 
