@@ -1,9 +1,15 @@
 <script setup>
   import { ref, reactive, computed } from 'vue';
+  import { useRouter } from 'vue-router';
   import { T, P } from '../assets/constants';
   import FormField from './FormField.vue';
+  import { useAuthStore } from '../stores/auth';
+  import { ApiError } from '../lib/api';
 
   defineEmits(['switch']);
+
+  const router = useRouter();
+  const auth = useAuthStore();
 
   const v = reactive({ email: '', password: '' });
   const touched = reactive({ email: false, password: false });
@@ -11,6 +17,7 @@
   const loading = ref(false);
   const done = ref(false);
   const hov = ref(false);
+  const serverError = ref('');
 
   const errors = computed(() => {
     const e = {};
@@ -30,20 +37,34 @@
 
   const blur = (key) => { touched[key] = true; };
 
+  const triggerShake = () => {
+    shaking.value = true;
+    setTimeout(() => { shaking.value = false; }, 600);
+  };
+
   const submit = async () => {
     touched.email = true;
     touched.password = true;
 
     if (Object.keys(errors.value).length > 0) {
-      shaking.value = true;
-      setTimeout(() => { shaking.value = false; }, 600);
+      triggerShake();
       return;
     }
 
+    serverError.value = '';
     loading.value = true;
-    await new Promise(r => setTimeout(r, 1400));
-    loading.value = false;
-    done.value = true;
+    try {
+      await auth.login(v.email, v.password);
+      done.value = true;
+      setTimeout(() => { router.push('/'); }, 900);
+    } catch (e) {
+      serverError.value = (e instanceof ApiError && e.status === 401)
+        ? 'Nieprawidłowy email lub hasło'
+        : (e instanceof Error && e.message) ? e.message : 'Logowanie nie powiodło się';
+      triggerShake();
+    } finally {
+      loading.value = false;
+    }
   };
 </script>
 
@@ -83,6 +104,14 @@
         Zapomniałeś hasła?
       </a>
     </div>
+
+    <p v-if="serverError" role="alert" :style="{
+      background: '#FBEDEC', color: T.danger, fontSize: '13px',
+      padding: '10px 12px', borderRadius: '8px', marginBottom: '16px',
+      border: `1px solid ${T.danger}33`,
+    }">
+      {{ serverError }}
+    </p>
 
     <button type="submit" :disabled="loading"
             @mouseenter="hov = true" @mouseleave="hov = false"

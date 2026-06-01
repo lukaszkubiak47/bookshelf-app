@@ -1,3 +1,19 @@
+<script setup>
+  import { computed, onMounted } from 'vue';
+  import { useStatsStore } from '../stores/stats';
+
+  const statsStore = useStatsStore();
+  onMounted(() => statsStore.fetchStats());
+
+  const fmt = (n) => (n == null ? '—' : n.toLocaleString('pl-PL'));
+
+  const heroStats = computed(() => [
+    { num: fmt(statsStore.stats?.activeOffers), label: 'Książek w obiegu' },
+    { num: fmt(statsStore.stats?.totalUsers), label: 'Czytelników' },
+    { num: fmt(statsStore.stats?.totalCities), label: 'Miast w Polsce' },
+  ]);
+</script>
+
 <template>
   <!-- ════════════════════════ HERO ════════════════════════ -->
   <section class="hero">
@@ -21,24 +37,17 @@
 
         <div class="hero-ctas">
           <RouterLink to="/przegladanie" class="btn btn-filled btn-lg">Przeglądaj książki</RouterLink>
-          <RouterLink to="/logowanie" class="btn btn-outline btn-lg">Dołącz za darmo</RouterLink>
+          <RouterLink to="/logowanie?tab=register" class="btn btn-outline btn-lg">Dołącz za darmo</RouterLink>
         </div>
 
         <div class="hero-stats">
-          <div class="hero-stat">
-            <span class="hero-stat-num">12 400+</span>
-            <span class="hero-stat-label">Książek w obiegu</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="hero-stat">
-            <span class="hero-stat-num">3 200+</span>
-            <span class="hero-stat-label">Czytelników</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="hero-stat">
-            <span class="hero-stat-num">86</span>
-            <span class="hero-stat-label">Miast w Polsce</span>
-          </div>
+          <template v-for="(s, i) in heroStats" :key="s.label">
+            <div v-if="i > 0" class="stat-divider"></div>
+            <div class="hero-stat">
+              <span class="hero-stat-num">{{ s.num }}</span>
+              <span class="hero-stat-label">{{ s.label }}</span>
+            </div>
+          </template>
         </div>
       </div>
 

@@ -1,9 +1,15 @@
 <script setup>
   import { ref, reactive, computed } from 'vue';
+  import { useRouter } from 'vue-router';
   import { T, P } from '../assets/constants.js';
   import FormField from './FormField.vue';
+  import { useAuthStore } from '../stores/auth';
+  import { ApiError } from '../lib/api';
 
   defineEmits(['switch']);
+
+  const router = useRouter();
+  const auth = useAuthStore();
 
   const v = reactive({
     firstName: '', lastName: '', username: '', email: '', city: '', password: '', confirmPw: '',
@@ -17,6 +23,7 @@
   const loading = ref(false);
   const done = ref(false);
   const hov = ref(false);
+  const serverError = ref('');
 
   const strColor = ['', T.danger, T.warning, T.gold, T.success];
   const strLabel = ['', 'Słabe', 'Mierne', 'Dobre', 'Silne'];
@@ -67,19 +74,43 @@
     touched.terms = true;
   };
 
+  const triggerShake = () => {
+    shaking.value = true;
+    setTimeout(() => { shaking.value = false; }, 600);
+  };
+
   const submit = async () => {
     Object.keys(touched).forEach(k => { touched[k] = true; });
 
     if (Object.keys(errors.value).length > 0) {
-      shaking.value = true;
-      setTimeout(() => { shaking.value = false; }, 600);
+      triggerShake();
       return;
     }
 
+    serverError.value = '';
     loading.value = true;
-    await new Promise(r => setTimeout(r, 1600));
-    loading.value = false;
-    done.value = true;
+    try {
+      // confirmPw i terms NIE są wysyłane — backend ich nie potrzebuje.
+      await auth.register({
+        email: v.email,
+        password: v.password,
+        username: v.username,
+        firstName: v.firstName,
+        lastName: v.lastName,
+        city: v.city,
+      });
+      done.value = true;
+      setTimeout(() => { router.push('/'); }, 900);
+    } catch (e) {
+      // Backend zwraca 409 zarówno dla zajętego emaila, jak i nicka — pokazujemy jego komunikat,
+      // bo poprawnie rozróżnia oba przypadki.
+      serverError.value = (e instanceof ApiError && e.status === 409)
+        ? (e.message || 'Konto z tym adresem email już istnieje')
+        : (e instanceof Error && e.message) ? e.message : 'Rejestracja nie powiodła się';
+      triggerShake();
+    } finally {
+      loading.value = false;
+    }
   };
 </script>
 
@@ -95,7 +126,7 @@
     <h3 :style="{ fontFamily: '\'Playfair Display\', serif', fontSize: '22px', fontWeight: 700, color: T.t1, marginBottom: '8px' }">
       Konto utworzone!
     </h3>
-    <p :style="{ color: T.t2, fontSize: '14px' }">Sprawdź swoją skrzynkę email, aby potwierdzić rejestrację.</p>
+    <p :style="{ color: T.t2, fontSize: '14px' }">Przekierowanie za chwilę…</p>
   </div>
 
   <form v-else @submit.prevent="submit" :class="{ 'anim-shake': shaking }" noValidate>
@@ -150,6 +181,14 @@
         </p>
       </div>
     </div>
+
+    <p v-if="serverError" role="alert" :style="{
+      background: '#FBEDEC', color: T.danger, fontSize: '13px',
+      padding: '10px 12px', borderRadius: '8px', marginTop: '16px',
+      border: `1px solid ${T.danger}33`,
+    }">
+      {{ serverError }}
+    </p>
 
     <div :style="{ marginTop: '20px' }">
       <button type="submit" :disabled="loading" @mouseenter="hov = true" @mouseleave="hov = false"

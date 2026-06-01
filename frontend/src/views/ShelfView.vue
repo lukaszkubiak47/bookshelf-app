@@ -3,12 +3,31 @@
   import BookFilters from '../components/BookFiltersShelfView.vue';
   import BookOffer from '../components/BookOffer.vue';
 
+  // Pozycja transakcji (prośba otrzymana/wysłana). Pola opcjonalne zależą od typu oferty,
+  // a contact jest uzupełniany dopiero po zaakceptowaniu prośby.
+  interface TxItem {
+    id: string;
+    status: string;
+    type: string;
+    bookTitle: string;
+    bookAuthor: string;
+    img: number;
+    nick: string;
+    av: number;
+    date: string;
+    msg: string;
+    returnDate?: string;
+    wants?: string;
+    price?: number;
+    contact: { email: string; nick: string } | null;
+  }
+
   // Definicja stanu i filtrów (zawsze jako stringi, by uniknąć undefined)
   const currentTab = ref<'received' | 'sent' | 'listed'>('received');
   const statusFilter = ref('');
   const typeFilter = ref('');
 
-  const receivedBooks = ref([
+  const receivedBooks = ref<TxItem[]>([
     { id: 'r1', status: 'pending', type: 'loan', bookTitle: 'Hobbit', bookAuthor: 'J.R.R. Tolkien', img: 35, nick: 'anna_m', av: 3, date: '1 dzień temu', msg: 'Cześć! Czy mogę pożyczyć na 2 tygodnie? Zwrócę w idealnym stanie.', returnDate: '28.06.2026', contact: null },
     { id: 'r2', status: 'pending', type: 'swap', bookTitle: 'Lalka', bookAuthor: 'Bolesław Prus', img: 41, nick: 'zosia_k', av: 11, date: '2 dni temu', msg: 'Mam kilka książek z literatury pięknej, chętnie wymienię!', wants: 'Literatura piękna', contact: null },
     { id: 'r3', status: 'pending', type: 'sale', bookTitle: 'Sapiens', bookAuthor: 'Yuval Harari', img: 32, nick: 'kasia_w', av: 7, date: '3 dni temu', msg: 'Chciałabym kupić, czy cena jest do negocjacji?', price: 35, contact: null },
@@ -20,7 +39,7 @@
     { id: 'r9', status: 'done', type: 'sale', bookTitle: 'Thinking, Fast and Slow', bookAuthor: 'Daniel Kahneman', img: 49, nick: 'adam_z', av: 15, date: '1 miesiąc temu', msg: '', price: 42, contact: null },
   ]);
 
-  const sentBooks = ref([
+  const sentBooks = ref<TxItem[]>([
     { id: 's1', status: 'pending', type: 'loan', bookTitle: 'Sto lat samotności', bookAuthor: 'G. García Márquez', img: 21, nick: 'maria_kow', av: 2, date: '3 dni temu', msg: 'Bardzo chętnie wypożyczę, mam wolne dwa tygodnie na spokojne czytanie.', returnDate: '10.07.2026', contact: null },
     { id: 's2', status: 'pending', type: 'swap', bookTitle: 'Wiedźmin: Ostatnie życzenie', bookAuthor: 'A. Sapkowski', img: 23, nick: 'marek_z', av: 9, date: '2 dni temu', msg: 'Chętnie wymienię za coś z fantasy!', wants: 'Fantasy', contact: null },
     { id: 's3', status: 'pending', type: 'sale', bookTitle: 'Clean Code', bookAuthor: 'Robert C. Martin', img: 50, nick: 'paweł_d', av: 16, date: '1 dzień temu', msg: 'Zainteresowany, czy można odebrać osobiście?', price: 55, contact: null },
