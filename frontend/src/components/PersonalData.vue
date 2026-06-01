@@ -1,17 +1,23 @@
 <script setup>
   import { ref, reactive } from 'vue';
+  import { usersApi } from '../lib/users';
+  import { mapUserToProfile } from '../lib/mappers';
+  import { ApiError } from '../lib/client';
+  import { useAuthStore } from '../stores/auth';
 
   const props = defineProps({
     user: { type: Object, required: true }
   });
 
-  const emit = defineEmits(['update:user', 'notify']);
+  const emit = defineEmits(['update:user', 'notify', 'saved']);
+  const auth = useAuthStore();
 
   const isEditMode = ref(false);
   const isDragging = ref(false);
   const fileInput = ref(null);
   const customAvatar = ref(null);
-  const selectedPreset = ref(15);
+  const selectedPreset = ref(1);
+  const saving = ref(false);
 
   const form = reactive({ name: '', surname: '', nick: '', city: '', bio: '', avatar: '' });
   const errors = reactive({ name: false, surname: false });
@@ -61,15 +67,41 @@
     form.avatar = props.user.avatar;
   };
 
-  const saveChanges = () => {
+  const saveChanges = async () => {
     errors.name = !form.name.trim();
     errors.surname = !form.surname.trim();
 
     if (errors.name || errors.surname) return;
 
-    emit('update:user', { ...props.user, ...form });
-    isEditMode.value = false;
-    emit('notify', { message: 'Dane zostały zapisane ✓', type: 'success' });
+    saving.value = true;
+    try {
+      let profile = await usersApi.updateMe({
+        firstName: form.name.trim(),
+        lastName: form.surname.trim(),
+        username: form.nick.trim(),
+        city: form.city?.trim() || undefined,
+      });
+
+      if (customAvatar.value && fileInput.value?.files?.[0]) {
+        profile = await usersApi.uploadAvatar(fileInput.value.files[0]);
+      } else if (!customAvatar.value && selectedPreset.value) {
+        profile = await usersApi.setAvatarPreset(Math.min(10, Math.max(1, selectedPreset.value)));
+      }
+
+      const mapped = mapUserToProfile(profile);
+      auth.syncFromProfile(profile);
+      emit('update:user', mapped);
+      isEditMode.value = false;
+      emit('saved');
+      emit('notify', { message: 'Dane zostały zapisane ✓', type: 'success' });
+    } catch (err) {
+      emit('notify', {
+        message: err instanceof ApiError ? err.message : 'Nie udało się zapisać zmian',
+        type: 'error',
+      });
+    } finally {
+      saving.value = false;
+    }
   };
 </script>
 

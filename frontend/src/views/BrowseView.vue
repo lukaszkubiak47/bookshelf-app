@@ -1,47 +1,38 @@
-<script setup>import { ref, computed } from 'vue';
+<script setup>
+  import { ref, computed, watch, onMounted } from 'vue';
   import BookFiltersBrowseView from '../components/BookFiltersBrowseView.vue';
   import BookCard from '../components/BookCard.vue';
+  import { userBooksApi } from '../lib/userBooks';
+  import { mapUserBookToCard } from '../lib/mappers';
 
-  const BOOKS = [
-    { id: 1, title: "Sto lat samotności", author: "Gabriel García Márquez", type: "swap", genre: "Literatura piękna", city: "Warszawa", owner: "maria_kow", av: 1, ownerRating: 4.8, rating: 5, img: 21, isbn: "978-83-08-04821-3", desc: "Epicka saga rodziny Buendía w fikcyjnym miasteczku Macondo — arcydzieło realizmu magicznego, które zmienia sposób patrzenia na literaturę i rzeczywistość. Powieść zdobyła Nagrodę Nobla dla autora.", wants: "Fantasy lub cokolwiek" },
-    { id: 2, title: "Diuna", author: "Frank Herbert", type: "loan", genre: "Sci-Fi", city: "Kraków", owner: "piotr_n", av: 5, ownerRating: 4.5, rating: 5, img: 22, isbn: "978-83-7469-983-7", desc: "Saga o rodzinie Atrydów na pustynnej planecie Arrakis, pełna intryg politycznych i mistycyzmu. Jedna z najważniejszych i najchętniej czytanych powieści science-fiction w historii gatunku.", delivery: "Osobiście" },
-    { id: 3, title: "Wiedźmin: Ostatnie życzenie", author: "Andrzej Sapkowski", type: "sale", genre: "Fantasy", city: "Gdańsk", owner: "agata_ww", av: 9, ownerRating: 4.9, rating: 4, img: 23, isbn: "978-83-7578-066-2", desc: "Zbiór opowiadań o Geralcie z Rivii — łowcy potworów balansującym na granicy dobra i zła. Fundament polskiej literatury fantasy, osnuty na ludowych baśniach z mrocznym twistem.", price: "35 zł", condition: "Dobry" },
-    { id: 4, title: "Mistrz i Małgorzata", author: "Michaił Bułhakow", type: "swap", genre: "Literatura piękna", city: "Wrocław", owner: "tomek_r", av: 3, ownerRating: 4.7, rating: 5, img: 24, isbn: "978-83-240-1383-8", desc: "Szatan odwiedza stalinowską Moskwę — satyryczna, miłosna i mistyczna opowieść w jednym. Jedno z najważniejszych dzieł literatury rosyjskiej XX wieku, pisane w konspiracji.", wants: "Kryminał lub Sci-Fi" },
-    { id: 5, title: "Zbrodnia i kara", author: "Fiodor Dostojewski", type: "loan", genre: "Literatura piękna", city: "Poznań", owner: "kasia_pzn", av: 7, ownerRating: 4.6, rating: 4, img: 25, isbn: "978-83-7243-472-5", desc: "Psychologiczny portret studenta Raskolnikowa, który popełnia zbrodnię i zmaga się z wyrzutami sumienia. Klasyk rosyjskiej literatury, pełen egzystencjalnych pytań i napięcia.", delivery: "Pocztą (koszt po stronie pożyczkobiorcy)" },
-    { id: 6, title: "Lśnienie", author: "Stephen King", type: "swap", genre: "Kryminał", city: "Łódź", owner: "bartek_ld", av: 12, ownerRating: 4.3, rating: 4, img: 26, isbn: "978-83-7552-919-5", desc: "Rodzina spędza zimę w odizolowanym hotelu Overlook — mroczna opowieść o szaleństwie i demonach przeszłości. Jedna z kultowych powieści grozy, którą King napisał po własnych doświadczeniach.", wants: "Horror lub Thriller" },
-    { id: 7, title: "Władca Pierścieni", author: "J.R.R. Tolkien", type: "sale", genre: "Fantasy", city: "Warszawa", owner: "ela_book", av: 2, ownerRating: 5.0, rating: 5, img: 27, isbn: "978-83-7469-214-2", desc: "Epopeja fantasy śledząca Drużynę Pierścienia w misji zniszczenia Jedynego Pierścienia. Fundament nowoczesnej literatury fantastycznej, inspiracja dla niezliczonej liczby twórców.", price: "65 zł", condition: "Jak nowa" },
-    { id: 8, title: "Rok 1984", author: "George Orwell", type: "loan", genre: "Sci-Fi", city: "Kraków", owner: "marek_k", av: 6, ownerRating: 4.8, rating: 5, img: 28, isbn: "978-83-7469-718-5", desc: "Dystopijny obraz totalitarnego państwa, gdzie Wielki Brat kontroluje każdy aspect życia. Profetyczna wizja napisana w 1949 roku, która wciąż niepokoi swoją aktualnością.", delivery: "Do uzgodnienia" },
-    { id: 9, title: "Mały Książę", author: "Antoine de Saint-Exupéry", type: "swap", genre: "Literatura piękna", city: "Gdynia", owner: "zofia_g", av: 10, ownerRating: 4.9, rating: 5, img: 29, isbn: "978-83-7469-441-2", desc: "Filozoficzna baśń o małym księciu podróżującym przez planety w poszukiwaniu przyjaźni i sensu życia. Arcydzieło czytane przez wszystkich, niezależnie od wieku.", wants: "Literatura dla dzieci" },
-    { id: 10, title: "Harry Potter i Kamień Filozoficzny", author: "J.K. Rowling", type: "sale", genre: "Fantasy", city: "Białystok", owner: "adam_bk", av: 4, ownerRating: 4.4, rating: 4, img: 30, isbn: "978-83-7469-321-7", desc: "Chłopiec odkrywa, że jest czarodziejem i trafia do szkoły magii Hogwart. Początek największej sagi fantasy dla młodych czytelników, przetłumaczonej na ponad 80 języków.", price: "45 zł", condition: "Dobry" },
-    { id: 11, title: "Fabryka lodów", author: "Camilla Läckberg", type: "loan", genre: "Kryminał", city: "Gdańsk", owner: "nina_lk", av: 8, ownerRating: 4.5, rating: 4, img: 31, isbn: "978-83-7552-344-5", desc: "Erica Falck bada serię tajemniczych zbrodni w szwedzkiej miejscowości. Gęsta atmosfera skandynawskiego noir, pełna zaskakujących zwrotów i psychologicznej głębi.", delivery: "Osobiście" },
-    { id: 12, title: "Sapiens. Od zwierząt do bogów", author: "Yuval Noah Harari", type: "sale", genre: "Biografia", city: "Wrocław", owner: "pawel_hr", av: 11, ownerRating: 4.7, rating: 5, img: 32, isbn: "978-83-7785-101-3", desc: "Brawurowa historia ludzkości od pierwszych hominidów do rewolucji cyfrowej. Bestseller, który zmienił sposób rozumienia naszego gatunku i jego roli na Ziemi.", price: "55 zł", condition: "Widoczne zużycie" },
-  ];
+  const books = ref([]);
+  const total = ref(0);
+  const loading = ref(false);
+  const loadError = ref('');
 
-  // Reaktywny stan aplikacji
   const search = ref('');
   const city = ref('');
   const stateTypes = ref(new Set(['loan', 'swap', 'sale']));
   const stateGenres = ref(new Set());
   const sortBy = ref('newest');
   const viewMode = ref('grid');
+  const page = ref(1);
   const limit = ref(12);
 
-  // Statystyki dla filtrów
   const typeCounts = computed(() => ({
-    loan: BOOKS.filter(b => b.type === 'loan').length,
-    swap: BOOKS.filter(b => b.type === 'swap').length,
-    sale: BOOKS.filter(b => b.type === 'sale').length,
+    loan: books.value.filter(b => b.type === 'loan').length,
+    swap: books.value.filter(b => b.type === 'swap').length,
+    sale: books.value.filter(b => b.type === 'sale').length,
   }));
 
   const availableGenres = computed(() => {
-    const genres = [...new Set(BOOKS.map(b => b.genre))].sort();
+    const genres = [...new Set(books.value.map(b => b.genre))].sort();
     return genres.map(g => ({
       name: g,
-      count: BOOKS.filter(b => b.genre === g).length
+      count: books.value.filter(b => b.genre === g).length
     }));
   });
 
-  // Obsługa kliknięć filtrów typu i gatunku
   const toggleType = (type) => {
     if (stateTypes.value.has(type)) stateTypes.value.delete(type);
     else stateTypes.value.add(type);
@@ -52,51 +43,61 @@
     else stateGenres.value.add(genre);
   };
 
-  // Reset filtrów
   const resetFilters = () => {
     stateTypes.value = new Set(['loan', 'swap', 'sale']);
     stateGenres.value.clear();
     search.value = '';
     city.value = '';
+    page.value = 1;
   };
 
-  // Filtrowanie i sortowanie danych wejściowych
-  const filteredBooks = computed(() => {
-    let arr = [...BOOKS];
-
-    if (stateTypes.value.size > 0) {
-      arr = arr.filter(b => stateTypes.value.has(b.type));
+  async function fetchBooks(append = false) {
+    loading.value = true;
+    loadError.value = '';
+    try {
+      const types = [...stateTypes.value].join(',');
+      const genres = [...stateGenres.value].join(',');
+      const result = await userBooksApi.getAll({
+        page: page.value,
+        limit: limit.value,
+        type: types || undefined,
+        genre: genres || undefined,
+        city: city.value || undefined,
+        search: search.value || undefined,
+        sort: sortBy.value,
+      });
+      const mapped = result.items.map(mapUserBookToCard);
+      books.value = append ? [...books.value, ...mapped] : mapped;
+      total.value = result.total;
+    } catch {
+      loadError.value = 'Nie udało się pobrać ofert. Upewnij się, że backend działa.';
+      if (!append) books.value = [];
+    } finally {
+      loading.value = false;
     }
-    if (stateGenres.value.size > 0) {
-      arr = arr.filter(b => stateGenres.value.has(b.genre));
-    }
-    if (search.value) {
-      const q = search.value.toLowerCase();
-      arr = arr.filter(b =>
-        b.title.toLowerCase().includes(q) ||
-        b.author.toLowerCase().includes(q) ||
-        b.isbn.includes(q)
-      );
-    }
-    if (city.value) {
-      arr = arr.filter(b => b.city.toLowerCase().includes(city.value.toLowerCase()));
-    }
+  }
 
-    // Sortowanie
-    if (sortBy.value === 'title') arr.sort((a, b) => a.title.localeCompare(b.title));
-    if (sortBy.value === 'oldest') arr.sort((a, b) => a.id - b.id);
-    if (sortBy.value === 'newest') arr.sort((a, b) => b.id - a.id);
+  let debounceTimer;
+  watch([search, city, stateTypes, stateGenres, sortBy], () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      page.value = 1;
+      fetchBooks();
+    }, 350);
+  }, { deep: true });
 
-    return arr;
-  });
+  onMounted(() => fetchBooks());
 
-  // Ograniczenie liczby wyświetlanych elementów (Load More)
-  const displayedBooks = computed(() => {
-    return filteredBooks.value.slice(0, limit.value);
-  });
+  const displayedBooks = computed(() => books.value);
+
+  const loadMore = () => {
+    if (books.value.length >= total.value) return;
+    page.value += 1;
+    fetchBooks(true);
+  };
 
   const openModal = (id) => {
-    console.log("Otwieranie modala dla książki o ID:", id);
+    console.log('Otwieranie modala dla oferty:', id);
   };
 </script>
 
@@ -104,19 +105,21 @@
   <div class="page-wrapper">
     <div class="page-header">
       <h1 class="page-title">Przeglądaj książki</h1>
-      <span class="result-count">Znaleziono <strong>{{ filteredBooks.length }}</strong> ofert</span>
+      <span class="result-count">Znaleziono <strong>{{ total }}</strong> ofert</span>
     </div>
+
+    <p v-if="loadError" class="load-error">{{ loadError }}</p>
 
     <div class="page-layout">
       <BookFiltersBrowseView v-model:search="search"
-                   v-model:city="city"
-                   :types="stateTypes"
-                   :genres="stateGenres"
-                   :available-genres="availableGenres"
-                   :counts="typeCounts"
-                   @toggle-type="toggleType"
-                   @toggle-genre="toggleGenre"
-                   @reset="resetFilters" />
+                             v-model:city="city"
+                             :types="stateTypes"
+                             :genres="stateGenres"
+                             :available-genres="availableGenres"
+                             :counts="typeCounts"
+                             @toggle-type="toggleType"
+                             @toggle-genre="toggleGenre"
+                             @reset="resetFilters" />
 
       <main>
         <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
@@ -145,7 +148,11 @@
           </div>
         </div>
 
-        <div v-if="displayedBooks.length === 0" class="empty">
+        <div v-if="loading && books.length === 0" class="empty">
+          <p>Ładowanie ofert…</p>
+        </div>
+
+        <div v-else-if="displayedBooks.length === 0" class="empty">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><line x1="16.5" y1="16.5" x2="22" y2="22" /></svg>
           <p>Brak ofert pasujących do filtrów</p>
         </div>
@@ -157,11 +164,20 @@
                     @select="openModal" />
         </div>
 
-        <div class="load-more" v-if="filteredBooks.length > limit">
-          <button class="btn btn-outline" @click="limit += 6" style="min-width:200px">Załaduj więcej ofert</button>
+        <div class="load-more" v-if="books.length < total">
+          <button class="btn btn-outline" :disabled="loading" @click="loadMore" style="min-width:200px">
+            {{ loading ? 'Ładowanie…' : 'Załaduj więcej ofert' }}
+          </button>
         </div>
       </main>
     </div>
   </div>
 </template>
 
+<style scoped>
+  .load-error {
+    color: var(--danger, #c0392b);
+    margin-bottom: 16px;
+    font-size: 14px;
+  }
+</style>
