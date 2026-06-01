@@ -21,8 +21,9 @@ namespace Bookshelf.API.Models.DTOs.Books
         [MaxLength(2000)]
         public string? Description { get; set; }
 
-        [Required]
-        public Guid GenreId { get; set; }
+        // Walidowany jawnie w serwisie (null / Guid.Empty -> BadRequestException),
+        // zeby blad szedl przez nasz middleware zamiast automatycznego 400 z ModelState.
+        public Guid? GenreId { get; set; }
 
         [MaxLength(500)]
         public string? CoverUrl { get; set; }
