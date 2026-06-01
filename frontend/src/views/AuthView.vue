@@ -1,11 +1,14 @@
 <script setup>
   import { ref, computed } from 'vue';
+  import { useRoute } from 'vue-router';
   import { T } from '../assets/constants.js';
   import AuthLeftPanel from '../components/AuthLeftPanel.vue';
   import LoginForm from '../components/LoginForm.vue';
   import RegisterForm from '../components/RegisterForm.vue';
 
-  const mode = ref('login');
+  const route = useRoute();
+  // Zakładka aktywna po wejściu zależy od ?tab= (register/login); domyślnie logowanie.
+  const mode = ref(route.query.tab === 'register' ? 'register' : 'login');
   const prev = ref(null);
   const viewKey = ref(0);
 

@@ -6,6 +6,7 @@ import AuthView from '../views/AuthView.vue'
 import ShelfView from '../views/ShelfView.vue'
 import AddBookView from '../views/AddBookView.vue'
 import ProfileView from '../views/ProfileView.vue'
+import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -23,24 +24,40 @@ const router = createRouter({
     {
       path: '/logowanie',
       name: 'auth',
-      component: AuthView
+      component: AuthView,
+      meta: { guestOnly: true }
     },
     {
       path: '/polka',
       name: 'shelf',
-      component: ShelfView
+      component: ShelfView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/dodawanie',
       name: 'addbook',
-      component: AddBookView
+      component: AddBookView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/profil',
       name: 'profile',
-      component: ProfileView
+      component: ProfileView,
+      meta: { requiresAuth: true }
     }
   ]
+})
+
+// Ochrona tras: trasy z requiresAuth wymagają logowania; guestOnly (logowanie) przekierowuje
+// zalogowanych na stronę główną.
+router.beforeEach((to) => {
+  const auth = useAuthStore()
+  if (to.meta.requiresAuth && !auth.isLoggedIn) {
+    return { name: 'auth' }
+  }
+  if (to.meta.guestOnly && auth.isLoggedIn) {
+    return { name: 'home' }
+  }
 })
 
 export default router

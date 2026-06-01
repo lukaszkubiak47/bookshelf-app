@@ -1,3 +1,16 @@
+<script setup>
+  import { useRouter } from 'vue-router'
+  import { useAuthStore } from '../stores/auth'
+
+  const router = useRouter()
+  const auth = useAuthStore()
+
+  const logout = () => {
+    auth.logout()
+    router.push('/')
+  }
+</script>
+
 <template>
   <nav class="navbar">
     <RouterLink to="/" class="nav-logo">
@@ -11,9 +24,19 @@
     <ul class="nav-links">
       <li><RouterLink to="/">Strona główna</RouterLink></li>
       <li><RouterLink to="/przegladanie">Przeglądaj książki</RouterLink></li>
+      <li v-if="auth.isLoggedIn"><RouterLink to="/polka">Moja półka</RouterLink></li>
     </ul>
     <div class="nav-actions">
-      <RouterLink to="/logowanie" class="btn btn-filled">Dołącz</RouterLink>
+      <template v-if="auth.isLoggedIn">
+        <RouterLink to="/profil" :style="{ color: 'var(--primary)', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }">
+          @{{ auth.user?.username }}
+        </RouterLink>
+        <button type="button" class="btn btn-outline" @click="logout">Wyloguj</button>
+      </template>
+      <template v-else>
+        <RouterLink to="/logowanie?tab=login" class="btn btn-outline">Zaloguj się</RouterLink>
+        <RouterLink to="/logowanie?tab=register" class="btn btn-filled">Dołącz</RouterLink>
+      </template>
     </div>
   </nav>
 </template>

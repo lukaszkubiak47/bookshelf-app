@@ -15,4 +15,15 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    proxy: {
+      // Żądania do /api są przekierowywane do backendu .NET (same-origin dla przeglądarki -> brak problemu z CORS).
+      // secure: false pozwala korzystać z deweloperskiego self-signed certu HTTPS.
+      '/api': {
+        target: 'https://localhost:7208',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })

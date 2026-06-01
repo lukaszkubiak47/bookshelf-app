@@ -1,5 +1,12 @@
 <script setup>
+  import { computed, onMounted } from 'vue';
   import { T, P } from '../assets/constants';
+  import { useStatsStore } from '../stores/stats';
+
+  const statsStore = useStatsStore();
+  onMounted(() => statsStore.fetchStats());
+
+  const fmt = (n) => (n == null ? '—' : n.toLocaleString('pl-PL'));
 
   const books = [
     { id: 17, title: 'Mistrz i Małgorzata', author: 'M. Bułhakow', badge: 'Do wymiany', badgeColor: T.gold, badgeTxt: T.t1 },
@@ -13,11 +20,11 @@
     { transform: 'rotate(9deg)  translate(22px, 6px)', z: 2, float: 'float-b' },
   ];
 
-  const stats = [
-    { icon: 'book', value: '2 847', label: 'książek' },
-    { icon: 'users', value: '1 203', label: 'użytkowników' },
-    { icon: 'repeat', value: '4 521', label: 'transakcji' },
-  ];
+  const stats = computed(() => [
+    { icon: 'book', value: fmt(statsStore.stats?.totalBooks), label: 'książek' },
+    { icon: 'users', value: fmt(statsStore.stats?.totalUsers), label: 'użytkowników' },
+    { icon: 'repeat', value: fmt(statsStore.stats?.activeOffers), label: 'aktywnych ofert' },
+  ]);
 </script>
 
 <template>

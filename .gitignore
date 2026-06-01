@@ -434,3 +434,8 @@ dist/
 .env
 .env.local
 *.local
+
+# Claude Code — lokalne pliki kontekstu (w każdym katalogu)
+CLAUDE.md
+
+docs/
