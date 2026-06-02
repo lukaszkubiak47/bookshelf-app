@@ -32,6 +32,9 @@ namespace Bookshelf.API.Services
                 .Include(ub => ub.User)
                 .AsQueryable();
 
+            // Pokazujemy tylko oferty dostępne — wypożyczone/zarezerwowane znikają z listy do czasu zakończenia transakcji.
+            query = query.Where(ub => ub.Status == "available");
+
             // Filtry
             if (!string.IsNullOrWhiteSpace(type))
             {
@@ -100,6 +103,8 @@ namespace Bookshelf.API.Services
                 .Include(ub => ub.Book)
                     .ThenInclude(b => b.Genre)
                 .Include(ub => ub.User)
+                // Tylko dostępne oferty (spójnie z "Przeglądaj" i statystyką activeOffers).
+                .Where(ub => ub.Status == "available")
                 .OrderByDescending(ub => ub.CreatedAt)
                 .Take(limit)
                 .Select(ub => MapToDto(ub))

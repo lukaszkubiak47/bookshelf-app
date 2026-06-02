@@ -1,8 +1,10 @@
 <script setup>
   import { computed, onMounted } from 'vue';
   import { useStatsStore } from '../stores/stats';
+  import { useAuthStore } from '../stores/auth';
 
   const statsStore = useStatsStore();
+  const auth = useAuthStore();
   onMounted(() => statsStore.fetchStats());
 
   const fmt = (n) => (n == null ? '—' : n.toLocaleString('pl-PL'));
@@ -37,7 +39,7 @@
 
         <div class="hero-ctas">
           <RouterLink to="/przegladanie" class="btn btn-filled btn-lg">Przeglądaj książki</RouterLink>
-          <RouterLink to="/logowanie?tab=register" class="btn btn-outline btn-lg">Dołącz za darmo</RouterLink>
+          <RouterLink v-if="!auth.isLoggedIn" to="/logowanie?tab=register" class="btn btn-outline btn-lg">Dołącz za darmo</RouterLink>
         </div>
 
         <div class="hero-stats">

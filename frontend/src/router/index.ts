@@ -6,6 +6,8 @@ import AuthView from '../views/AuthView.vue'
 import ShelfView from '../views/ShelfView.vue'
 import AddBookView from '../views/AddBookView.vue'
 import ProfileView from '../views/ProfileView.vue'
+import TermsView from '../views/TermsView.vue'
+import PrivacyView from '../views/PrivacyView.vue'
 import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
@@ -44,6 +46,16 @@ const router = createRouter({
       name: 'profile',
       component: ProfileView,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/regulamin',
+      name: 'terms',
+      component: TermsView
+    },
+    {
+      path: '/polityka-prywatnosci',
+      name: 'privacy',
+      component: PrivacyView
     }
   ]
 })
