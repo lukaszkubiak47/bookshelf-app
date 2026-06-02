@@ -1,5 +1,6 @@
 <script setup>
-  import { computed } from 'vue';
+  import { ref, computed } from 'vue';
+  import { coverColor } from '../lib/mappers';
 
   const props = defineProps({
     book: {
@@ -10,6 +11,9 @@
 
   defineEmits(['select']);
 
+  // Okładka z coverUrl, która nie załaduje się (np. Google blokuje referer z localhost) -> kafelek zastępczy.
+  const coverFailed = ref(false);
+
   const badgeClass = computed(() => {
     const mapping = { loan: 'badge-loan', swap: 'badge-swap', sale: 'badge-sale' };
     return mapping[props.book.type] || '';
@@ -19,12 +23,18 @@
     const mapping = { loan: 'Do wypożyczenia', swap: 'Do wymiany', sale: 'Do sprzedaży' };
     return mapping[props.book.type] || '';
   });
+
+  const ownerInitial = computed(() => (props.book.owner?.[0] || '?').toUpperCase());
 </script>
 
 <template>
   <div class="book-card" @click="$emit('select', book.id)">
     <div class="cover-wrap">
-      <img :src="`https://picsum.photos/180/240?random=${book.img}`" :alt="book.title" class="cover-img" loading="lazy">
+      <img v-if="book.coverUrl && !coverFailed" :src="book.coverUrl" :alt="book.title" class="cover-img" loading="lazy" @error="coverFailed = true">
+      <div v-else class="cover-img cover-fallback" :style="{ background: coverColor(book.title) }">
+        <span class="cover-fallback-title">{{ book.title }}</span>
+        <span class="cover-fallback-author">{{ book.author }}</span>
+      </div>
       <span :class="['bk-badge', badgeClass]">{{ badgeText }}</span>
       <button class="see-btn">Zobacz ofertę</button>
     </div>
@@ -32,7 +42,8 @@
       <h3 class="card-title">{{ book.title }}</h3>
       <p class="card-author">{{ book.author }}</p>
       <div class="card-meta">
-        <img :src="`https://i.pravatar.cc/40?img=${book.av}`" :alt="book.owner" class="meta-av">
+        <img v-if="book.avatarUrl" :src="book.avatarUrl" :alt="book.owner" class="meta-av">
+        <div v-else class="meta-av meta-av-fallback" aria-hidden="true">{{ ownerInitial }}</div>
         <div class="meta-info">
           <span class="meta-nick">@{{ book.owner }}</span><br>{{ book.city }}
         </div>
@@ -40,3 +51,38 @@
     </div>
   </div>
 </template>
+
+<style scoped>
+  .cover-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 16px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .cover-fallback-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1.25;
+  }
+
+  .cover-fallback-author {
+    font-size: 12px;
+    opacity: 0.8;
+  }
+
+  .meta-av-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tag-bg, #f0e8df);
+    color: var(--text-2, #7a6652);
+    font-weight: 600;
+    font-size: 13px;
+  }
+</style>

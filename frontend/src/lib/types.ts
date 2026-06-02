@@ -34,6 +34,23 @@ export interface BookDto {
   genreName?: string | null
 }
 
+// Słownikowy gatunek z GET /api/genres (id = Guid jako string, używany jako CreateBookDto.GenreId).
+export interface Genre {
+  id: string
+  name: string
+}
+
+// Wynik wyszukiwania w Google Books — to NIE jest książka z naszej bazy,
+// więc ma googleBooksId, a nie id (Guid) — dopóki nie zostanie zapisana przez POST /api/books.
+export interface GoogleBookResult {
+  googleBooksId: string
+  title: string
+  author: string
+  description?: string | null
+  coverUrl?: string | null
+  isbn?: string | null
+}
+
 export interface UserBookDto {
   id: string
   status: string

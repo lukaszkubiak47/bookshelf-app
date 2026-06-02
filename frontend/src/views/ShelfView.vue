@@ -7,7 +7,8 @@
   import { mapTransactionToShelfItem, mapUserBookToListed } from '../lib/mappers';
   import { ApiError } from '../lib/client';
 
-  const currentTab = ref<'received' | 'sent' | 'listed'>('received');
+  // Domyślnie "Wystawione" — po wejściu na półkę (i po dodaniu książki) user najpierw chce zobaczyć swoje oferty.
+  const currentTab = ref<'received' | 'sent' | 'listed'>('listed');
   const statusFilter = ref('');
   const typeFilter = ref('');
   const loading = ref(false);

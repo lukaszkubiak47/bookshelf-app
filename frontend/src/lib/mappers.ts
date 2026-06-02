@@ -1,4 +1,4 @@
-import type { BookDto, TransactionDto, UserBookDto } from './types'
+import type { TransactionDto, UserBookDto } from './types'
 import { resolveApiUrl } from './client'
 
 export function seedFromGuid(id: string, max = 70): number {
@@ -25,6 +25,32 @@ export function avatarImageUrl(user: { id: string; avatarUrl?: string | null }):
   return `https://i.pravatar.cc/40?img=${seedFromGuid(user.id, 70)}`
 }
 
+// Realny URL okładki albo null (bez fallbacku na losowy obrazek) — kafelek-zastępczy renderuje komponent.
+export function realCoverUrl(coverUrl?: string | null): string | null {
+  return coverUrl ? resolveApiUrl(coverUrl) : null
+}
+
+// Realny URL avatara (preset -> pravatar, własny -> resolve) albo null, gdy użytkownik nie ma avatara.
+export function realAvatarUrl(user: { id: string; avatarUrl?: string | null }): string | null {
+  return user.avatarUrl ? avatarImageUrl(user) : null
+}
+
+// Deterministyczny, stonowany kolor tła okładki na podstawie tytułu (ten sam tytuł => ten sam kolor).
+const COVER_COLORS = [
+  '#6B4F3A', '#7A5C43', '#5A4636', '#6A5240', // brązy
+  '#3E5641', '#445C4A', '#4E6151', '#3A5246', // zielenie
+  '#2F3E57', '#384E6A', '#3B4A63', '#33425C', // granaty
+]
+
+export function coverColor(title: string): string {
+  let hash = 0
+  for (let i = 0; i < title.length; i++) {
+    hash = (hash << 5) - hash + title.charCodeAt(i)
+    hash |= 0
+  }
+  return COVER_COLORS[Math.abs(hash) % COVER_COLORS.length] ?? '#445C4A'
+}
+
 export function mapUserBookToCard(dto: UserBookDto) {
   const imgSeed = seedFromGuid(dto.book.id, 80)
   const avSeed = seedFromGuid(dto.owner.id, 70)
@@ -40,8 +66,8 @@ export function mapUserBookToCard(dto: UserBookDto) {
     owner: dto.owner.username,
     av: avSeed,
     img: imgSeed,
-    coverUrl: coverImageUrl(dto.book),
-    avatarUrl: avatarImageUrl(dto.owner),
+    coverUrl: realCoverUrl(dto.book.coverUrl),
+    avatarUrl: realAvatarUrl(dto.owner),
     isbn: dto.book.isbn ?? '',
     desc: dto.book.description ?? '',
     price: dto.price != null ? `${dto.price} zł` : undefined,
@@ -50,18 +76,29 @@ export function mapUserBookToCard(dto: UserBookDto) {
   }
 }
 
-export function mapBookSearchResult(dto: BookDto) {
-  const imgSeed = seedFromGuid(dto.id, 80)
+// Obsługuje zarówno wynik z Google (googleBooksId, bez id), jak i zapisaną książkę z bazy (id).
+export function mapBookSearchResult(dto: {
+  id?: string | null
+  googleBooksId?: string | null
+  title: string
+  author: string
+  description?: string | null
+  coverUrl?: string | null
+  isbn?: string | null
+  genreName?: string | null
+}) {
+  const identity = dto.googleBooksId ?? dto.id ?? dto.title
   return {
-    id: dto.id,
+    id: dto.id ?? null,                    // Guid z bazy (po zapisie) albo null dla surowego wyniku Google
+    googleBooksId: dto.googleBooksId ?? null,
     title: dto.title,
     author: dto.author,
     year: '—',
     genre: dto.genreName ?? 'Inne',
     isbn: dto.isbn ?? '—',
     desc: dto.description ?? '',
-    img: imgSeed,
-    coverUrl: coverImageUrl(dto),
+    img: seedFromGuid(identity, 80),
+    coverUrl: dto.coverUrl ? resolveApiUrl(dto.coverUrl) : null,
   }
 }
 
@@ -92,9 +129,10 @@ export function mapTransactionToShelfItem(dto: TransactionDto, direction: 'recei
     bookTitle: dto.userBook.book.title,
     bookAuthor: dto.userBook.book.author,
     img: imgSeed,
-    coverUrl: coverImageUrl(dto.userBook.book),
+    coverUrl: realCoverUrl(dto.userBook.book.coverUrl),
     nick: counterparty.username,
     av: seedFromGuid(counterparty.id, 70),
+    avatarUrl: realAvatarUrl(counterparty),
     date: formatRelativeDate(dto.createdAt),
     msg: dto.message ?? '',
     returnDate: formatDueDate(dto.dueDate),
@@ -111,7 +149,7 @@ export function mapUserBookToListed(dto: UserBookDto) {
     bookTitle: dto.book.title,
     bookAuthor: dto.book.author,
     img: seedFromGuid(dto.book.id, 80),
-    coverUrl: coverImageUrl(dto.book),
+    coverUrl: realCoverUrl(dto.book.coverUrl),
     price: dto.price,
     dateAdded: new Date(dto.createdAt).toLocaleDateString('pl-PL'),
     listStatus: dto.status === 'available' ? 'available' : 'active',

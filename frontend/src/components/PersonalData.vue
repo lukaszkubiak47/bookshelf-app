@@ -18,6 +18,9 @@
   const customAvatar = ref(null);
   const selectedPreset = ref(1);
   const saving = ref(false);
+  // Avatar ruszamy TYLKO gdy użytkownik faktycznie wybrał preset / wgrał obrazek.
+  // Sam zapis imienia/miasta nie może podmieniać avatara.
+  const avatarTouched = ref(false);
 
   const form = reactive({ name: '', surname: '', nick: '', city: '', bio: '', avatar: '' });
   const errors = reactive({ name: false, surname: false });
@@ -26,6 +29,7 @@
     Object.assign(form, { ...props.user });
     errors.name = false;
     errors.surname = false;
+    avatarTouched.value = false;
     isEditMode.value = true;
   };
 
@@ -36,6 +40,7 @@
   const selectPreset = (id) => {
     selectedPreset.value = id;
     customAvatar.value = null;
+    avatarTouched.value = true;
     form.avatar = `https://i.pravatar.cc/108?img=${id}`;
   };
 
@@ -58,6 +63,7 @@
     reader.onload = (ev) => {
       customAvatar.value = ev.target.result;
       form.avatar = ev.target.result;
+      avatarTouched.value = true;
     };
     reader.readAsDataURL(file);
   };
@@ -65,6 +71,8 @@
   const removeCustomAvatar = () => {
     customAvatar.value = null;
     form.avatar = props.user.avatar;
+    // Powrót do dotychczasowego avatara = brak zmiany.
+    avatarTouched.value = false;
   };
 
   const saveChanges = async () => {
@@ -82,10 +90,12 @@
         city: form.city?.trim() || undefined,
       });
 
-      if (customAvatar.value && fileInput.value?.files?.[0]) {
-        profile = await usersApi.uploadAvatar(fileInput.value.files[0]);
-      } else if (!customAvatar.value && selectedPreset.value) {
-        profile = await usersApi.setAvatarPreset(Math.min(10, Math.max(1, selectedPreset.value)));
+      if (avatarTouched.value) {
+        if (customAvatar.value && fileInput.value?.files?.[0]) {
+          profile = await usersApi.uploadAvatar(fileInput.value.files[0]);
+        } else {
+          profile = await usersApi.setAvatarPreset(Math.min(10, Math.max(1, selectedPreset.value)));
+        }
       }
 
       const mapped = mapUserToProfile(profile);

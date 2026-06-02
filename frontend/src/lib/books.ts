@@ -1,12 +1,17 @@
 import { apiRequest } from './client'
-import type { BookDto } from './types'
+import type { BookDto, Genre, GoogleBookResult } from './types'
 
 export const booksApi = {
-  search(search: string, limit = 10) {
+  // Backend: GET /api/books/search?q=... (proxy do Google Books). Zwraca wyniki Google, nie encje z bazy.
+  search(query: string) {
     const qs = new URLSearchParams()
-    if (search) qs.set('search', search)
-    qs.set('limit', String(limit))
-    return apiRequest<BookDto[]>(`/api/books?${qs}`)
+    qs.set('q', query)
+    return apiRequest<GoogleBookResult[]>(`/api/books/search?${qs}`)
+  },
+
+  // Backend: GET /api/genres (publiczny). Słownik gatunków: { id: Guid, name }.
+  getGenres() {
+    return apiRequest<Genre[]>('/api/genres')
   },
 
   create(body: {
@@ -14,7 +19,9 @@ export const booksApi = {
     author: string
     description?: string
     isbn?: string
-    genreName?: string
+    genreId: string
+    googleBooksId?: string
+    coverUrl?: string
   }) {
     return apiRequest<BookDto>('/api/books', { method: 'POST', auth: true, body })
   },
