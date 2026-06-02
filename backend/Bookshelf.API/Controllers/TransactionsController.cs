@@ -98,6 +98,19 @@ namespace Bookshelf.API.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Dane kontaktowe drugiej strony — tylko dla strony transakcji i statusu accepted/done.
+        /// </summary>
+        [HttpGet("{id:guid}/contact")]
+        public async Task<IActionResult> GetContact(Guid id)
+        {
+            // Serwis sprawdza, czy pytajacy jest strona transakcji i czy status pozwala na kontakt.
+            var userId = GetCurrentUserId();
+            var result = await _service.GetContactAsync(userId, id);
+
+            return Ok(result);
+        }
+
         private Guid GetCurrentUserId()
         {
             // ClaimTypes.NameIdentifier jest ustawiany podczas generowania JWT w TokenService

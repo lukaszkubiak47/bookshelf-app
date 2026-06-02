@@ -2,6 +2,7 @@
   import { ref, computed, watch, onMounted } from 'vue';
   import BookFiltersBrowseView from '../components/BookFiltersBrowseView.vue';
   import BookCard from '../components/BookCard.vue';
+  import OfferModal from '../components/OfferModal.vue';
   import { userBooksApi } from '../lib/userBooks';
   import { mapUserBookToCard } from '../lib/mappers';
 
@@ -96,8 +97,9 @@
     fetchBooks(true);
   };
 
+  const selectedOfferId = ref(null);
   const openModal = (id) => {
-    console.log('Otwieranie modala dla oferty:', id);
+    selectedOfferId.value = id;
   };
 </script>
 
@@ -171,6 +173,8 @@
         </div>
       </main>
     </div>
+
+    <OfferModal :offer-id="selectedOfferId" @close="selectedOfferId = null" />
   </div>
 </template>
 

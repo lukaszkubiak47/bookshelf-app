@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted } from 'vue';
   import { coverColor } from '../lib/mappers';
+  import { transactionsApi } from '../lib/transactions';
 
   const props = withDefaults(defineProps<{
     item: any;
@@ -82,7 +83,23 @@
   // Inicjał kontrahenta jako fallback avatara (gdy brak avatarUrl).
   const counterpartyInitial = computed(() => (props.item.nick?.[0] || '?').toUpperCase());
 
-  onMounted(() => document.addEventListener('click', closeDropdown));
+  // Dane kontaktowe drugiej strony — dostępne dopiero po akceptacji (accepted/done).
+  const contact = ref<{ username: string; email: string } | null>(null);
+
+  async function loadContact() {
+    if (props.isListed) return;
+    if (props.item.status !== 'accepted' && props.item.status !== 'done') return;
+    try {
+      contact.value = await transactionsApi.getContact(props.item.id);
+    } catch {
+      contact.value = null;
+    }
+  }
+
+  onMounted(() => {
+    document.addEventListener('click', closeDropdown);
+    loadContact();
+  });
   onUnmounted(() => document.removeEventListener('click', closeDropdown));
 </script>
 
@@ -202,7 +219,7 @@
       </div>
     </div>
 
-    <div v-if="item.status === 'accepted' && item.contact" class="contact-section">
+    <div v-if="(item.status === 'accepted' || item.status === 'done') && contact" class="contact-section">
       <div class="contact-head">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
         Dane kontaktowe
@@ -210,17 +227,17 @@
 
       <div class="contact-row">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
-        <a :href="`mailto:${item.contact.email}`">{{ item.contact.email }}</a>
+        <a :href="`mailto:${contact?.email}`">Skontaktuj się: {{ contact?.email }}</a>
       </div>
 
       <div class="contact-row">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></svg>
-        <span>{{ item.contact.nick }}</span>
+        <span>@{{ contact?.username }}</span>
       </div>
 
       <div class="contact-note">Skontaktuj się, aby ustalić szczegóły odbioru</div>
 
-      <div class="contact-footer" v-if="direction === 'received'">
+      <div class="contact-footer" v-if="direction === 'received' && item.status === 'accepted'">
         <button class="btn-finish" @click="triggerAction('finish', 'g')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 8v13H3V8" /><path d="M1 3h22v5H1z" /></svg>
           Zakończ transakcję

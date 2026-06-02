@@ -171,9 +171,9 @@
           </div>
           <span :style="{ fontSize: '13px', color: T.t2, lineHeight: 1.5, paddingTop: '1px' }">
             Akceptuję{{ ' ' }}
-            <a href="#" @click.prevent :style="{ color: T.green, textDecoration: 'none', fontWeight: 500 }">Regulamin</a>
+            <RouterLink to="/regulamin" target="_blank" rel="noopener" @click.stop :style="{ color: T.green, textDecoration: 'none', fontWeight: 500 }">Regulamin</RouterLink>
             {{ ' ' }}i{{ ' ' }}
-            <a href="#" @click.prevent :style="{ color: T.green, textDecoration: 'none', fontWeight: 500 }">Politykę prywatności</a>
+            <RouterLink to="/polityka-prywatnosci" target="_blank" rel="noopener" @click.stop :style="{ color: T.green, textDecoration: 'none', fontWeight: 500 }">Politykę prywatności</RouterLink>
           </span>
         </label>
         <p v-if="termsErr" :style="{ fontSize: '12px', color: T.danger, marginTop: '5px', marginLeft: '28px' }">
