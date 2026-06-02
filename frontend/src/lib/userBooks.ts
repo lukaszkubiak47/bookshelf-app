@@ -29,6 +29,11 @@ export const userBooksApi = {
     return apiRequest<UserBookDto[]>(`/api/userbooks/recent?limit=${limit}`)
   },
 
+  // Szczegóły jednej oferty (publiczny endpoint).
+  getById(id: string) {
+    return apiRequest<UserBookDto>(`/api/userbooks/${id}`)
+  },
+
   getMy() {
     return apiRequest<UserBookDto[]>('/api/userbooks/my', { auth: true })
   },

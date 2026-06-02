@@ -2,6 +2,11 @@ import { apiRequest } from './client'
 import type { TransactionDto } from './types'
 
 export const transactionsApi = {
+  // Wyślij prośbę o ofertę. Typ transakcji backend dziedziczy z oferty — wystarczy userBookId.
+  create(body: { userBookId: string; message?: string; dueDate?: string }) {
+    return apiRequest<TransactionDto>('/api/transactions', { method: 'POST', auth: true, body })
+  },
+
   getReceived() {
     return apiRequest<TransactionDto[]>('/api/transactions/received', { auth: true })
   },
