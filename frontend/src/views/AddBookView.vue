@@ -1,13 +1,25 @@
 <script setup>
-  import { ref, reactive, onMounted } from 'vue';
+  import { ref, reactive, onMounted, watch } from 'vue';
+  import { booksApi } from '../lib/books';
+  import { userBooksApi } from '../lib/userBooks';
+  import { mapBookSearchResult, seedFromGuid, coverColor } from '../lib/mappers';
+  import { ApiError } from '../lib/client';
 
   /* ────── STAN APLIKACJI ────── */
   const currentStep = ref(1);
-  const searchQuery = ref('Sapkowski');
+  const searchQuery = ref('');
   const isLoading = ref(false);
   const showResults = ref(false);
   const isManualOpen = ref(false);
   const showSuccess = ref(false);
+  const searchResults = ref([]);
+  const submitError = ref('');
+  const isPublishing = ref(false);
+
+  // Okładki wyników, które nie załadują się (np. blokada Google na localhost) -> kafelek zastępczy.
+  const failedCovers = ref(new Set());
+  const markCoverFailed = (id) => { failedCovers.value = new Set(failedCovers.value).add(id); };
+  const coverOk = (b) => b.coverUrl && !failedCovers.value.has(b.googleBooksId);
 
   const form = reactive({
     selectedBook: null,
@@ -25,7 +37,8 @@
   });
 
   /* Formularz ręczny i walidacja */
-  const manualForm = reactive({ title: '', author: '', genre: 'Literatura piękna', isbn: '', desc: '' });
+  const genres = ref([]);
+  const manualForm = reactive({ title: '', author: '', genre: '', isbn: '', desc: '' });
   const errors = reactive({ title: false, author: false });
 
   /* Dropzone state */
@@ -33,30 +46,50 @@
   const previewUrl = ref(null);
   const fileInput = ref(null);
 
-  /* Mockowane dane wyszukiwania */
-  const mockResults = [
-    { id: 1, title: "Wiedźmin: Ostatnie życzenie", author: "Andrzej Sapkowski", year: "1993", genre: "Fantasy", isbn: "978-83-7578-066-2", desc: "Zbiór opowiadań o wiedźminie Geralcie z Rivii — łowcy potworów.", img: 23 },
-    { id: 2, title: "Krew elfów", author: "Andrzej Sapkowski", year: "1994", genre: "Fantasy", isbn: "978-83-7578-068-6", desc: "Pierwsza pełnowymiarowa powieść z cyklu Wiedźmin.", img: 51 },
-    { id: 3, title: "Czas pogardy", author: "Andrzej Sapkowski", year: "1995", genre: "Fantasy", isbn: "978-83-7578-069-3", desc: "Ciri ucieka, Geralt walczy — drugi tom sagi.", img: 52 },
-    { id: 4, title: "Narrenturm", author: "Andrzej Sapkowski", year: "2002", genre: "Fantasy historyczne", isbn: "978-83-7469-104-6", desc: "Powieść historyczna osadzona w XV-wiecznej Europie.", img: 53 },
-    { id: 5, title: "Maladie i inne opowiadania", author: "Andrzej Sapkowski", year: "2012", genre: "Opowiadania", isbn: "978-83-7578-514-8", desc: "Zbiór fantastycznych opowiadań.", img: 54 }
-  ];
-
   /* ────── LOGIKA METOD ────── */
-  const runSearch = () => {
+  const runSearch = async () => {
     if (!searchQuery.value.trim()) return;
     isLoading.value = true;
     showResults.value = false;
     form.selectedBook = null;
+    submitError.value = '';
 
-    setTimeout(() => {
-      isLoading.value = false;
+    try {
+      const results = await booksApi.search(searchQuery.value.trim());
+      searchResults.value = results.map(mapBookSearchResult);
       showResults.value = true;
-    }, 680);
+    } catch {
+      searchResults.value = [];
+      submitError.value = 'Wyszukiwanie nie powiodło się';
+      showResults.value = true;
+    } finally {
+      isLoading.value = false;
+    }
   };
 
+  // Zmiana zapytania chowa stare wyniki, żeby nie wisiał "duch" poprzedniego wyszukiwania.
+  watch(searchQuery, () => {
+    searchResults.value = [];
+    showResults.value = false;
+    submitError.value = '';
+  });
+
+  // Wynik Google: stage'ujemy do wspólnego kształtu. genreId puste — użytkownik wybierze gatunek w kroku 2.
   const selectBook = (book) => {
-    form.selectedBook = book;
+    form.selectedBook = {
+      bookId: null,
+      googleBooksId: book.googleBooksId,
+      title: book.title,
+      author: book.author,
+      description: book.desc || null,
+      isbn: book.isbn && book.isbn !== '—' ? book.isbn : null,
+      coverUrl: book.coverUrl || null,
+      genreId: '',
+      // pola wyłącznie do podglądu w kreatorze:
+      year: book.year,
+      genre: book.genre,
+      img: book.img,
+    };
     showResults.value = false;
   };
 
@@ -65,21 +98,106 @@
     showResults.value = true;
   };
 
+  // Ręczne dane: tylko stage'ujemy lokalnie. Zapis do bazy (POST /api/books) następuje przy publikacji oferty.
   const submitManualForm = () => {
     errors.title = !manualForm.title.trim();
     errors.author = !manualForm.author.trim();
     if (errors.title || errors.author) return;
+    if (!manualForm.genre) {
+      submitError.value = 'Wybierz gatunek książki.';
+      return;
+    }
 
+    submitError.value = '';
     form.selectedBook = {
-      title: manualForm.title,
-      author: manualForm.author,
+      bookId: null,                 // jeszcze nie zapisana w bazie
+      googleBooksId: null,
+      title: manualForm.title.trim(),
+      author: manualForm.author.trim(),
+      description: manualForm.desc.trim() || null,
+      isbn: manualForm.isbn.trim() || null,
+      genreId: manualForm.genre,    // Guid z selecta
+      // pola wyłącznie do podglądu w kreatorze:
       year: '—',
-      genre: manualForm.genre,
-      isbn: manualForm.isbn || '—',
-      img: Math.floor(Math.random() * 80) + 20
+      genre: genres.value.find(g => g.id === manualForm.genre)?.name ?? 'Inne',
+      img: seedFromGuid(manualForm.title.trim() || 'book', 80),
     };
     isManualOpen.value = false;
     showResults.value = false;
+  };
+
+  const swapConditionMap = {
+    any: 'anything',
+    book: 'specific_book',
+    genre: 'genre',
+    free: 'free',
+  };
+
+  // Zapewnia bookId z bazy: jeśli książka nie była jeszcze zapisana, tworzy ją teraz (POST /api/books).
+  async function ensureBookId() {
+    const sb = form.selectedBook;
+    if (sb.bookId) return sb.bookId;
+    const created = await booksApi.create({
+      title: sb.title,
+      author: sb.author,
+      description: sb.description || undefined,
+      isbn: sb.isbn || undefined,
+      genreId: sb.genreId,
+      googleBooksId: sb.googleBooksId || undefined,
+      coverUrl: sb.coverUrl || undefined,
+    });
+    sb.bookId = created.id;        // zapamiętujemy, by ponowna próba nie utworzyła duplikatu
+    return created.id;
+  }
+
+  const publishOffer = async () => {
+    if (!form.selectedBook || !form.offerType || isPublishing.value) return;
+
+    // POST /api/books wymaga genreId. Dla wyniku Google wybiera się go w kroku 2 (poniższy <select>).
+    if (!form.selectedBook.bookId && !form.selectedBook.genreId) {
+      submitError.value = 'Wybierz gatunek książki.';
+      return;
+    }
+
+    // Cena: wymagana i dodatnia tylko dla sprzedaży (backend odrzuca sprzedaż bez ceny).
+    if (form.offerType === 'sale') {
+      const price = Number(form.offerDetails.price);
+      if (!price || price <= 0) {
+        submitError.value = 'Podaj cenę sprzedaży (większą od 0).';
+        return;
+      }
+    }
+
+    submitError.value = '';
+    isPublishing.value = true;
+    try {
+      const bookId = await ensureBookId();
+
+      const body = {
+        bookId,
+        transactionType: form.offerType,
+      };
+
+      if (form.offerType === 'sale') {
+        body.price = Number(form.offerDetails.price);
+      }
+
+      if (form.offerType === 'swap') {
+        body.exchangeCondition = swapConditionMap[form.offerDetails.swapLooking] ?? 'anything';
+        if (form.offerDetails.swapLooking === 'book') {
+          body.exchangeDetails = form.offerDetails.swapBookTitle || undefined;
+        } else if (form.offerDetails.swapLooking === 'genre') {
+          body.exchangeDetails = form.offerDetails.swapGenre;
+        }
+      }
+
+      await userBooksApi.create(body);
+      showSuccess.value = true;
+    } catch (err) {
+      submitError.value = err instanceof ApiError ? err.message : 'Nie udało się dodać oferty';
+    } finally {
+      isPublishing.value = false;
+    }
   };
 
   /* Dropzone logic */
@@ -102,9 +220,16 @@
     if (fileInput.value) fileInput.value.value = '';
   };
 
-  /* Automatyczne wyszukiwanie po załadowaniu strony (1 do 1) */
-  onMounted(() => {
-    setTimeout(() => { runSearch(); }, 400);
+  /* Ładowanie gatunków + automatyczne wyszukiwanie po załadowaniu strony */
+  onMounted(async () => {
+    try {
+      genres.value = await booksApi.getGenres();
+      // Domyślnie pierwszy gatunek, żeby pole nie było puste przy wysyłce.
+      if (genres.value.length && !manualForm.genre) manualForm.genre = genres.value[0].id;
+    } catch {
+      genres.value = [];
+    }
+    if (searchQuery.value.trim()) runSearch();
   });
 </script>
 
@@ -149,10 +274,14 @@
         </div>
 
         <div v-if="showResults && !isLoading" class="results-section">
-          <div class="results-label">5 wyników dla „{{ searchQuery }}”</div>
+          <div class="results-label">{{ searchResults.length }} wyników dla „{{ searchQuery }}”</div>
           <div class="results-list">
-            <div v-for="b in mockResults" :key="b.id" class="result-row" @click="selectBook(b)">
-              <img :src="`https://picsum.photos/52/70?random=${b.img}`" :alt="b.title" class="result-cover">
+            <div v-for="b in searchResults" :key="b.googleBooksId" class="result-row" @click="selectBook(b)">
+              <img v-if="coverOk(b)" :src="b.coverUrl" :alt="b.title" class="result-cover" @error="markCoverFailed(b.googleBooksId)">
+              <div v-else class="result-cover result-cover-fallback" :style="{ background: coverColor(b.title) }">
+                <span class="rcf-title">{{ b.title }}</span>
+                <span class="rcf-author">{{ b.author }}</span>
+              </div>
               <div class="result-info">
                 <div class="result-title">{{ b.title }}</div>
                 <div class="result-author">{{ b.author }}</div>
@@ -231,7 +360,8 @@
               <div class="form-field">
                 <label class="form-label">Gatunek</label>
                 <select class="form-input" v-model="manualForm.genre">
-                  <option v-for="g in ['Fantasy', 'Sci-Fi', 'Kryminał', 'Literatura piękna', 'Biografia', 'Poradniki', 'Historia', 'Inne']" :key="g">{{ g }}</option>
+                  <option value="" disabled>Wybierz gatunek…</option>
+                  <option v-for="g in genres" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
               </div>
               <div class="form-field">
@@ -246,6 +376,8 @@
             <button class="btn btn-filled btn-full" @click="submitManualForm">Użyj tych danych →</button>
           </div>
         </div>
+
+        <p v-if="submitError" style="color:var(--danger);font-size:13px;margin:0 0 10px">{{ submitError }}</p>
 
         <div class="step-footer" style="margin-top:24px">
           <a href="#" style="font-size:13px;color:var(--text-3);text-decoration:none">Anuluj</a>
@@ -271,6 +403,14 @@
             <div class="recap-author">{{ form.selectedBook.author }}</div>
           </div>
           <a href="#" class="recap-change" @click.prevent="currentStep = 1">← Zmień</a>
+        </div>
+
+        <div v-if="form.selectedBook?.googleBooksId" class="form-field" style="margin-bottom:18px">
+          <label class="form-label">Gatunek książki</label>
+          <select class="form-input" v-model="form.selectedBook.genreId">
+            <option value="" disabled>Wybierz gatunek…</option>
+            <option v-for="g in genres" :key="g.id" :value="g.id">{{ g.name }}</option>
+          </select>
         </div>
 
         <div class="offer-type-heading">Wybierz typ oferty</div>
@@ -384,9 +524,10 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
             Wróć
           </button>
-          <button class="btn btn-filled btn-lg" :disabled="!form.offerType" @click="showSuccess = true">
+          <p v-if="submitError" style="color:var(--danger);font-size:13px;margin-bottom:12px">{{ submitError }}</p>
+          <button class="btn btn-filled btn-lg" :disabled="!form.offerType || isPublishing" @click="publishOffer">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-            Dodaj na półkę
+            {{ isPublishing ? 'Dodawanie…' : 'Dodaj na półkę' }}
           </button>
         </div>
       </div>
@@ -407,3 +548,29 @@
     </div>
   </div>
 </template>
+
+<style scoped>
+  .result-cover-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 4px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.92);
+    overflow: hidden;
+  }
+
+  .result-cover-fallback .rcf-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 9px;
+    line-height: 1.1;
+  }
+
+  .result-cover-fallback .rcf-author {
+    font-size: 8px;
+    opacity: 0.8;
+  }
+</style>

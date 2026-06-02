@@ -1,17 +1,26 @@
 <script setup>
   import { ref, reactive } from 'vue';
+  import { usersApi } from '../lib/users';
+  import { mapUserToProfile } from '../lib/mappers';
+  import { ApiError } from '../lib/client';
+  import { useAuthStore } from '../stores/auth';
 
   const props = defineProps({
     user: { type: Object, required: true }
   });
 
-  const emit = defineEmits(['update:user', 'notify']);
+  const emit = defineEmits(['update:user', 'notify', 'saved']);
+  const auth = useAuthStore();
 
   const isEditMode = ref(false);
   const isDragging = ref(false);
   const fileInput = ref(null);
   const customAvatar = ref(null);
-  const selectedPreset = ref(15);
+  const selectedPreset = ref(1);
+  const saving = ref(false);
+  // Avatar ruszamy TYLKO gdy użytkownik faktycznie wybrał preset / wgrał obrazek.
+  // Sam zapis imienia/miasta nie może podmieniać avatara.
+  const avatarTouched = ref(false);
 
   const form = reactive({ name: '', surname: '', nick: '', city: '', bio: '', avatar: '' });
   const errors = reactive({ name: false, surname: false });
@@ -20,6 +29,7 @@
     Object.assign(form, { ...props.user });
     errors.name = false;
     errors.surname = false;
+    avatarTouched.value = false;
     isEditMode.value = true;
   };
 
@@ -30,6 +40,7 @@
   const selectPreset = (id) => {
     selectedPreset.value = id;
     customAvatar.value = null;
+    avatarTouched.value = true;
     form.avatar = `https://i.pravatar.cc/108?img=${id}`;
   };
 
@@ -52,6 +63,7 @@
     reader.onload = (ev) => {
       customAvatar.value = ev.target.result;
       form.avatar = ev.target.result;
+      avatarTouched.value = true;
     };
     reader.readAsDataURL(file);
   };
@@ -59,17 +71,47 @@
   const removeCustomAvatar = () => {
     customAvatar.value = null;
     form.avatar = props.user.avatar;
+    // Powrót do dotychczasowego avatara = brak zmiany.
+    avatarTouched.value = false;
   };
 
-  const saveChanges = () => {
+  const saveChanges = async () => {
     errors.name = !form.name.trim();
     errors.surname = !form.surname.trim();
 
     if (errors.name || errors.surname) return;
 
-    emit('update:user', { ...props.user, ...form });
-    isEditMode.value = false;
-    emit('notify', { message: 'Dane zostały zapisane ✓', type: 'success' });
+    saving.value = true;
+    try {
+      let profile = await usersApi.updateMe({
+        firstName: form.name.trim(),
+        lastName: form.surname.trim(),
+        username: form.nick.trim(),
+        city: form.city?.trim() || undefined,
+      });
+
+      if (avatarTouched.value) {
+        if (customAvatar.value && fileInput.value?.files?.[0]) {
+          profile = await usersApi.uploadAvatar(fileInput.value.files[0]);
+        } else {
+          profile = await usersApi.setAvatarPreset(Math.min(10, Math.max(1, selectedPreset.value)));
+        }
+      }
+
+      const mapped = mapUserToProfile(profile);
+      auth.syncFromProfile(profile);
+      emit('update:user', mapped);
+      isEditMode.value = false;
+      emit('saved');
+      emit('notify', { message: 'Dane zostały zapisane ✓', type: 'success' });
+    } catch (err) {
+      emit('notify', {
+        message: err instanceof ApiError ? err.message : 'Nie udało się zapisać zmian',
+        type: 'error',
+      });
+    } finally {
+      saving.value = false;
+    }
   };
 </script>
 

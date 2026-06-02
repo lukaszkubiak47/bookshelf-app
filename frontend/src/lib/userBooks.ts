@@ -1,0 +1,53 @@
+import { apiRequest } from './client'
+import type { PagedResult, UserBookDto } from './types'
+
+export interface UserBooksQuery {
+  page?: number
+  limit?: number
+  type?: string
+  genre?: string
+  city?: string
+  search?: string
+  sort?: string
+}
+
+function toQuery(params: UserBooksQuery): string {
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(params) as [keyof UserBooksQuery, string | number | undefined][]) {
+    if (value !== undefined && value !== '') search.set(key, String(value))
+  }
+  const qs = search.toString()
+  return qs ? `?${qs}` : ''
+}
+
+export const userBooksApi = {
+  getAll(query: UserBooksQuery = {}) {
+    return apiRequest<PagedResult<UserBookDto>>(`/api/userbooks${toQuery(query)}`)
+  },
+
+  getRecent(limit = 5) {
+    return apiRequest<UserBookDto[]>(`/api/userbooks/recent?limit=${limit}`)
+  },
+
+  getMy() {
+    return apiRequest<UserBookDto[]>('/api/userbooks/my', { auth: true })
+  },
+
+  create(body: {
+    bookId: string
+    transactionType: string
+    price?: number
+    exchangeCondition?: string
+    exchangeDetails?: string
+  }) {
+    return apiRequest<UserBookDto>('/api/userbooks', {
+      method: 'POST',
+      auth: true,
+      body,
+    })
+  },
+
+  remove(id: string) {
+    return apiRequest<void>(`/api/userbooks/${id}`, { method: 'DELETE', auth: true })
+  },
+}

@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted } from 'vue';
+  import { coverColor } from '../lib/mappers';
 
   const props = withDefaults(defineProps<{
     item: any;
@@ -18,6 +19,8 @@
   const isRejectConfirmOpen = ref(false);
   const flashClass = ref('');
   const isDeletedAnimate = ref(false);
+  // Okładka z coverUrl, która nie załaduje się (np. blokada Google na localhost) -> kafelek zastępczy.
+  const coverFailed = ref(false);
   const formReturnDate = ref(props.item.returnDate ? props.item.returnDate.split('.').reverse().join('-') : '2026-06-28');
 
   // Computed dla statusów transakcji
@@ -76,6 +79,9 @@
     triggerAction('rejected', 'r');
   };
 
+  // Inicjał kontrahenta jako fallback avatara (gdy brak avatarUrl).
+  const counterpartyInitial = computed(() => (props.item.nick?.[0] || '?').toUpperCase());
+
   onMounted(() => document.addEventListener('click', closeDropdown));
   onUnmounted(() => document.removeEventListener('click', closeDropdown));
 </script>
@@ -83,7 +89,11 @@
 <template>
   <div v-if="isListed" class="listed-card" :style="cardStyle">
     <div class="lc-cover-wrap">
-      <img :src="`https://picsum.photos/180/240?random=${item.img}`" :alt="item.bookTitle" class="lc-cover" loading="lazy">
+      <img v-if="item.coverUrl && !coverFailed" :src="item.coverUrl" :alt="item.bookTitle" class="lc-cover" loading="lazy" @error="coverFailed = true">
+      <div v-else class="lc-cover cover-fallback" :style="{ background: coverColor(item.bookTitle) }">
+        <span class="cover-fallback-title">{{ item.bookTitle }}</span>
+        <span class="cover-fallback-author">{{ item.bookAuthor }}</span>
+      </div>
       <span :class="['lc-badge', item.type === 'loan' ? 'lcb-loan' : item.type === 'swap' ? 'lcb-swap' : 'lcb-sale']">
         {{ item.type === 'loan' ? 'Do wypożyczenia' : item.type === 'swap' ? 'Do wymiany' : 'Do sprzedaży' }}
       </span>
@@ -118,7 +128,10 @@
   <div v-else :class="['tx-card', `t-${item.type}`, { dimmed: isDimmed, 'pending-pulse': item.status === 'pending' }, flashClass]">
     <div class="tx-main">
       <div class="tx-left">
-        <img :src="`https://picsum.photos/60/80?random=${item.img}`" :alt="item.bookTitle" class="tx-cover">
+        <img v-if="item.coverUrl && !coverFailed" :src="item.coverUrl" :alt="item.bookTitle" class="tx-cover" @error="coverFailed = true">
+        <div v-else class="tx-cover cover-fallback cover-fallback-sm" :style="{ background: coverColor(item.bookTitle) }">
+          <span class="cover-fallback-title">{{ item.bookTitle }}</span>
+        </div>
         <div class="tx-book-title">{{ item.bookTitle }}</div>
         <div class="tx-book-author">{{ item.bookAuthor }}</div>
       </div>
@@ -138,7 +151,8 @@
                 <line x1="12" y1="3" x2="12" y2="21" />
               </template>
             </svg>
-            <img :src="`https://i.pravatar.cc/40?img=${item.av}`" :alt="item.nick">
+            <img v-if="item.avatarUrl" :src="item.avatarUrl" :alt="item.nick">
+            <span v-else class="tx-av-fallback" aria-hidden="true">{{ counterpartyInitial }}</span>
             <span>{{ direction === 'received' ? 'Prośba od ' : 'Twoja prośba do ' }}<strong>@{{ item.nick }}</strong></span>
           </div>
         </div>
@@ -228,3 +242,51 @@
     </div>
   </div>
 </template>
+
+<style scoped>
+  .cover-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.92);
+    overflow: hidden;
+  }
+
+  .cover-fallback-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  .cover-fallback-author {
+    font-size: 11px;
+    opacity: 0.8;
+  }
+
+  .cover-fallback-sm {
+    padding: 6px;
+  }
+
+  .cover-fallback-sm .cover-fallback-title {
+    font-size: 10px;
+    line-height: 1.15;
+  }
+
+  .tx-av-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--tag-bg, #f0e8df);
+    color: var(--text-2, #7a6652);
+    font-weight: 600;
+    font-size: 10px;
+  }
+</style>

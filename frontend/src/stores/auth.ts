@@ -1,11 +1,8 @@
 // src/stores/auth.ts
-// Globalny stan autentykacji: token JWT + zalogowany użytkownik.
-// Sesja jest utrwalana w localStorage, więc przetrwa odświeżenie strony.
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { apiFetch } from '../lib/api'
 
-// Odpowiada AuthResponseDto.UserDto z backendu
 export interface User {
   id: string
   email: string
@@ -22,8 +19,6 @@ interface AuthResponse {
   user: User
 }
 
-// Pola wysyłane do POST /api/auth/register (odpowiada RegisterDto z backendu;
-// bez confirmPw/terms, które są walidowane wyłącznie po stronie frontu).
 export interface RegisterPayload {
   email: string
   password: string
@@ -50,7 +45,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isLoggedIn = computed(() => !!token.value)
 
-  // Zapisuje sesję (token + user) w stanie i localStorage. Wspólne dla login i register.
   function setSession(res: AuthResponse) {
     token.value = res.token
     user.value = res.user
@@ -81,5 +75,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(USER_KEY)
   }
 
-  return { token, user, isLoggedIn, login, register, logout }
+  // NOWA METODA: Synchronizuje zaktualizowany profil z backendu ze stanem aplikacji
+  function syncFromProfile(updatedUser: User) {
+    user.value = updatedUser
+    localStorage.setItem(USER_KEY, JSON.stringify(updatedUser))
+  }
+
+  return { token, user, isLoggedIn, login, register, logout, syncFromProfile }
 })

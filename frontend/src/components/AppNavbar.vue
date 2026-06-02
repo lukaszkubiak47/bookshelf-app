@@ -1,14 +1,49 @@
 <script setup>
-  import { useRouter } from 'vue-router'
-  import { useAuthStore } from '../stores/auth'
+  import { ref, computed, onMounted, onUnmounted } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { useAuthStore } from '../stores/auth';
+  import { avatarImageUrl } from '../lib/mappers';
 
-  const router = useRouter()
-  const auth = useAuthStore()
+  const auth = useAuthStore();
+  const router = useRouter();
+
+  const menuOpen = ref(false);
+  const avatarWrapRef = ref(null);
+
+  const displayName = computed(() => {
+    const u = auth.user;
+    if (!u) return '';
+    return `${u.firstName} ${u.lastName}`.trim();
+  });
+
+  const avatarSrc = computed(() => {
+    if (!auth.user) return '';
+    return avatarImageUrl({ id: auth.user.id, avatarUrl: auth.user.avatarUrl });
+  });
+
+  const toggleMenu = (event) => {
+    event.stopPropagation();
+    menuOpen.value = !menuOpen.value;
+  };
+
+  const closeMenu = () => {
+    menuOpen.value = false;
+  };
+
+  const onDocumentClick = (event) => {
+    if (avatarWrapRef.value && !avatarWrapRef.value.contains(event.target)) {
+      closeMenu();
+    }
+  };
 
   const logout = () => {
-    auth.logout()
-    router.push('/')
-  }
+    closeMenu();
+    auth.logout();
+    router.push('/');
+  };
+
+  onMounted(() => document.addEventListener('click', onDocumentClick));
+  onUnmounted(() => document.removeEventListener('click', onDocumentClick));
 </script>
 
 <template>
@@ -24,15 +59,49 @@
     <ul class="nav-links">
       <li><RouterLink to="/">Strona główna</RouterLink></li>
       <li><RouterLink to="/przegladanie">Przeglądaj książki</RouterLink></li>
-      <li v-if="auth.isLoggedIn"><RouterLink to="/polka">Moja półka</RouterLink></li>
+      <template v-if="auth.isLoggedIn">
+        <li><RouterLink to="/polka">Moja półka</RouterLink></li>
+      </template>
     </ul>
     <div class="nav-actions">
-      <template v-if="auth.isLoggedIn">
-        <RouterLink to="/profil" :style="{ color: 'var(--primary)', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }">
-          @{{ auth.user?.username }}
-        </RouterLink>
-        <button type="button" class="btn btn-outline" @click="logout">Wyloguj</button>
-      </template>
+      <div v-if="auth.isLoggedIn"
+           ref="avatarWrapRef"
+           class="nav-avatar-wrap"
+           :class="{ open: menuOpen }">
+        <button type="button" class="nav-avatar-btn" aria-haspopup="true" :aria-expanded="menuOpen" @click="toggleMenu">
+          <img :key="auth.user?.avatarUrl ?? auth.user?.id" :src="avatarSrc" :alt="displayName" class="nav-avatar">
+          <span class="nav-avatar-name">@{{ auth.user?.username }}</span>
+          <span class="nav-chevron" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M3 5l4 4 4-4" />
+            </svg>
+          </span>
+        </button>
+        <div class="nav-dropdown">
+          <div class="dd-head">
+            <strong>{{ displayName }}</strong>
+            <span>
+              <a :href="`mailto:${auth.user?.email}`">{{ auth.user?.email }}</a>
+            </span>
+          </div>
+          <RouterLink to="/profil" class="dd-item" @click="closeMenu">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+            </svg>
+            Mój profil
+          </RouterLink>
+          <div class="dd-divider"></div>
+          <button type="button" class="dd-item danger" @click="logout">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Wyloguj się
+          </button>
+        </div>
+      </div>
       <template v-else>
         <RouterLink to="/logowanie?tab=login" class="btn btn-outline">Zaloguj się</RouterLink>
         <RouterLink to="/logowanie?tab=register" class="btn btn-filled">Dołącz</RouterLink>
