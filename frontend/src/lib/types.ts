@@ -77,6 +77,12 @@ export interface PagedResult<T> {
   totalPages: number
 }
 
+// Dane kontaktowe drugiej strony zaakceptowanej/zakończonej transakcji (GET /api/transactions/{id}/contact).
+export interface TransactionContact {
+  username: string
+  email: string
+}
+
 export interface TransactionDto {
   id: string
   type: string

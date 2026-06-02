@@ -1,7 +1,12 @@
 import { apiRequest } from './client'
-import type { TransactionDto } from './types'
+import type { TransactionDto, TransactionContact } from './types'
 
 export const transactionsApi = {
+  // Dane kontaktowe drugiej strony — działa tylko dla accepted/done i tylko dla strony transakcji.
+  getContact(id: string) {
+    return apiRequest<TransactionContact>(`/api/transactions/${id}/contact`, { auth: true })
+  },
+
   // Wyślij prośbę o ofertę. Typ transakcji backend dziedziczy z oferty — wystarczy userBookId.
   create(body: { userBookId: string; message?: string; dueDate?: string }) {
     return apiRequest<TransactionDto>('/api/transactions', { method: 'POST', auth: true, body })

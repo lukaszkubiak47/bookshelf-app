@@ -97,6 +97,35 @@ namespace Bookshelf.API.Services
             return transactions.Select(MapToDto).ToList();
         }
 
+        public async Task<TransactionContactDto> GetContactAsync(Guid currentUserId, Guid transactionId)
+        {
+            var transaction = await BuildTransactionDetailsQuery()
+                .FirstOrDefaultAsync(t => t.Id == transactionId);
+
+            // Brak transakcji LUB pytający nie jest jej stroną -> 404 (nie zdradzamy, że transakcja istnieje).
+            if (transaction == null)
+                throw new NotFoundException("Nie znaleziono transakcji");
+
+            var requesterId = transaction.RequesterId;
+            var ownerId = transaction.UserBook.UserId;
+
+            if (currentUserId != requesterId && currentUserId != ownerId)
+                throw new NotFoundException("Nie znaleziono transakcji");
+
+            // Strona transakcji, ale przed akceptacją (pending/rejected) -> 403 z jasnym komunikatem.
+            if (transaction.Status != AcceptedStatus && transaction.Status != DoneStatus)
+                throw new ForbiddenException("Dane kontaktowe dostępne po zaakceptowaniu prośby");
+
+            // Zwracamy dane DRUGIEJ strony, nigdy własne.
+            var other = currentUserId == requesterId ? transaction.UserBook.User : transaction.Requester;
+
+            return new TransactionContactDto
+            {
+                Username = other.Username,
+                Email = other.Email
+            };
+        }
+
         public async Task<TransactionDto> AcceptAsync(Guid ownerId, Guid transactionId, AcceptTransactionDto dto)
         {
             // Pobierz transakcję i sprawdź, czy aktualny użytkownik jest właścicielem oferty

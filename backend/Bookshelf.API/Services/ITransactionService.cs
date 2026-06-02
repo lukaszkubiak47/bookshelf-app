@@ -21,5 +21,8 @@ namespace Bookshelf.API.Services
 
         // Konczy zaakceptowana transakcje i przywraca oferte jako dostepna.
         Task<TransactionDto> FinishAsync(Guid ownerId, Guid transactionId);
+
+        // Zwraca dane kontaktowe DRUGIEJ strony (tylko dla strony transakcji i statusu accepted/done).
+        Task<TransactionContactDto> GetContactAsync(Guid currentUserId, Guid transactionId);
     }
 }
