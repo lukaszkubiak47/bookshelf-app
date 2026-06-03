@@ -5,6 +5,7 @@ import BrowseView from '../views/BrowseView.vue'
 import AuthView from '../views/AuthView.vue'
 import ShelfView from '../views/ShelfView.vue'
 import AddBookView from '../views/AddBookView.vue'
+import EditBookView from '../views/EditBookView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import TermsView from '../views/TermsView.vue'
 import PrivacyView from '../views/PrivacyView.vue'
@@ -39,6 +40,12 @@ const router = createRouter({
       path: '/dodawanie',
       name: 'addbook',
       component: AddBookView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/polka/edytuj/:id',
+      name: 'editbook',
+      component: EditBookView,
       meta: { requiresAuth: true }
     },
     {

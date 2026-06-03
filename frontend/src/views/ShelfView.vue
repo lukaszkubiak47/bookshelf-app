@@ -1,11 +1,14 @@
 <script setup lang="ts">
   import { ref, computed, onMounted } from 'vue';
+  import { useRouter } from 'vue-router';
   import BookFilters from '../components/BookFiltersShelfView.vue';
   import BookOffer from '../components/BookOffer.vue';
   import { transactionsApi } from '../lib/transactions';
   import { userBooksApi } from '../lib/userBooks';
   import { mapTransactionToShelfItem, mapUserBookToListed } from '../lib/mappers';
   import { ApiError } from '../lib/client';
+
+  const router = useRouter();
 
   // Domyślnie "Wystawione" — po wejściu na półkę (i po dodaniu książki) user najpierw chce zobaczyć swoje oferty.
   const currentTab = ref<'received' | 'sent' | 'listed'>('listed');
@@ -99,8 +102,8 @@
     }
   };
 
-  const editListedBook = (book: any) => {
-    alert(`Edycja oferty: „${book.bookTitle}”\n(funkcja w przygotowaniu)`);
+  const editListedBook = (book: { id: string }) => {
+    router.push({ name: 'editbook', params: { id: book.id } });
   };
 </script>
 

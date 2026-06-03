@@ -82,6 +82,41 @@ namespace Bookshelf.API.Controllers
         }
 
         /// <summary>
+        /// Wgraj własną okładkę oferty (wymaga JWT, tylko właściciel)
+        /// </summary>
+        [HttpPost("{id:guid}/cover")]
+        [Authorize]
+        public async Task<IActionResult> UploadCover(Guid id, IFormFile file)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await _service.UploadCoverAsync(userId, id, file);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Pobierz własną okładkę oferty (publiczny)
+        /// </summary>
+        [HttpGet("{id:guid}/cover/image")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetCoverImage(Guid id)
+        {
+            var result = await _service.GetCoverImageAsync(id);
+            return File(result.Data, result.ContentType);
+        }
+
+        /// <summary>
+        /// Usuń własną okładkę oferty (wymaga JWT, tylko właściciel)
+        /// </summary>
+        [HttpDelete("{id:guid}/cover")]
+        [Authorize]
+        public async Task<IActionResult> DeleteCover(Guid id)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await _service.DeleteCoverAsync(userId, id);
+            return NoContent();
+        }
+
+        /// <summary>
         /// Wystaw książkę na półce (wymaga JWT)
         /// </summary>
         [HttpPost]

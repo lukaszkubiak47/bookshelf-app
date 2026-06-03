@@ -21,6 +21,9 @@
   const markCoverFailed = (id) => { failedCovers.value = new Set(failedCovers.value).add(id); };
   const coverOk = (b) => b.coverUrl && !failedCovers.value.has(b.googleBooksId);
 
+  const selectedCoverFailed = ref(false);
+  const resetSelectedCover = () => { selectedCoverFailed.value = false; };
+
   const form = reactive({
     selectedBook: null,
     offerType: null,
@@ -81,7 +84,7 @@
       googleBooksId: book.googleBooksId,
       title: book.title,
       author: book.author,
-      description: book.desc || null,
+      description: book.desc || '',
       isbn: book.isbn && book.isbn !== '—' ? book.isbn : null,
       coverUrl: book.coverUrl || null,
       genreId: '',
@@ -91,11 +94,13 @@
       img: book.img,
     };
     showResults.value = false;
+    resetSelectedCover();
   };
 
   const changeBookSelection = () => {
     form.selectedBook = null;
     showResults.value = true;
+    resetSelectedCover();
   };
 
   // Ręczne dane: tylko stage'ujemy lokalnie. Zapis do bazy (POST /api/books) następuje przy publikacji oferty.
@@ -124,6 +129,7 @@
     };
     isManualOpen.value = false;
     showResults.value = false;
+    resetSelectedCover();
   };
 
   const swapConditionMap = {
@@ -140,7 +146,7 @@
     const created = await booksApi.create({
       title: sb.title,
       author: sb.author,
-      description: sb.description || undefined,
+      description: sb.description?.trim() || undefined,
       isbn: sb.isbn || undefined,
       genreId: sb.genreId,
       googleBooksId: sb.googleBooksId || undefined,
@@ -191,7 +197,10 @@
         }
       }
 
-      await userBooksApi.create(body);
+      const created = await userBooksApi.create(body);
+      if (form.customCoverFile) {
+        await userBooksApi.uploadCover(created.id, form.customCoverFile);
+      }
       showSuccess.value = true;
     } catch (err) {
       submitError.value = err instanceof ApiError ? err.message : 'Nie udało się dodać oferty';
@@ -319,7 +328,17 @@
           <div class="sel-check">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
           </div>
-          <img :src="`https://picsum.photos/72/96?random=${form.selectedBook.img}`" alt="" class="sel-cover">
+          <img
+            v-if="form.selectedBook.coverUrl && !selectedCoverFailed"
+            :src="form.selectedBook.coverUrl"
+            :alt="form.selectedBook.title"
+            class="sel-cover"
+            @error="selectedCoverFailed = true"
+          >
+          <div v-else class="sel-cover sel-cover-fallback" :style="{ background: coverColor(form.selectedBook.title) }">
+            <span class="scf-title">{{ form.selectedBook.title }}</span>
+            <span class="scf-author">{{ form.selectedBook.author }}</span>
+          </div>
           <div class="sel-info">
             <div class="sel-title">{{ form.selectedBook.title }}</div>
             <div class="sel-author">{{ form.selectedBook.author }}</div>
@@ -397,7 +416,17 @@
       <div class="wcard-body">
 
         <div class="book-recap">
-          <img :src="`https://picsum.photos/48/64?random=${form.selectedBook.img}`" alt="" class="recap-cover">
+          <img
+            v-if="form.selectedBook.coverUrl && !selectedCoverFailed"
+            :src="form.selectedBook.coverUrl"
+            :alt="form.selectedBook.title"
+            class="recap-cover"
+            @error="selectedCoverFailed = true"
+          >
+          <div v-else class="recap-cover recap-cover-fallback" :style="{ background: coverColor(form.selectedBook.title) }">
+            <span class="rcf-title">{{ form.selectedBook.title }}</span>
+            <span class="rcf-author">{{ form.selectedBook.author }}</span>
+          </div>
           <div class="recap-info">
             <div class="recap-title">{{ form.selectedBook.title }}</div>
             <div class="recap-author">{{ form.selectedBook.author }}</div>
@@ -411,6 +440,17 @@
             <option value="" disabled>Wybierz gatunek…</option>
             <option v-for="g in genres" :key="g.id" :value="g.id">{{ g.name }}</option>
           </select>
+        </div>
+
+        <div v-if="form.selectedBook?.googleBooksId" class="form-field" style="margin-bottom:18px">
+          <label class="form-label">Opis (opcjonalnie)</label>
+          <textarea
+            class="form-input"
+            v-model="form.selectedBook.description"
+            rows="3"
+            placeholder="Dodaj własny opis lub zostaw opis z Google Books…"
+            style="resize:vertical"
+          ></textarea>
         </div>
 
         <div class="offer-type-heading">Wybierz typ oferty</div>
@@ -570,6 +610,40 @@
   }
 
   .result-cover-fallback .rcf-author {
+    font-size: 8px;
+    opacity: 0.8;
+  }
+
+  .sel-cover-fallback,
+  .recap-cover-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 4px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.92);
+    overflow: hidden;
+  }
+
+  .sel-cover-fallback .scf-title,
+  .recap-cover-fallback .rcf-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .sel-cover-fallback .scf-title {
+    font-size: 9px;
+  }
+
+  .recap-cover-fallback .rcf-title {
+    font-size: 8px;
+  }
+
+  .sel-cover-fallback .scf-author,
+  .recap-cover-fallback .rcf-author {
     font-size: 8px;
     opacity: 0.8;
   }

@@ -9,6 +9,9 @@ namespace Bookshelf.API.Services
 {
     public class UserBookService : IUserBookService
     {
+        private const int MaxCoverSizeBytes = 5 * 1024 * 1024;
+        private static readonly string[] AllowedCoverContentTypes = ["image/jpeg", "image/png"];
+
         private readonly AppDbContext _db;
 
         public UserBookService(AppDbContext db)
@@ -215,6 +218,11 @@ namespace Bookshelf.API.Services
             if (dto.ExchangeDetails != null)
                 userBook.ExchangeDetails = dto.ExchangeDetails;
 
+            if (dto.BookDescription != null)
+                userBook.Book.Description = string.IsNullOrWhiteSpace(dto.BookDescription)
+                    ? null
+                    : dto.BookDescription.Trim();
+
             // Specjalne czyszczenie: jeśli zmieniono typ, wyczyść nieadekwatne pola
             if (dto.TransactionType != null)
             {
@@ -231,6 +239,46 @@ namespace Bookshelf.API.Services
             await _db.SaveChangesAsync();
 
             return MapToDto(userBook);
+        }
+
+        public async Task<UserBookDto> UploadCoverAsync(Guid userId, Guid userBookId, IFormFile file)
+        {
+            var userBook = await GetOwnedUserBookAsync(userId, userBookId);
+
+            if (file == null || file.Length == 0)
+                throw new BadRequestException("Plik jest wymagany");
+
+            if (file.Length > MaxCoverSizeBytes)
+                throw new BadRequestException("Plik nie może przekraczać 5 MB");
+
+            if (!AllowedCoverContentTypes.Contains(file.ContentType))
+                throw new BadRequestException("Dozwolone formaty okładki: JPG, PNG");
+
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            userBook.CustomCoverImageData = memoryStream.ToArray();
+
+            await _db.SaveChangesAsync();
+            return MapToDto(userBook);
+        }
+
+        public async Task<(byte[] Data, string ContentType)> GetCoverImageAsync(Guid userBookId)
+        {
+            var userBook = await _db.UserBooks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ub => ub.Id == userBookId);
+
+            if (userBook?.CustomCoverImageData == null || userBook.CustomCoverImageData.Length == 0)
+                throw new NotFoundException("Oferta nie ma własnej okładki");
+
+            return (userBook.CustomCoverImageData, GetImageContentType(userBook.CustomCoverImageData));
+        }
+
+        public async Task DeleteCoverAsync(Guid userId, Guid userBookId)
+        {
+            var userBook = await GetOwnedUserBookAsync(userId, userBookId);
+            userBook.CustomCoverImageData = null;
+            await _db.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(Guid userId, Guid userBookId)
@@ -258,6 +306,45 @@ namespace Bookshelf.API.Services
             await _db.SaveChangesAsync();
         }
 
+        private async Task<UserBook> GetOwnedUserBookAsync(Guid userId, Guid userBookId)
+        {
+            var userBook = await _db.UserBooks
+                .Include(ub => ub.Book)
+                    .ThenInclude(b => b.Genre)
+                .Include(ub => ub.User)
+                .FirstOrDefaultAsync(ub => ub.Id == userBookId);
+
+            if (userBook == null)
+                throw new NotFoundException("Nie znaleziono oferty o podanym ID");
+
+            if (userBook.UserId != userId)
+                throw new ForbiddenException("Możesz edytować tylko swoje oferty");
+
+            return userBook;
+        }
+
+        private static string? ResolveCoverUrl(UserBook ub)
+        {
+            if (ub.CustomCoverImageData != null && ub.CustomCoverImageData.Length > 0)
+                return $"/api/userbooks/{ub.Id}/cover/image";
+
+            return ub.Book.CoverUrl;
+        }
+
+        private static string GetImageContentType(byte[] data)
+        {
+            if (data.Length >= 8 &&
+                data[0] == 0x89 &&
+                data[1] == 0x50 &&
+                data[2] == 0x4E &&
+                data[3] == 0x47)
+            {
+                return "image/png";
+            }
+
+            return "image/jpeg";
+        }
+
         private static UserBookDto MapToDto(UserBook ub)
         {
             return new UserBookDto
@@ -276,7 +363,7 @@ namespace Bookshelf.API.Services
                     Title = ub.Book.Title,
                     Author = ub.Book.Author,
                     Description = ub.Book.Description,
-                    CoverUrl = ub.Book.CoverUrl,
+                    CoverUrl = ResolveCoverUrl(ub),
                     ISBN = ub.Book.ISBN,
                     GenreName = ub.Book.Genre?.Name
                 },

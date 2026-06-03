@@ -52,6 +52,34 @@ export const userBooksApi = {
     })
   },
 
+  update(id: string, body: {
+    transactionType?: string
+    price?: number
+    exchangeCondition?: string
+    exchangeDetails?: string
+    bookDescription?: string
+  }) {
+    return apiRequest<UserBookDto>(`/api/userbooks/${id}`, {
+      method: 'PUT',
+      auth: true,
+      body,
+    })
+  },
+
+  uploadCover(id: string, file: File) {
+    const form = new FormData()
+    form.append('file', file)
+    return apiRequest<UserBookDto>(`/api/userbooks/${id}/cover`, {
+      method: 'POST',
+      auth: true,
+      body: form,
+    })
+  },
+
+  removeCover(id: string) {
+    return apiRequest<void>(`/api/userbooks/${id}/cover`, { method: 'DELETE', auth: true })
+  },
+
   remove(id: string) {
     return apiRequest<void>(`/api/userbooks/${id}`, { method: 'DELETE', auth: true })
   },

@@ -15,5 +15,8 @@ namespace Bookshelf.API.Models.DTOs.UserBooks
 
         [MaxLength(300)]
         public string? ExchangeDetails { get; set; }
+
+        [MaxLength(2000)]
+        public string? BookDescription { get; set; }
     }
 }
