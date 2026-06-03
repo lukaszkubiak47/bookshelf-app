@@ -1,15 +1,30 @@
 <script setup>
   /** Sekcja hero na stronie głównej: statystyki platformy, CTA, animacje wejścia. */
-  import { computed, onMounted } from 'vue';
+  import { ref, computed, onMounted } from 'vue';
+  import { useRouter } from 'vue-router';
   import { useStatsStore } from '../stores/stats';
   import { useAuthStore } from '../stores/auth';
   import { usePageAnimations } from '../composables/useAnimations';
+  import { useShowcaseOffers } from '../composables/useShowcaseOffers';
+  import { openBrowseOffer } from '../lib/browseNavigation';
+  import { coverColor } from '../lib/showcaseOffers';
 
+  const router = useRouter();
   const statsStore = useStatsStore();
   const auth = useAuthStore();
+  const { slots: showcaseSlots } = useShowcaseOffers(6, { w: 112, h: 150 });
+  const coverFailed = ref({});
   usePageAnimations({ hero: true, scroll: false, ripple: false });
 
   onMounted(() => statsStore.fetchStats());
+
+  const markCoverFailed = (id) => {
+    coverFailed.value = { ...coverFailed.value, [id]: true };
+  };
+
+  const onCoverClick = (slot) => {
+    if (slot.offerId) openBrowseOffer(router, slot.offerId);
+  };
 
   const fmt = (n) => (n == null ? '—' : n.toLocaleString('pl-PL'));
 
@@ -61,15 +76,74 @@
       <div class="hero-right anim anim-d2">
         <div class="hero-blob"></div>
         <div class="hero-books">
-          <div class="hero-book"><img src="https://picsum.photos/112/150?random=10" alt="Book cover"></div>
-          <div class="hero-book"><img src="https://picsum.photos/112/150?random=11" alt="Book cover"></div>
-          <div class="hero-book"><img src="https://picsum.photos/112/150?random=12" alt="Book cover"></div>
-          <div class="hero-book"><img src="https://picsum.photos/112/150?random=13" alt="Book cover"></div>
-          <div class="hero-book"><img src="https://picsum.photos/112/150?random=14" alt="Book cover"></div>
-          <div class="hero-book"><img src="https://picsum.photos/112/150?random=15" alt="Book cover"></div>
+          <div
+            v-for="slot in showcaseSlots"
+            :key="slot.id"
+            :class="['hero-book', { 'hero-book--clickable': slot.offerId }]"
+            :role="slot.offerId ? 'button' : undefined"
+            :tabindex="slot.offerId ? 0 : undefined"
+            @click="onCoverClick(slot)"
+            @keydown.enter="onCoverClick(slot)"
+          >
+            <img
+              v-if="slot.isPlaceholder"
+              :src="slot.placeholderImage"
+              alt=""
+            >
+            <img
+              v-else-if="slot.coverUrl && !coverFailed[slot.id]"
+              :src="slot.coverUrl"
+              :alt="slot.title"
+              @error="markCoverFailed(slot.id)"
+            >
+            <div
+              v-else
+              class="hero-book-fallback cover-fallback"
+              :style="{ background: coverColor(slot.title) }"
+            >
+              <span class="cover-fallback-title">{{ slot.title }}</span>
+              <span class="cover-fallback-author">{{ slot.author }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
     </div>
   </section>
 </template>
+
+<style scoped>
+  .hero-book--clickable {
+    cursor: pointer;
+  }
+
+  .hero-book--clickable:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+  }
+
+  .hero-book-fallback.cover-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .hero-book-fallback .cover-fallback-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  .hero-book-fallback .cover-fallback-author {
+    font-size: 10px;
+    opacity: 0.8;
+  }
+</style>

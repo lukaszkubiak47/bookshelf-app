@@ -1,20 +1,22 @@
 <script setup>
-  /** Lewa kolumna /logowanie: branding, animowane okładki, statystyki z API. */
-  import { computed, onMounted } from 'vue';
+  /** Lewa kolumna /logowanie: branding, animowane okładki (prawdziwe oferty), statystyki z API. */
+  import { ref, computed, onMounted } from 'vue';
+  import { useRouter } from 'vue-router';
   import { T, P, AUTH_DEMO_BOOK_BADGE } from '../assets/constants';
   import { offerBrowseLabel } from '../lib/offerTypes';
+  import { openBrowseOffer } from '../lib/browseNavigation';
+  import { coverColor } from '../lib/showcaseOffers';
+  import { useShowcaseOffers } from '../composables/useShowcaseOffers';
   import { useStatsStore } from '../stores/stats';
 
+  const router = useRouter();
   const statsStore = useStatsStore();
+  const { slots: showcaseSlots } = useShowcaseOffers(3, { w: 150, h: 200 });
+  const coverFailed = ref({});
+
   onMounted(() => statsStore.fetchStats());
 
   const fmt = (n) => (n == null ? '—' : n.toLocaleString('pl-PL'));
-
-  const books = [
-    { id: 17, title: 'Mistrz i Małgorzata', author: 'M. Bułhakow', type: 'swap' },
-    { id: 43, title: 'Dżuma', author: 'A. Camus', type: 'loan' },
-    { id: 28, title: 'Sto lat samotności', author: 'G.G. Márquez', type: 'sale' },
-  ];
 
   const demoBadgeStyle = (type) => {
     const colors = AUTH_DEMO_BOOK_BADGE[type] ?? { bg: T.green, text: 'white' };
@@ -40,6 +42,14 @@
     { icon: 'users', value: fmt(statsStore.stats?.totalUsers), label: 'użytkowników' },
     { icon: 'repeat', value: fmt(statsStore.stats?.activeOffers), label: 'aktywnych ofert' },
   ]);
+
+  const markCoverFailed = (id) => {
+    coverFailed.value = { ...coverFailed.value, [id]: true };
+  };
+
+  const onCoverClick = (slot) => {
+    if (slot.offerId) openBrowseOffer(router, slot.offerId);
+  };
 </script>
 
 <template>
@@ -91,37 +101,70 @@
     </div>
 
     <div :style="{ position: 'relative', width: '200px', height: '290px', zIndex: 2 }">
-      <div v-for="(book, i) in books" :key="book.id" :style="{
-        position: 'absolute',
-        width: '150px', height: '200px',
-        top: '50%', left: '50%',
-        marginTop: '-100px', marginLeft: '-75px',
-        transform: spreads[i].transform,
-        zIndex: spreads[i].z,
-      }">
-        <div :class="spreads[i].float" :style="{
-          width: '100%', height: '100%',
-          borderRadius: '10px',
-          overflow: 'hidden',
-          boxShadow: '0 18px 48px rgba(0,0,0,0.45)',
-          position: 'relative'
-        }">
-          <img :src="`https://picsum.photos/150/200?random=${book.id}`" :alt="book.title" :style="{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }" />
-
-          <div :style="{ position: 'absolute', top: '8px', left: '8px', ...demoBadgeStyle(book.type) }">
-            {{ offerBrowseLabel(book.type) }}
+      <div
+        v-for="(slot, i) in showcaseSlots"
+        :key="slot.id"
+        :style="{
+          position: 'absolute',
+          width: '150px', height: '200px',
+          top: '50%', left: '50%',
+          marginTop: '-100px', marginLeft: '-75px',
+          transform: spreads[i]?.transform,
+          zIndex: spreads[i]?.z,
+        }"
+      >
+        <div
+          :class="[spreads[i]?.float, { 'auth-showcase--clickable': slot.offerId }]"
+          :style="{
+            width: '100%', height: '100%',
+            borderRadius: '10px',
+            overflow: 'hidden',
+            boxShadow: '0 18px 48px rgba(0,0,0,0.45)',
+            position: 'relative',
+          }"
+          :role="slot.offerId ? 'button' : undefined"
+          :tabindex="slot.offerId ? 0 : undefined"
+          @click="onCoverClick(slot)"
+          @keydown.enter="onCoverClick(slot)"
+        >
+          <img
+            v-if="slot.isPlaceholder"
+            :src="slot.placeholderImage"
+            alt=""
+            :style="{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }"
+          >
+          <img
+            v-else-if="slot.coverUrl && !coverFailed[slot.id]"
+            :src="slot.coverUrl"
+            :alt="slot.title"
+            :style="{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }"
+            @error="markCoverFailed(slot.id)"
+          >
+          <div
+            v-else
+            class="auth-showcase-fallback cover-fallback"
+            :style="{ background: coverColor(slot.title) }"
+          >
+            <span class="cover-fallback-title">{{ slot.title }}</span>
+            <span class="cover-fallback-author">{{ slot.author }}</span>
           </div>
 
-          <div :style="{
-            position: 'absolute', bottom: 0, left: 0, right: 0,
-            background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)',
-            padding: '22px 10px 10px',
-          }">
-            <p :style="{ fontFamily: '\'Playfair Display\', serif', color: 'white', fontSize: '11px', fontWeight: 600, lineHeight: 1.3, marginBottom: '2px' }">
-              {{ book.title }}
-            </p>
-            <p :style="{ color: 'rgba(255,255,255,0.65)', fontSize: '10px' }">{{ book.author }}</p>
-          </div>
+          <template v-if="!slot.isPlaceholder">
+            <div :style="{ position: 'absolute', top: '8px', left: '8px', ...demoBadgeStyle(slot.type) }">
+              {{ offerBrowseLabel(slot.type) }}
+            </div>
+
+            <div :style="{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)',
+              padding: '22px 10px 10px',
+            }">
+              <p :style="{ fontFamily: '\'Playfair Display\', serif', color: 'white', fontSize: '11px', fontWeight: 600, lineHeight: 1.3, marginBottom: '2px' }">
+                {{ slot.title }}
+              </p>
+              <p :style="{ color: 'rgba(255,255,255,0.65)', fontSize: '10px' }">{{ slot.author }}</p>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -145,3 +188,38 @@
     </div>
   </div>
 </template>
+
+<style scoped>
+  .auth-showcase--clickable {
+    cursor: pointer;
+  }
+
+  .auth-showcase--clickable:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.85);
+    outline-offset: 3px;
+  }
+
+  .auth-showcase-fallback.cover-fallback {
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .auth-showcase-fallback .cover-fallback-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .auth-showcase-fallback .cover-fallback-author {
+    font-size: 9px;
+    opacity: 0.8;
+  }
+</style>

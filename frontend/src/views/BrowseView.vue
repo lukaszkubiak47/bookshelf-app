@@ -4,7 +4,7 @@
    * Po akceptacji/zakończeniu transakcji odświeża listę (OFFERS_CHANGED_EVENT).
    */
   import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-  import { useRoute } from 'vue-router';
+  import { useRoute, useRouter } from 'vue-router';
   import { OFFERS_CHANGED_EVENT } from '../lib/offers';
   import { usePageAnimations, observeAnimationsIn } from '../composables/useAnimations';
   import BookFiltersBrowseView from '../components/BookFiltersBrowseView.vue';
@@ -14,6 +14,7 @@
   import { mapUserBookToCard } from '../lib/mappers';
 
   const route = useRoute();
+  const router = useRouter();
   const pageRef = ref(null);
   const books = ref([]);
 
@@ -140,6 +141,22 @@
     selectedOfferId.value = id;
   };
 
+  const closeModal = () => {
+    selectedOfferId.value = null;
+    if (route.query.offer) {
+      router.replace({ name: 'browse', query: {} });
+    }
+  };
+
+  /** Otwarcie modala z ?offer= (klik okładki na stronie głównej / logowaniu). */
+  function syncOfferFromQuery() {
+    const raw = route.query.offer;
+    const id = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : null;
+    selectedOfferId.value = id || null;
+  }
+
+  watch(() => route.query.offer, syncOfferFromQuery, { immediate: true });
+
   const cardDelayClass = (i) => `anim-d${(i % 5) + 1}`;
 </script>
 
@@ -217,7 +234,7 @@
       </main>
     </div>
 
-    <OfferModal :offer-id="selectedOfferId" @close="selectedOfferId = null" />
+    <OfferModal :offer-id="selectedOfferId" @close="closeModal" />
   </div>
 </template>
 
