@@ -1,11 +1,14 @@
 <script setup>
-  import { ref, computed, watch, onMounted } from 'vue';
+  import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+  import { useRoute } from 'vue-router';
+  import { OFFERS_CHANGED_EVENT } from '../lib/offers';
   import BookFiltersBrowseView from '../components/BookFiltersBrowseView.vue';
   import BookCard from '../components/BookCard.vue';
   import OfferModal from '../components/OfferModal.vue';
   import { userBooksApi } from '../lib/userBooks';
   import { mapUserBookToCard } from '../lib/mappers';
 
+  const route = useRoute();
   const books = ref([]);
   const total = ref(0);
   const loading = ref(false);
@@ -87,9 +90,30 @@
     }, 350);
   }, { deep: true });
 
-  onMounted(() => fetchBooks());
+  function refreshBrowse() {
+    page.value = 1;
+    fetchBooks();
+  }
 
-  const displayedBooks = computed(() => books.value);
+  watch(
+    () => route.name,
+    (name) => {
+      if (name === 'browse') refreshBrowse();
+    },
+    { immediate: true },
+  );
+
+  onMounted(() => {
+    window.addEventListener(OFFERS_CHANGED_EVENT, refreshBrowse);
+  });
+
+  onUnmounted(() => {
+    window.removeEventListener(OFFERS_CHANGED_EVENT, refreshBrowse);
+  });
+
+  const displayedBooks = computed(() =>
+    books.value.filter((b) => b.status === 'available'),
+  );
 
   const loadMore = () => {
     if (books.value.length >= total.value) return;

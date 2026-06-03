@@ -134,9 +134,9 @@
       <div v-if="item.type === 'sale' && item.price" class="lc-price">{{ item.price }} zł</div>
       <div class="lc-date">Wystawiono: {{ item.dateAdded }}</div>
       <div class="lc-status">
-        <span :class="['lc-dot', item.listStatus === 'active' ? 'lc-dot-active' : 'lc-dot-available']"></span>
-        <span :class="item.listStatus === 'active' ? 'lc-status-active' : 'lc-status-available'">
-          {{ item.listStatus === 'active' ? 'W trakcie transakcji' : 'Dostępna' }}
+        <span :class="['lc-dot', item.listStatus === 'active' ? 'lc-dot-active' : item.listStatus === 'completed' ? 'lc-dot-completed' : 'lc-dot-available']"></span>
+        <span :class="item.listStatus === 'active' ? 'lc-status-active' : item.listStatus === 'completed' ? 'lc-status-completed' : 'lc-status-available'">
+          {{ item.listStatus === 'active' ? 'W trakcie transakcji' : item.listStatus === 'completed' ? 'Zrealizowana' : 'Dostępna' }}
         </span>
       </div>
     </div>

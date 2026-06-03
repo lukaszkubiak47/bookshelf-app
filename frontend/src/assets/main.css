@@ -2493,12 +2493,20 @@ body {
   background: var(--accent);
 }
 
+.lc-dot-completed {
+  background: var(--text-3);
+}
+
 .lc-status-available {
   color: var(--success);
 }
 
 .lc-status-active {
   color: #856404;
+}
+
+.lc-status-completed {
+  color: var(--text-3);
 }
 
 .contact-note {

@@ -11,6 +11,7 @@ namespace Bookshelf.API.Services
     {
         private const int MaxCoverSizeBytes = 5 * 1024 * 1024;
         private static readonly string[] AllowedCoverContentTypes = ["image/jpeg", "image/png"];
+        private const string AvailableStatus = "available";
 
         private readonly AppDbContext _db;
 
@@ -35,8 +36,7 @@ namespace Bookshelf.API.Services
                 .Include(ub => ub.User)
                 .AsQueryable();
 
-            // Pokazujemy tylko oferty dostępne — wypożyczone/zarezerwowane znikają z listy do czasu zakończenia transakcji.
-            query = query.Where(ub => ub.Status == "available");
+            query = WhereBrowsable(query);
 
             // Filtry
             if (!string.IsNullOrWhiteSpace(type))
@@ -95,19 +95,23 @@ namespace Bookshelf.API.Services
                 .Include(ub => ub.Book)
                     .ThenInclude(b => b.Genre)
                 .Include(ub => ub.User)
+                .Include(ub => ub.TransactionRequests)
                 .FirstOrDefaultAsync(ub => ub.Id == id);
 
-            return userBook == null ? null : MapToDto(userBook);
+            if (userBook == null || !IsBrowsable(userBook))
+                return null;
+
+            return MapToDto(userBook);
         }
 
         public async Task<List<UserBookDto>> GetRecentAsync(int limit = 5)
         {
-            return await _db.UserBooks
+            var query = _db.UserBooks
                 .Include(ub => ub.Book)
                     .ThenInclude(b => b.Genre)
-                .Include(ub => ub.User)
-                // Tylko dostępne oferty (spójnie z "Przeglądaj" i statystyką activeOffers).
-                .Where(ub => ub.Status == "available")
+                .Include(ub => ub.User);
+
+            return await WhereBrowsable(query)
                 .OrderByDescending(ub => ub.CreatedAt)
                 .Take(limit)
                 .Select(ub => MapToDto(ub))
@@ -305,6 +309,17 @@ namespace Bookshelf.API.Services
             _db.UserBooks.Remove(userBook);
             await _db.SaveChangesAsync();
         }
+
+        private static IQueryable<UserBook> WhereBrowsable(IQueryable<UserBook> query) =>
+            query.Where(ub =>
+                ub.Status == AvailableStatus &&
+                !ub.TransactionRequests.Any(tr =>
+                    tr.Status == "accepted" || tr.Status == "done"));
+
+        private static bool IsBrowsable(UserBook userBook) =>
+            userBook.Status == AvailableStatus &&
+            !userBook.TransactionRequests.Any(tr =>
+                tr.Status == "accepted" || tr.Status == "done");
 
         private async Task<UserBook> GetOwnedUserBookAsync(Guid userId, Guid userBookId)
         {

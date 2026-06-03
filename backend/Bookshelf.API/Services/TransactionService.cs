@@ -16,6 +16,8 @@ namespace Bookshelf.API.Services
         private const string AvailableStatus = "available";
         private const string BorrowedStatus = "borrowed";
         private const string ReservedStatus = "reserved";
+        private const string CompletedStatus = "completed";
+        private const string SoldStatus = "sold";
 
         private readonly AppDbContext _db;
 
@@ -42,6 +44,19 @@ namespace Bookshelf.API.Services
             // Prośby przyjmujemy tylko dla dostępnych ofert
             if (userBook.Status != AvailableStatus)
                 throw new ConflictException("Ta oferta nie jest już dostępna");
+
+            // Jedna zaakceptowana prośba na ofertę — dopóki trwa transakcja, oferta znika z przeglądania
+            var hasAccepted = await _db.TransactionRequests.AnyAsync(tr =>
+                tr.UserBookId == dto.UserBookId && tr.Status == AcceptedStatus);
+
+            if (hasAccepted)
+                throw new ConflictException("Ta oferta nie jest już dostępna");
+
+            var hasCompleted = await _db.TransactionRequests.AnyAsync(tr =>
+                tr.UserBookId == dto.UserBookId && tr.Status == DoneStatus);
+
+            if (hasCompleted)
+                throw new ConflictException("Ta oferta została już zrealizowana");
 
             // Ten sam użytkownik nie może mieć drugiej aktywnej prośby pending na tę samą ofertę
             var pendingExists = await _db.TransactionRequests.AnyAsync(tr =>
@@ -134,6 +149,15 @@ namespace Bookshelf.API.Services
             if (transaction.Status != PendingStatus)
                 throw new ConflictException("Można zaakceptować tylko prośbę o statusie pending");
 
+            if (transaction.UserBook.Status != AvailableStatus)
+                throw new ConflictException("Ta oferta nie jest już dostępna");
+
+            var alreadyAccepted = await _db.TransactionRequests.AnyAsync(tr =>
+                tr.UserBookId == transaction.UserBookId && tr.Status == AcceptedStatus);
+
+            if (alreadyAccepted)
+                throw new ConflictException("Ta oferta ma już zaakceptowaną prośbę");
+
             // Zmień status prośby na accepted
             transaction.Status = AcceptedStatus;
             transaction.UpdatedAt = DateTime.UtcNow;
@@ -144,8 +168,7 @@ namespace Bookshelf.API.Services
             if (!string.IsNullOrWhiteSpace(dto.Message))
                 transaction.Message = dto.Message;
 
-            // Po akceptacji oferta nie jest już dostępna dla innych
-            transaction.UserBook.Status = transaction.Type == "sale" ? ReservedStatus : BorrowedStatus;
+            var offerStatus = transaction.Type == "sale" ? ReservedStatus : BorrowedStatus;
 
             // Wszystkie pozostałe pending dla tej samej oferty automatycznie odrzucamy
             var otherPendingTransactions = await _db.TransactionRequests
@@ -162,6 +185,7 @@ namespace Bookshelf.API.Services
             }
 
             await _db.SaveChangesAsync();
+            await SetOfferStatusAsync(transaction.UserBookId, offerStatus);
 
             var updated = await GetTransactionWithDetailsOrThrowAsync(transaction.Id);
             return MapToDto(updated);
@@ -193,15 +217,39 @@ namespace Bookshelf.API.Services
             if (transaction.Status != AcceptedStatus)
                 throw new ConflictException("Można zakończyć tylko zaakceptowaną transakcję");
 
-            // Dla MVP po zakończeniu każda oferta wraca jako available
             transaction.Status = DoneStatus;
             transaction.UpdatedAt = DateTime.UtcNow;
-            transaction.UserBook.Status = AvailableStatus;
+
+            var offerStatus = transaction.Type == "sale" ? SoldStatus : CompletedStatus;
+
+            var otherPending = await _db.TransactionRequests
+                .Where(tr =>
+                    tr.UserBookId == transaction.UserBookId &&
+                    tr.Id != transaction.Id &&
+                    tr.Status == PendingStatus)
+                .ToListAsync();
+
+            foreach (var other in otherPending)
+            {
+                other.Status = RejectedStatus;
+                other.UpdatedAt = DateTime.UtcNow;
+            }
 
             await _db.SaveChangesAsync();
+            await SetOfferStatusAsync(transaction.UserBookId, offerStatus);
 
             var updated = await GetTransactionWithDetailsOrThrowAsync(transaction.Id);
             return MapToDto(updated);
+        }
+
+        private async Task SetOfferStatusAsync(Guid userBookId, string status)
+        {
+            var rows = await _db.UserBooks
+                .Where(ub => ub.Id == userBookId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(ub => ub.Status, status));
+
+            if (rows == 0)
+                throw new NotFoundException("Nie znaleziono oferty");
         }
 
         private IQueryable<TransactionRequest> BuildTransactionDetailsQuery()

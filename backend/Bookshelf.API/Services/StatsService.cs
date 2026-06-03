@@ -27,7 +27,10 @@ namespace Bookshelf.API.Services
                     .Distinct()
                     .CountAsync(),
                 ActiveOffers = await _db.UserBooks
-                    .CountAsync(ub => ub.Status == AvailableStatus)
+                    .CountAsync(ub =>
+                        ub.Status == AvailableStatus &&
+                        !ub.TransactionRequests.Any(tr =>
+                            tr.Status == "accepted" || tr.Status == "done"))
             };
         }
     }

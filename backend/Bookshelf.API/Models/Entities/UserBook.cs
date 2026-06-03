@@ -16,7 +16,7 @@ namespace Bookshelf.API.Models.Entities
 
         [Required]
         [MaxLength(20)]
-        public string Status { get; set; } = "available"; // available, borrowed, reserved
+        public string Status { get; set; } = "available"; // available, borrowed, reserved, completed, sold
 
         [Required]
         [MaxLength(10)]

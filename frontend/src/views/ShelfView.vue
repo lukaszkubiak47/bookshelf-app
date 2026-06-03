@@ -7,6 +7,7 @@
   import { userBooksApi } from '../lib/userBooks';
   import { mapTransactionToShelfItem, mapUserBookToListed } from '../lib/mappers';
   import { ApiError } from '../lib/client';
+  import { notifyOffersChanged } from '../lib/offers';
 
   const router = useRouter();
 
@@ -88,6 +89,9 @@
         await transactionsApi.finish(payload.id);
       }
       await reloadTransactions();
+      if (payload.status === 'accepted' || payload.status === 'finish') {
+        notifyOffersChanged();
+      }
     } catch (err) {
       loadError.value = err instanceof ApiError ? err.message : 'Operacja nie powiodła się';
     }
