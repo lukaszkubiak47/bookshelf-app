@@ -1,3 +1,7 @@
+/**
+ * Typy odpowiedzi API (DTO) — odzwierciedlają kontrakty backendu ASP.NET.
+ * Komponenty UI zwykle dostają dane po mapowaniu w lib/mappers.ts.
+ */
 export interface ApiErrorBody {
   statusCode: number
   message: string

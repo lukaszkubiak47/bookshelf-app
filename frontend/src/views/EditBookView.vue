@@ -1,4 +1,5 @@
 <script setup>
+  /** Edycja wystawionej oferty (właściciel): typ, cena/warunki, opis, okładka — PUT userbooks/:id. */
   import { ref, reactive, onMounted } from 'vue';
   import { useRoute } from 'vue-router';
   import { userBooksApi } from '../lib/userBooks';

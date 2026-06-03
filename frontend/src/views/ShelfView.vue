@@ -1,4 +1,8 @@
 <script setup lang="ts">
+  /**
+   * Moja półka: transakcje (otrzymane/wysłane) + wystawione oferty.
+   * Akceptacja/zakończenie wywołuje notifyOffersChanged() — ukrywa ofertę w przeglądaj.
+   */
   import { ref, computed, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import BookFilters from '../components/BookFiltersShelfView.vue';
@@ -8,8 +12,11 @@
   import { mapTransactionToShelfItem, mapUserBookToListed } from '../lib/mappers';
   import { ApiError } from '../lib/client';
   import { notifyOffersChanged } from '../lib/offers';
+  import { usePageAnimations } from '../composables/useAnimations';
 
   const router = useRouter();
+  const pageRef = ref(null);
+  usePageAnimations({ scroll: true, ripple: true, root: pageRef });
 
   // Domyślnie "Wystawione" — po wejściu na półkę (i po dodaniu książki) user najpierw chce zobaczyć swoje oferty.
   const currentTab = ref<'received' | 'sent' | 'listed'>('listed');
@@ -112,8 +119,8 @@
 </script>
 
 <template>
-  <div class="shelf-page">
-    <div class="page-header">
+  <div ref="pageRef" class="shelf-page">
+    <div class="page-header anim">
       <h1 class="page-title">Moja półka</h1>
       <span class="page-count">Razem: {{ totalCount }}</span>
     </div>
@@ -121,7 +128,7 @@
     <p v-if="loadError" class="load-error">{{ loadError }}</p>
     <p v-if="loading" class="load-hint">Ładowanie…</p>
 
-    <div class="controls-row">
+    <div class="controls-row anim anim-d1">
       <div class="tabs">
         <button :class="['tab-btn', { active: currentTab === 'received' }]" @click="currentTab = 'received'">
           Otrzymane <span class="tab-cnt">({{ filteredReceived.length }})</span>

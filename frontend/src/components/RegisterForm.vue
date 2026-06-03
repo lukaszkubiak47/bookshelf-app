@@ -1,7 +1,8 @@
 <script setup>
+  /** Rejestracja konta — walidacja, siła hasła, authStore.register. */
   import { ref, reactive, computed } from 'vue';
   import { useRouter } from 'vue-router';
-  import { T, P } from '../assets/constants.js';
+  import { T, P, AUTH_STYLES } from '../assets/constants.js';
   import FormField from './FormField.vue';
   import { useAuthStore } from '../stores/auth';
   import { ApiError } from '../lib/api';
@@ -115,25 +116,21 @@
 </script>
 
 <template>
-  <div v-if="done" :style="{ textAlign: 'center', padding: '20px 0', animation: 'fadeScaleIn 0.4s ease both' }">
-    <div :style="{
-      width: '64px', height: '64px', borderRadius: '50%', background: '#EBF7F0',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      margin: '0 auto 20px', animation: 'successPulse 0.6s ease 0.2s',
-    }">
+  <div v-if="done" :style="AUTH_STYLES.successScreen">
+    <div :style="AUTH_STYLES.successIconCircle">
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" :stroke="T.success" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="P.check" />
     </div>
-    <h3 :style="{ fontFamily: '\'Playfair Display\', serif', fontSize: '22px', fontWeight: 700, color: T.t1, marginBottom: '8px' }">
+    <h3 :style="AUTH_STYLES.successTitle">
       Konto utworzone!
     </h3>
     <p :style="{ color: T.t2, fontSize: '14px' }">Przekierowanie za chwilę…</p>
   </div>
 
   <form v-else @submit.prevent="submit" :class="{ 'anim-shake': shaking }" noValidate>
-    <h2 :style="{ fontFamily: '\'Playfair Display\', serif', fontSize: '28px', fontWeight: 700, color: T.t1, marginBottom: '6px', lineHeight: 1.2 }">
+    <h2 :style="AUTH_STYLES.heading">
       Dołącz do nas
     </h2>
-    <p :style="{ color: T.t2, fontSize: '14px', marginBottom: '22px' }">Stwórz konto w kilka sekund</p>
+    <p :style="{ ...AUTH_STYLES.subheading, marginBottom: '22px' }">Stwórz konto w kilka sekund</p>
 
     <div :style="{ display: 'flex', flexDirection: 'column', gap: '13px' }">
       <div :style="{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }">
@@ -182,32 +179,14 @@
       </div>
     </div>
 
-    <p v-if="serverError" role="alert" :style="{
-      background: '#FBEDEC', color: T.danger, fontSize: '13px',
-      padding: '10px 12px', borderRadius: '8px', marginTop: '16px',
-      border: `1px solid ${T.danger}33`,
-    }">
+    <p v-if="serverError" role="alert" :style="{ ...AUTH_STYLES.errorAlert, marginTop: '16px' }">
       {{ serverError }}
     </p>
 
     <div :style="{ marginTop: '20px' }">
       <button type="submit" :disabled="loading" @mouseenter="hov = true" @mouseleave="hov = false"
-              :style="{
-                width: '100%', height: '46px',
-                background: loading ? '#7BAF9A' : (hov ? T.greenHov : T.green),
-                color: 'white', border: 'none', borderRadius: '8px',
-                fontSize: '15px', fontWeight: 600, fontFamily: '\'DM Sans\', sans-serif',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'background 0.18s ease',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                letterSpacing: '0.2px',
-              }">
-        <span v-if="loading" :style="{
-          width: '16px', height: '16px', flexShrink: 0,
-          border: '2px solid rgba(255,255,255,0.3)',
-          borderTopColor: 'white', borderRadius: '50%',
-          display: 'inline-block', animation: 'spin 0.7s linear infinite'
-        }" />
+              :style="AUTH_STYLES.submitButton(loading, hov)">
+        <span v-if="loading" :style="AUTH_STYLES.submitSpinner" />
         {{ loading ? 'Tworzenie konta…' : 'Stwórz konto' }}
       </button>
     </div>

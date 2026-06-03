@@ -1,3 +1,7 @@
+/**
+ * Mapowanie DTO z API → kształt wygodny dla Vue (karty, półka, profil).
+ * Tu też: URL okładek/avatarów, kolory zastępcze okładek, format dat.
+ */
 import type { TransactionDto, UserBookDto } from './types'
 import { resolveApiUrl } from './client'
 

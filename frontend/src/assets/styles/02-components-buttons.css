@@ -1,0 +1,74 @@
+/* Przyciski globalne: .btn, .btn-filled, .btn-outline — używane w całej aplikacji. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 22px;
+  border-radius: var(--r-btn);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s ease;
+  text-decoration: none;
+  border: none;
+  white-space: nowrap;
+  letter-spacing: .1px;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+}
+
+  .btn-outline:hover {
+    background: var(--primary);
+    color: #fff;
+  }
+
+.btn-filled {
+  background: var(--primary);
+  color: #fff;
+  border: 1.5px solid var(--primary);
+}
+
+  .btn-filled:hover {
+    background: var(--primary-h);
+    border-color: var(--primary-h);
+  }
+
+.btn-lg {
+  padding: 14px 32px;
+  font-size: 16px;
+}
+
+.btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.btn-ghost {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 2px 0;
+  transition: opacity .2s;
+}
+
+  .btn-ghost:hover {
+    opacity: .7;
+  }
+
+.btn-full {
+  width: 100%;
+}

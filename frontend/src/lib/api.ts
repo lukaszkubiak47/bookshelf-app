@@ -1,6 +1,7 @@
-// src/lib/api.ts
-// Cienki wrapper na fetch: wspólny prefiks /api (proxowany przez Vite do backendu),
-// automatyczny nagłówek Authorization oraz ujednolicona obsługa błędów (BookshelfException -> { statusCode, message }).
+/**
+ * Uproszczony fetch pod /api — używany wyłącznie przez stores/auth (login, register).
+ * Reszta aplikacji powinna iść przez client.ts → apiRequest.
+ */
 
 const BASE = '/api'
 const TOKEN_KEY = 'bookshelf_token'

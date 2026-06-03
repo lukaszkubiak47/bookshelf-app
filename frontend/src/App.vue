@@ -1,4 +1,7 @@
 <script setup>
+  /**
+   * Główny layout: nawigacja (oprócz /logowanie), treść z routera, stopka.
+   */
   import AppNavbar from './components/AppNavbar.vue'
   import AppFooter from './components/AppFooter.vue'
   import { RouterView } from 'vue-router'

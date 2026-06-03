@@ -1,6 +1,8 @@
 <script setup>
+  /** Lewa kolumna /logowanie: branding, animowane okładki, statystyki z API. */
   import { computed, onMounted } from 'vue';
-  import { T, P } from '../assets/constants';
+  import { T, P, AUTH_DEMO_BOOK_BADGE } from '../assets/constants';
+  import { offerBrowseLabel } from '../lib/offerTypes';
   import { useStatsStore } from '../stores/stats';
 
   const statsStore = useStatsStore();
@@ -9,10 +11,23 @@
   const fmt = (n) => (n == null ? '—' : n.toLocaleString('pl-PL'));
 
   const books = [
-    { id: 17, title: 'Mistrz i Małgorzata', author: 'M. Bułhakow', badge: 'Do wymiany', badgeColor: T.gold, badgeTxt: T.t1 },
-    { id: 43, title: 'Dżuma', author: 'A. Camus', badge: 'Do wypożyczenia', badgeColor: T.green, badgeTxt: 'white' },
-    { id: 28, title: 'Sto lat samotności', author: 'G.G. Márquez', badge: 'Do sprzedaży', badgeColor: '#2C5F8A', badgeTxt: 'white' },
+    { id: 17, title: 'Mistrz i Małgorzata', author: 'M. Bułhakow', type: 'swap' },
+    { id: 43, title: 'Dżuma', author: 'A. Camus', type: 'loan' },
+    { id: 28, title: 'Sto lat samotności', author: 'G.G. Márquez', type: 'sale' },
   ];
+
+  const demoBadgeStyle = (type) => {
+    const colors = AUTH_DEMO_BOOK_BADGE[type] ?? { bg: T.green, text: 'white' };
+    return {
+      background: colors.bg,
+      color: colors.text,
+      fontSize: '9px',
+      fontWeight: 600,
+      letterSpacing: '0.4px',
+      padding: '3px 7px',
+      borderRadius: '4px',
+    };
+  };
 
   const spreads = [
     { transform: 'rotate(-9deg) translate(-22px, 10px)', z: 1, float: 'float-a' },
@@ -93,14 +108,8 @@
         }">
           <img :src="`https://picsum.photos/150/200?random=${book.id}`" :alt="book.title" :style="{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }" />
 
-          <div :style="{
-            position: 'absolute', top: '8px', left: '8px',
-            background: book.badgeColor,
-            color: book.badgeTxt,
-            fontSize: '9px', fontWeight: 600, letterSpacing: '0.4px',
-            padding: '3px 7px', borderRadius: '4px',
-          }">
-            {{ book.badge }}
+          <div :style="{ position: 'absolute', top: '8px', left: '8px', ...demoBadgeStyle(book.type) }">
+            {{ offerBrowseLabel(book.type) }}
           </div>
 
           <div :style="{

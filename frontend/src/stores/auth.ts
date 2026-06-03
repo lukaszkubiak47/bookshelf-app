@@ -1,4 +1,8 @@
-// src/stores/auth.ts
+/**
+ * Stan sesji użytkownika (JWT + dane w localStorage).
+ * Używany przez navbar, guard routera, formularze logowania i profil.
+ * Logowanie/rejestracja idą przez apiFetch (lib/api.ts) — starsza warstwa HTTP.
+ */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { apiFetch } from '../lib/api'
@@ -75,7 +79,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(USER_KEY)
   }
 
-  // NOWA METODA: Synchronizuje zaktualizowany profil z backendu ze stanem aplikacji
+  /** Po zapisie profilu — aktualizuje user w pamięci i localStorage (np. nick w navbarze). */
   function syncFromProfile(updatedUser: User) {
     user.value = updatedUser
     localStorage.setItem(USER_KEY, JSON.stringify(updatedUser))

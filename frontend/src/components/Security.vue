@@ -1,4 +1,5 @@
 <script setup>
+  /** Zmiana hasła w profilu — rozwijana sekcja, PUT /api/users/me/password. */
   import { ref, reactive, computed } from 'vue';
   import { usersApi } from '../lib/users';
   import { ApiError } from '../lib/client';

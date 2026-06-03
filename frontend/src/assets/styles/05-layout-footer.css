@@ -1,0 +1,37 @@
+/* Stopka aplikacji (AppFooter) oraz wariant na stronie auth. */
+.footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 20px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary);
+  font-family: 'Playfair Display', serif;
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.footer-copy {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.footer-copy-auth {
+  position: fixed;
+  bottom: 24px;
+  right: 48px;
+  font-size: 12px;
+  color: var(--text-3);
+  z-index: 10;
+  pointer-events: none;
+}

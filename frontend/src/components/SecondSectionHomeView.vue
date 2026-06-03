@@ -1,11 +1,17 @@
 <script setup>
-  import { ref, onMounted } from 'vue';
+  /** Strona główna: siatka ostatnich ofert z API (GET /api/userbooks/recent). */
+  import { ref, onMounted, watch, nextTick } from 'vue';
   import { RouterLink } from 'vue-router';
   import { userBooksApi } from '../lib/userBooks';
   import { mapUserBookToCard } from '../lib/mappers';
+  import { usePageAnimations, observeAnimationsIn } from '../composables/useAnimations';
+  import { offerBadgeClass, offerBrowseLabel } from '../lib/offerTypes';
 
   const recentBooks = ref([]);
   const loadingRecent = ref(true);
+  const sectionRef = ref(null);
+
+  usePageAnimations({ hero: false, scroll: true, ripple: true, root: sectionRef });
 
   onMounted(async () => {
     try {
@@ -18,59 +24,20 @@
     }
   });
 
-  const badgeClass = (type) => ({ loan: 'badge-loan', swap: 'badge-swap', sale: 'badge-sale' }[type] || '');
-  const badgeText = (type) => ({ loan: 'Do wypożyczenia', swap: 'Do wymiany', sale: 'Do sprzedaży' }[type] || '');
-
-  // ── Hero animates immediately, staggered by delay classes ──
-  const heroEls = document.querySelectorAll('.hero');
-  heroEls.forEach(el => {
-    // small tick so the browser registers the initial state
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      el.classList.add('is-visible');
-    }));
+  watch(recentBooks, async () => {
+    await nextTick();
+    if (sectionRef.value) observeAnimationsIn(sectionRef.value);
   });
 
-  // ── Everything else animates on scroll ──
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-visible');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1, rootMargin: '0px 0px -32px 0px' });
-
-  document.querySelectorAll(':not(.hero)').forEach(el => observer.observe(el));
-
-  // ── Button ripple feedback ──
-  document.querySelectorAll('.btn').forEach(btn => {
-    btn.addEventListener('click', function (e) {
-      const r = document.createElement('span');
-      const rect = this.getBoundingClientRect();
-      const size = Math.max(rect.width, rect.height);
-      Object.assign(r.style, {
-        position: 'absolute', borderRadius: '50%',
-        width: size + 'px', height: size + 'px',
-        left: (e.clientX - rect.left - size / 2) + 'px',
-        top: (e.clientY - rect.top - size / 2) + 'px',
-        background: 'rgba(255,255,255,.25)',
-        transform: 'scale(0)',
-        animation: 'ripple .5s linear',
-        pointerEvents: 'none',
-      });
-      this.style.position = 'relative';
-      this.style.overflow = 'hidden';
-      this.appendChild(r);
-      setTimeout(() => r.remove(), 500);
-    });
-  });
+  const badgeClass = (type) => offerBadgeClass(type);
+  const badgeText = (type) => offerBrowseLabel(type);
+  const delayClass = (i) => `anim-d${Math.min(i + 1, 5)}`;
 </script>
 
 <template>
-  <!-- ════════════════════════ ŚWIEŻE OFERTY ════════════════════════ -->
-  <section class="section">
+  <section ref="sectionRef" class="section">
     <div class="section-inner">
-      <div class="section-header">
+      <div class="section-header anim">
         <h2 class="section-title">Świeże oferty</h2>
         <RouterLink to="/przegladanie" class="section-link">
           Zobacz wszystkie
@@ -84,7 +51,11 @@
       <p v-else-if="recentBooks.length === 0" class="section-hint">Brak ofert — dodaj pierwszą książkę!</p>
 
       <div v-else class="books-grid">
-        <div v-for="book in recentBooks" :key="book.id" class="book-card-wrap">
+        <div
+          v-for="(book, i) in recentBooks"
+          :key="book.id"
+          :class="['book-card-wrap', 'anim', delayClass(i)]"
+        >
           <RouterLink :to="'/przegladanie'" class="book-card">
             <div class="book-cover-wrap">
               <img :src="book.coverUrl || `https://picsum.photos/180/240?random=${book.img}`" :alt="book.title" class="book-cover">
@@ -103,7 +74,7 @@
             </div>
           </div>
         </div>
-      </div><!-- /books-grid -->
+      </div>
     </div>
   </section>
 </template>

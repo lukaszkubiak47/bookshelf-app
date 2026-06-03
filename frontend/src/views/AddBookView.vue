@@ -1,12 +1,20 @@
 <script setup>
+  /**
+   * Kreator dodawania oferty (2 kroki): wyszukiwanie Google Books → typ i szczegóły oferty.
+   * Zapis: POST książki (jeśli nowa) + POST userbooks + opcjonalnie okładka.
+   */
   import { ref, reactive, onMounted, watch } from 'vue';
   import { booksApi } from '../lib/books';
   import { userBooksApi } from '../lib/userBooks';
   import { mapBookSearchResult, seedFromGuid, coverColor } from '../lib/mappers';
   import { ApiError } from '../lib/client';
+  import { useWizardStepTransition } from '../composables/useWizardStepTransition';
+  import { usePageAnimations } from '../composables/useAnimations';
 
-  /* ────── STAN APLIKACJI ────── */
   const currentStep = ref(1);
+  const wizardRef = ref(null);
+  const { goToStep, wizardTransition } = useWizardStepTransition(currentStep);
+  usePageAnimations({ scroll: false, ripple: true, root: wizardRef });
   const searchQuery = ref('');
   const isLoading = ref(false);
   const showResults = ref(false);
@@ -243,7 +251,7 @@
 </script>
 
 <template>
-  <div class="wizard-outer">
+  <div ref="wizardRef" class="wizard-outer">
 
     <div class="progress-bar">
       <div class="pb-step" :class="{ active: currentStep === 1, done: currentStep > 1 }">
@@ -264,7 +272,8 @@
       </div>
     </div>
 
-    <div v-if="currentStep === 1" class="wizard-card animate-in">
+    <Transition :name="wizardTransition" mode="out-in">
+    <div v-if="currentStep === 1" key="wizard-step-1" class="wizard-card">
       <div class="wcard-head">
         <h2 class="wcard-title">Znajdź swoją książkę</h2>
         <p class="wcard-desc">Wyszukaj książkę, którą chcesz wystawić. Pobierzemy dane automatycznie.</p>
@@ -400,7 +409,7 @@
 
         <div class="step-footer" style="margin-top:24px">
           <a href="#" style="font-size:13px;color:var(--text-3);text-decoration:none">Anuluj</a>
-          <button class="btn btn-filled btn-lg" :disabled="!form.selectedBook" @click="currentStep = 2">
+          <button class="btn btn-filled btn-lg" :disabled="!form.selectedBook" @click="goToStep(2)">
             Dalej
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
           </button>
@@ -408,7 +417,7 @@
       </div>
     </div>
 
-    <div v-if="currentStep === 2" class="wizard-card animate-in">
+    <div v-else key="wizard-step-2" class="wizard-card">
       <div class="wcard-head">
         <h2 class="wcard-title">Jak chcesz udostępnić tę książkę?</h2>
         <p class="wcard-desc">Wybierz typ oferty i uzupełnij szczegóły. Możesz to zmienić później.</p>
@@ -431,7 +440,7 @@
             <div class="recap-title">{{ form.selectedBook.title }}</div>
             <div class="recap-author">{{ form.selectedBook.author }}</div>
           </div>
-          <a href="#" class="recap-change" @click.prevent="currentStep = 1">← Zmień</a>
+          <a href="#" class="recap-change" @click.prevent="goToStep(1)">← Zmień</a>
         </div>
 
         <div v-if="form.selectedBook?.googleBooksId" class="form-field" style="margin-bottom:18px">
@@ -560,7 +569,7 @@
         </div>
 
         <div class="step-footer" style="margin-top:28px">
-          <button class="btn btn-outline" @click="currentStep = 1">
+          <button class="btn btn-outline" @click="goToStep(1)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
             Wróć
           </button>
@@ -572,6 +581,7 @@
         </div>
       </div>
     </div>
+    </Transition>
   </div>
 
   <div class="success-overlay" :class="{ open: showSuccess }">

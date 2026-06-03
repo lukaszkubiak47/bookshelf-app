@@ -1,4 +1,5 @@
 <script setup>
+  /** Stopka z logo i copyright; ukryta na /logowanie. */
   import { useRoute } from 'vue-router';
   const route = useRoute();
 </script>

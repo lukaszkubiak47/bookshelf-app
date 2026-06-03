@@ -1,6 +1,8 @@
 <script setup>
+  /** Karta pojedynczej oferty na liście przeglądaj (klik → modal). */
   import { ref, computed } from 'vue';
   import { coverColor } from '../lib/mappers';
+  import { offerBadgeClass, offerBrowseLabel } from '../lib/offerTypes';
 
   const props = defineProps({
     book: {
@@ -14,15 +16,8 @@
   // Okładka z coverUrl, która nie załaduje się (np. Google blokuje referer z localhost) -> kafelek zastępczy.
   const coverFailed = ref(false);
 
-  const badgeClass = computed(() => {
-    const mapping = { loan: 'badge-loan', swap: 'badge-swap', sale: 'badge-sale' };
-    return mapping[props.book.type] || '';
-  });
-
-  const badgeText = computed(() => {
-    const mapping = { loan: 'Do wypożyczenia', swap: 'Do wymiany', sale: 'Do sprzedaży' };
-    return mapping[props.book.type] || '';
-  });
+  const badgeClass = computed(() => offerBadgeClass(props.book.type));
+  const badgeText = computed(() => offerBrowseLabel(props.book.type));
 
   const ownerInitial = computed(() => (props.book.owner?.[0] || '?').toUpperCase());
 </script>

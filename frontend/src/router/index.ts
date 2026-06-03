@@ -1,4 +1,6 @@
-// src/router/index.ts
+/**
+ * Definicja tras URL → widoków oraz strażnik logowania (meta.requiresAuth / guestOnly).
+ */
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import BrowseView from '../views/BrowseView.vue'
@@ -14,46 +16,15 @@ import { useAuthStore } from '../stores/auth'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView
-    },
-    {
-      path: '/przegladanie',
-      name: 'browse',
-      component: BrowseView
-    },
-    {
-      path: '/logowanie',
-      name: 'auth',
-      component: AuthView,
-      meta: { guestOnly: true }
-    },
-    {
-      path: '/polka',
-      name: 'shelf',
-      component: ShelfView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/dodawanie',
-      name: 'addbook',
-      component: AddBookView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/polka/edytuj/:id',
-      name: 'editbook',
-      component: EditBookView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/profil',
-      name: 'profile',
-      component: ProfileView,
-      meta: { requiresAuth: true }
-    },
+  // --- Publiczne ---
+    { path: '/', name: 'home', component: HomeView },
+    { path: '/przegladanie', name: 'browse', component: BrowseView },
+    { path: '/logowanie', name: 'auth', component: AuthView, meta: { guestOnly: true } },
+    // --- Wymagają zalogowania ---
+    { path: '/polka', name: 'shelf', component: ShelfView, meta: { requiresAuth: true } },
+    { path: '/dodawanie', name: 'addbook', component: AddBookView, meta: { requiresAuth: true } },
+    { path: '/polka/edytuj/:id', name: 'editbook', component: EditBookView, meta: { requiresAuth: true } },
+    { path: '/profil', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
     {
       path: '/regulamin',
       name: 'terms',

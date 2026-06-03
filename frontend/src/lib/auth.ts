@@ -1,3 +1,7 @@
+/**
+ * Endpointy auth przez client.ts (alternatywa dla stores/auth + lib/api.ts).
+ * Obecnie store auth nie korzysta z tego pliku — zostawiony dla ewentualnej unifikacji HTTP.
+ */
 import { apiRequest } from './client'
 import type { AuthResponse } from './types'
 

@@ -1,4 +1,5 @@
 <script setup>
+  /** Panel filtrów bocznych na stronie Przeglądaj (typ, gatunek, miasto, szukaj). */
   defineProps({
     search: String,
     city: String,

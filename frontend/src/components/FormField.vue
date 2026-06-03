@@ -1,4 +1,5 @@
 <script setup>
+  /** Pole formularza auth z ikoną SVG, walidacją wizualną i przełącznikiem hasła. */
   import { ref, computed } from 'vue';
   import { T, P } from '../assets/constants.js';
 

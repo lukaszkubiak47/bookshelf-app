@@ -1,0 +1,51 @@
+/* Zmienne design systemu, reset i typografia bazowa (cała aplikacja). */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #FAF7F2;
+  --surface: #FFFFFF;
+  --primary: #2D6A4F;
+  --primary-h: #245A42;
+  --accent: #D4A843;
+  --blue: #2C5F8A;
+  --text-1: #2C1810;
+  --text-2: #7A6652;
+  --text-3: #B5A090;
+  --border: #E8DDD4;
+  --tag-bg: #F0E8DF;
+  --danger: #C0392B;
+  --success: #27AE60;
+  --warning: #E67E22;
+  --st-pending-bg: #FFF3CD;
+  --st-pending-tx: #856404;
+  --st-accept-bg: #D1E7DD;
+  --st-accept-tx: #0A3622;
+  --st-done-bg: #E2E3E5;
+  --st-done-tx: #41464B;
+  --st-reject-bg: #F8D7DA;
+  --st-reject-tx: #842029;
+  --shadow: 0 2px 8px rgba(44,24,16,.08);
+  --shadow-h: 0 4px 16px rgba(44,24,16,.12);
+  --r-card: 12px;
+  --r-btn: 8px;
+  --r-input: 8px;
+  --nav-h: 60px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text-1);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}

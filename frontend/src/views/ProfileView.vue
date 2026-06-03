@@ -1,4 +1,5 @@
 <script setup>
+  /** Profil użytkownika: nagłówek + PersonalData + Security; toast po zapisie. */
   import { ref, reactive, computed, onMounted } from 'vue';
   import PersonalData from '../components/PersonalData.vue';
   import Security from '../components/Security.vue';

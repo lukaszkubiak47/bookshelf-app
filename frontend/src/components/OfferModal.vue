@@ -1,4 +1,5 @@
 <script setup>
+  /** Modal szczegółów oferty + wysłanie prośby o transakcję (POST /api/transactions). */
   import { ref, watch, computed } from 'vue';
   import { useRouter } from 'vue-router';
   import { userBooksApi } from '../lib/userBooks';
@@ -6,6 +7,7 @@
   import { realCoverUrl, coverColor, avatarImageUrl } from '../lib/mappers';
   import { ApiError } from '../lib/client';
   import { useAuthStore } from '../stores/auth';
+  import { offerBadgeMeta } from '../lib/offerTypes';
 
   const props = defineProps({
     offerId: { type: String, default: null },
@@ -20,24 +22,17 @@
   const error = ref('');
   const coverFailed = ref(false);
 
-  // Stan wysyłania prośby
   const sending = ref(false);
   const sent = ref(false);
   const sendError = ref('');
 
-  // Nie można złożyć prośby o własną ofertę.
   const isOwn = computed(() => !!offer.value && offer.value.owner.id === auth.user?.id);
 
   const isUnavailable = computed(() => !!offer.value && offer.value.status !== 'available');
 
-  const badge = computed(() => {
-    const map = {
-      loan: { cls: 'badge-loan', label: 'Do wypożyczenia' },
-      swap: { cls: 'badge-swap', label: 'Do wymiany' },
-      sale: { cls: 'badge-sale', label: 'Do sprzedaży' },
-    };
-    return map[offer.value?.transactionType] || { cls: '', label: '' };
-  });
+  const badge = computed(() =>
+    offerBadgeMeta(offer.value?.transactionType ?? ''),
+  );
 
   const coverUrl = computed(() => realCoverUrl(offer.value?.book?.coverUrl));
 

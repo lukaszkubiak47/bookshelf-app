@@ -1,3 +1,4 @@
+/** Szablon Pinii z vue create — nieużywany w Bookshelf; można usunąć. */
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 

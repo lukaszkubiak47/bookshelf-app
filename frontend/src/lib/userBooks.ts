@@ -1,3 +1,6 @@
+/**
+ * Oferty użytkowników (UserBooks): przeglądanie, moja półka, CRUD, okładka.
+ */
 import { apiRequest } from './client'
 import type { PagedResult, UserBookDto } from './types'
 

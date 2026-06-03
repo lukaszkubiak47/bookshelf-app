@@ -1,4 +1,7 @@
-/** Sygnał do odświeżenia listy ofert w przeglądaniu (np. po akceptacji/zakończeniu na półce). */
+/**
+ * Zdarzenie między widokami: po zmianie statusu oferty na półce
+ * BrowseView ponownie pobiera listę (ukrywa zajęte/zakończone oferty).
+ */
 export const OFFERS_CHANGED_EVENT = 'bookshelf:offers-changed';
 
 export function notifyOffersChanged(): void {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  // Automatyczne dwukierunkowe bindowanie w Vue 3
+  /** Filtry statusu i typu na zakładkach transakcji (Moja półka). */
   const statusFilter = defineModel<string>('statusFilter');
   const typeFilter = defineModel<string>('typeFilter');
 </script>

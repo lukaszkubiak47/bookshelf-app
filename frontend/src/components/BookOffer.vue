@@ -1,7 +1,17 @@
 <script setup lang="ts">
+  /**
+   * Karta na „Moja półka”: tryb transakcji (akceptuj/odrzuć/zakończ) lub wystawiona oferta (edytuj/usuń).
+   */
   import { ref, computed, onMounted, onUnmounted } from 'vue';
   import { coverColor } from '../lib/mappers';
   import { transactionsApi } from '../lib/transactions';
+  import {
+    offerBrowseLabel,
+    offerListedBadgeClass,
+    offerTxCardClass,
+    offerTxLabel,
+    offerTxTypeClass,
+  } from '../lib/offerTypes';
 
   const props = withDefaults(defineProps<{
     item: any;
@@ -14,17 +24,14 @@
 
   const emit = defineEmits(['action', 'delete', 'edit']);
 
-  // State
   const isMenuOpen = ref(false);
   const isAcceptFormOpen = ref(false);
   const isRejectConfirmOpen = ref(false);
   const flashClass = ref('');
   const isDeletedAnimate = ref(false);
-  // Okładka z coverUrl, która nie załaduje się (np. blokada Google na localhost) -> kafelek zastępczy.
   const coverFailed = ref(false);
   const formReturnDate = ref(props.item.returnDate ? props.item.returnDate.split('.').reverse().join('-') : '2026-06-28');
 
-  // Computed dla statusów transakcji
   const isDimmed = computed(() => props.item.status === 'done' || props.item.status === 'rejected');
   const statusMeta = computed(() => {
     const meta: Record<string, any> = {
@@ -43,7 +50,6 @@
     return {};
   });
 
-  // Metody
   const toggleDropdown = () => {
     isMenuOpen.value = !isMenuOpen.value;
   };
@@ -80,10 +86,9 @@
     triggerAction('rejected', 'r');
   };
 
-  // Inicjał kontrahenta jako fallback avatara (gdy brak avatarUrl).
   const counterpartyInitial = computed(() => (props.item.nick?.[0] || '?').toUpperCase());
 
-  // Dane kontaktowe drugiej strony — dostępne dopiero po akceptacji (accepted/done).
+  /** Email/nick drugiej strony — ładowane po akceptacji transakcji. */
   const contact = ref<{ username: string; email: string } | null>(null);
 
   async function loadContact() {
@@ -111,8 +116,8 @@
         <span class="cover-fallback-title">{{ item.bookTitle }}</span>
         <span class="cover-fallback-author">{{ item.bookAuthor }}</span>
       </div>
-      <span :class="['lc-badge', item.type === 'loan' ? 'lcb-loan' : item.type === 'swap' ? 'lcb-swap' : 'lcb-sale']">
-        {{ item.type === 'loan' ? 'Do wypożyczenia' : item.type === 'swap' ? 'Do wymiany' : 'Do sprzedaży' }}
+      <span :class="['lc-badge', offerListedBadgeClass(item.type)]">
+        {{ offerBrowseLabel(item.type) }}
       </span>
       <button class="lc-menu-btn" @click.stop="toggleDropdown" aria-label="Opcje">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="2" r="1.3" /><circle cx="7" cy="7" r="1.3" /><circle cx="7" cy="12" r="1.3" /></svg>
@@ -142,7 +147,7 @@
     </div>
   </div>
 
-  <div v-else :class="['tx-card', `t-${item.type}`, { dimmed: isDimmed, 'pending-pulse': item.status === 'pending' }, flashClass]">
+  <div v-else :class="['tx-card', offerTxCardClass(item.type), { dimmed: isDimmed, 'pending-pulse': item.status === 'pending' }, flashClass]">
     <div class="tx-main">
       <div class="tx-left">
         <img v-if="item.coverUrl && !coverFailed" :src="item.coverUrl" :alt="item.bookTitle" class="tx-cover" @error="coverFailed = true">
@@ -154,8 +159,8 @@
       </div>
       <div class="tx-mid">
         <div class="tx-row1">
-          <span :class="['type-badge', item.type === 'loan' ? 'type-loan' : item.type === 'swap' ? 'type-swap' : 'type-sale']">
-            {{ item.type === 'loan' ? 'Wypożyczenie' : item.type === 'swap' ? 'Wymiana' : 'Sprzedaż' }}
+          <span :class="['type-badge', offerTxTypeClass(item.type)]">
+            {{ offerTxLabel(item.type) }}
           </span>
           <div class="tx-dir">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
