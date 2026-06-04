@@ -31,6 +31,9 @@ namespace Bookshelf.API.Models.Entities
         [MaxLength(300)]
         public string? ExchangeDetails { get; set; } // np. "Szuka: Fantasy"
 
+        [MaxLength(2000)]
+        public string? Description { get; set; } // opis specyficzny dla tej oferty; null => fallback na Book.Description
+
         public byte[]? CustomCoverImageData { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
