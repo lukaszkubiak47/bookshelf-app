@@ -2,7 +2,9 @@
   /** Lewa kolumna /logowanie: branding, animowane okładki (prawdziwe oferty), statystyki z API. */
   import { ref, computed, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
-  import { T, P, AUTH_DEMO_BOOK_BADGE } from '../assets/constants';
+  import { Icon } from '@iconify/vue';
+  import { T, AUTH_DEMO_BOOK_BADGE } from '../assets/constants';
+  import { formIcons } from '../lib/icons';
   import { offerBrowseLabel } from '../lib/offerTypes';
   import { openBrowseOffer } from '../lib/browseNavigation';
   import { coverColor } from '../lib/showcaseOffers';
@@ -89,7 +91,7 @@
           border: '1px solid rgba(255,255,255,0.2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="P.book" />
+          <Icon :icon="formIcons.book" width="26" height="26" color="white" />
         </div>
         <span :style="{ fontFamily: '\'Playfair Display\', serif', fontSize: '34px', fontWeight: 700, color: 'white', letterSpacing: '-0.5px' }">
           Bookshelf
@@ -178,7 +180,7 @@
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 8px',
         }">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="P[s.icon]" />
+          <Icon :icon="formIcons[s.icon]" width="18" height="18" color="rgba(255,255,255,0.7)" />
         </div>
         <p :style="{ fontFamily: '\'Playfair Display\', serif', color: 'white', fontSize: '20px', fontWeight: 700, lineHeight: 1 }">
           {{ s.value }}

@@ -2,7 +2,9 @@
   /** Formularz logowania — wywołuje authStore.login, potem przekierowanie na /. */
   import { ref, reactive, computed } from 'vue';
   import { useRouter } from 'vue-router';
-  import { T, P, AUTH_STYLES } from '../assets/constants';
+  import { Icon } from '@iconify/vue';
+  import { T, AUTH_STYLES } from '../assets/constants';
+  import { formIcons } from '../lib/icons';
   import FormField from './FormField.vue';
   import { useAuthStore } from '../stores/auth';
   import { ApiError, apiFetch } from '../lib/api';
@@ -217,7 +219,7 @@
 <template>
   <div v-if="done" :style="AUTH_STYLES.successScreen">
     <div :style="AUTH_STYLES.successIconCircle">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" :stroke="T.success" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="P.check" />
+      <Icon :icon="formIcons.check" width="30" height="30" :color="T.success" />
     </div>
     <h3 :style="AUTH_STYLES.successTitle">
       Zalogowano pomyślnie!
@@ -245,7 +247,7 @@
 
     <div v-if="resetSuccess" class="anim-reset-success" :style="{ textAlign: 'center', padding: '12px 0 4px' }">
       <div class="anim-reset-success-icon" :style="{ width: '54px', height: '54px', borderRadius: '50%', background: '#EBF7F0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" :stroke="T.success" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" v-html="P.check" />
+        <Icon :icon="formIcons.check" width="26" height="26" :color="T.success" />
       </div>
       <h4 :style="{ color: T.t1, fontSize: '18px', marginBottom: '8px' }">Hasło zostało zmienione</h4>
       <p :style="{ color: T.t2, fontSize: '13px', marginBottom: '18px' }">Możesz teraz zalogować się nowym hasłem.</p>

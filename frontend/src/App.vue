@@ -4,6 +4,7 @@
    * Provide: globalny toast + tokeny designu (constants.js).
    */
   import { provide } from 'vue'
+  import { Icon } from '@iconify/vue'
   import AppNavbar from './components/AppNavbar.vue'
   import AppFooter from './components/AppFooter.vue'
   import { RouterView } from 'vue-router'
@@ -28,7 +29,8 @@
       role="status"
       aria-live="polite"
     >
-      <span v-html="toast.icon"></span> {{ toast.message }}
+      <Icon v-if="toast.icon" :icon="toast.icon" width="14" height="14" color="white" />
+      {{ toast.message }}
     </div>
   </div>
 </template>

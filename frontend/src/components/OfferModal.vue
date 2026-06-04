@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
   /** Modal szczegółów oferty + wysłanie prośby o transakcję (POST /api/transactions). */
   import { ref, watch, computed } from 'vue';
   import { useRouter } from 'vue-router';
@@ -8,16 +8,18 @@
   import { ApiError } from '../lib/client';
   import { useAuthStore } from '../stores/auth';
   import { offerBadgeMeta } from '../lib/offerTypes';
+  import type { UserBookDto } from '../lib/types';
 
-  const props = defineProps({
-    offerId: { type: String, default: null },
-  });
-  const emit = defineEmits(['close']);
+  const props = withDefaults(
+    defineProps<{ offerId?: string | null }>(),
+    { offerId: null },
+  );
+  const emit = defineEmits<{ close: [] }>();
 
   const router = useRouter();
   const auth = useAuthStore();
 
-  const offer = ref(null);
+  const offer = ref<UserBookDto | null>(null);
   const loading = ref(false);
   const error = ref('');
   const coverFailed = ref(false);
@@ -44,17 +46,17 @@
   const ownerInitial = computed(() => (offer.value?.owner?.username?.[0] || '?').toUpperCase());
 
   const exchangeConditionLabel = computed(() => {
-    const map = {
+    const map: Record<string, string> = {
       anything: 'Cokolwiek pasującego',
       specific_book: 'Konkretna książka',
       genre: 'Książki danego gatunku',
       free: 'Oddam za darmo',
     };
     const c = offer.value?.exchangeCondition;
-    return c ? (map[c] || c) : null;
+    return c ? (map[c] ?? c) : null;
   });
 
-  async function load(id) {
+  async function load(id: string) {
     loading.value = true;
     error.value = '';
     offer.value = null;
@@ -72,9 +74,13 @@
     }
   }
 
-  watch(() => props.offerId, (id) => {
-    if (id) load(id);
-  }, { immediate: true });
+  watch(
+    () => props.offerId,
+    (id) => {
+      if (id) load(id);
+    },
+    { immediate: true },
+  );
 
   async function sendRequest() {
     // Trzeba być zalogowanym — w przeciwnym razie przekierowanie na logowanie.

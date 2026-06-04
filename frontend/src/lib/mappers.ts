@@ -55,6 +55,8 @@ export function coverColor(title: string): string {
   return COVER_COLORS[Math.abs(hash) % COVER_COLORS.length] ?? '#445C4A'
 }
 
+export type BookCardModel = ReturnType<typeof mapUserBookToCard>
+
 export function mapUserBookToCard(dto: UserBookDto) {
   const imgSeed = seedFromGuid(dto.book.id, 80)
   const avSeed = seedFromGuid(dto.owner.id, 70)

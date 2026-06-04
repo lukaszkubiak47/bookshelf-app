@@ -1,9 +1,9 @@
-<script setup>
+<script setup lang="ts">
   /**
    * Przeglądaj książki: lista publicznych ofert, filtry, sortowanie, modal szczegółów.
    * Po akceptacji/zakończeniu transakcji odświeża listę (OFFERS_CHANGED_EVENT).
    */
-  import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+  import { ref, computed, watch, watchEffect, onMounted, onUnmounted, nextTick } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { OFFERS_CHANGED_EVENT } from '../lib/offers';
   import { usePageAnimations, observeAnimationsIn } from '../composables/useAnimations';
@@ -11,14 +11,14 @@
   import BookCard from '../components/BookCard.vue';
   import OfferModal from '../components/OfferModal.vue';
   import { userBooksApi } from '../lib/userBooks';
-  import { mapUserBookToCard } from '../lib/mappers';
+  import { mapUserBookToCard, type BookCardModel } from '../lib/mappers';
   import { useAuthStore } from '../stores/auth';
 
   const route = useRoute();
   const auth = useAuthStore();
   const router = useRouter();
-  const pageRef = ref(null);
-  const books = ref([]);
+  const pageRef = ref<HTMLElement | null>(null);
+  const books = ref<BookCardModel[]>([]);
 
   usePageAnimations({ scroll: true, ripple: true, root: pageRef });
 
@@ -29,10 +29,10 @@
 
   const search = ref('');
   const city = ref('');
-  const stateTypes = ref(new Set(['loan', 'swap', 'sale']));
-  const stateGenres = ref(new Set());
-  const sortBy = ref('newest');
-  const viewMode = ref('grid');
+  const stateTypes = ref(new Set<string>(['loan', 'swap', 'sale']));
+  const stateGenres = ref(new Set<string>());
+  const sortBy = ref<'newest' | 'oldest' | 'title'>('newest');
+  const viewMode = ref<'grid' | 'list'>('grid');
   const page = ref(1);
   const limit = ref(12);
 
@@ -50,12 +50,12 @@
     }));
   });
 
-  const toggleType = (type) => {
+  const toggleType = (type: string) => {
     if (stateTypes.value.has(type)) stateTypes.value.delete(type);
     else stateTypes.value.add(type);
   };
 
-  const toggleGenre = (genre) => {
+  const toggleGenre = (genre: string) => {
     if (stateGenres.value.has(genre)) stateGenres.value.delete(genre);
     else stateGenres.value.add(genre);
   };
@@ -97,7 +97,7 @@
     }
   }
 
-  let debounceTimer;
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
   watch([search, city, stateTypes, stateGenres, sortBy], () => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
@@ -138,8 +138,8 @@
     fetchBooks(true);
   };
 
-  const selectedOfferId = ref(null);
-  const openModal = (id) => {
+  const selectedOfferId = ref<string | null>(null);
+  const openModal = (id: string) => {
     selectedOfferId.value = id;
   };
 
@@ -150,18 +150,16 @@
     }
   };
 
-  /** Otwarcie modala z ?offer= (klik okładki na stronie głównej / logowaniu). */
-  function syncOfferFromQuery() {
+  /** Synchronizacja modala z ?offer= (watchEffect — reaguje na query i nawigację). */
+  watchEffect(() => {
     const raw = route.query.offer;
     const id = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : null;
     selectedOfferId.value = id || null;
-  }
+  });
 
-  watch(() => route.query.offer, syncOfferFromQuery, { immediate: true });
+  const cardDelayClass = (i: number) => `anim-d${(i % 5) + 1}`;
 
-  const cardDelayClass = (i) => `anim-d${(i % 5) + 1}`;
-
-  const isOwnOffer = (book) => !!auth.user?.id && book.ownerId === auth.user.id;
+  const isOwnOffer = (book: BookCardModel) => !!auth.user?.id && book.ownerId === auth.user.id;
 </script>
 
 <template>

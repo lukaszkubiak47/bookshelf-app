@@ -1,9 +1,41 @@
-<script setup>
+<script setup lang="ts">
   /**
    * Kreator dodawania oferty (2 kroki): wyszukiwanie Google Books → typ i szczegóły oferty.
    * Zapis: POST książki (jeśli nowa) + POST userbooks + opcjonalnie okładka.
    */
   import { ref, reactive, onMounted, watch } from 'vue';
+  import type { Genre } from '../lib/types';
+  import type { OfferType } from '../lib/offerTypes';
+
+  interface StagedBook {
+    bookId: string | null
+    googleBooksId: string | null
+    title: string
+    author: string
+    description: string | null
+    isbn: string | null
+    coverUrl: string | null
+    genreId: string
+    year: string
+    genre: string
+    img: number
+  }
+
+  interface WizardForm {
+    selectedBook: StagedBook | null
+    offerType: OfferType | null
+    customCoverFile: File | null
+    offerDetails: {
+      maxLoanTime: string
+      deliveryMethod: string
+      swapLooking: string
+      swapBookTitle: string
+      swapGenre: string
+      price: number | null
+      condition: string
+    }
+  }
+
   import { booksApi } from '../lib/books';
   import { userBooksApi } from '../lib/userBooks';
   import { mapBookSearchResult, seedFromGuid, coverColor } from '../lib/mappers';
@@ -12,7 +44,7 @@
   import { usePageAnimations } from '../composables/useAnimations';
 
   const currentStep = ref(1);
-  const wizardRef = ref(null);
+  const wizardRef = ref<HTMLElement | null>(null);
   const { goToStep, wizardTransition } = useWizardStepTransition(currentStep);
   usePageAnimations({ scroll: false, ripple: true, root: wizardRef });
   const searchQuery = ref('');
@@ -20,19 +52,22 @@
   const showResults = ref(false);
   const isManualOpen = ref(false);
   const showSuccess = ref(false);
-  const searchResults = ref([]);
+  const searchResults = ref<ReturnType<typeof mapBookSearchResult>[]>([]);
   const submitError = ref('');
   const isPublishing = ref(false);
 
   // Okładki wyników, które nie załadują się (np. blokada Google na localhost) -> kafelek zastępczy.
-  const failedCovers = ref(new Set());
-  const markCoverFailed = (id) => { failedCovers.value = new Set(failedCovers.value).add(id); };
-  const coverOk = (b) => b.coverUrl && !failedCovers.value.has(b.googleBooksId);
+  const failedCovers = ref(new Set<string>());
+  const markCoverFailed = (id: string) => {
+    failedCovers.value = new Set(failedCovers.value).add(id);
+  };
+  const coverOk = (b: { coverUrl?: string | null; googleBooksId: string | null }) =>
+    !!b.googleBooksId && !!b.coverUrl && !failedCovers.value.has(b.googleBooksId);
 
   const selectedCoverFailed = ref(false);
   const resetSelectedCover = () => { selectedCoverFailed.value = false; };
 
-  const form = reactive({
+  const form = reactive<WizardForm>({
     selectedBook: null,
     offerType: null,
     customCoverFile: null,
@@ -48,14 +83,14 @@
   });
 
   /* Formularz ręczny i walidacja */
-  const genres = ref([]);
+  const genres = ref<Genre[]>([]);
   const manualForm = reactive({ title: '', author: '', genre: '', isbn: '', desc: '' });
   const errors = reactive({ title: false, author: false });
 
   /* Dropzone state */
   const isDragOver = ref(false);
-  const previewUrl = ref(null);
-  const fileInput = ref(null);
+  const previewUrl = ref<string | null>(null);
+  const fileInput = ref<HTMLInputElement | null>(null);
 
   /* ────── LOGIKA METOD ────── */
   const runSearch = async () => {
@@ -86,7 +121,7 @@
   });
 
   // Wynik Google: stage'ujemy do wspólnego kształtu. genreId puste — użytkownik wybierze gatunek w kroku 2.
-  const selectBook = (book) => {
+  const selectBook = (book: (typeof searchResults.value)[number]) => {
     form.selectedBook = {
       bookId: null,
       googleBooksId: book.googleBooksId,
@@ -134,6 +169,7 @@
       year: '—',
       genre: genres.value.find(g => g.id === manualForm.genre)?.name ?? 'Inne',
       img: seedFromGuid(manualForm.title.trim() || 'book', 80),
+      coverUrl: null,
     };
     isManualOpen.value = false;
     showResults.value = false;
@@ -150,6 +186,7 @@
   // Zapewnia bookId z bazy: jeśli książka nie była jeszcze zapisana, tworzy ją teraz (POST /api/books).
   async function ensureBookId() {
     const sb = form.selectedBook;
+    if (!sb) throw new Error('Brak wybranej książki');
     if (sb.bookId) return sb.bookId;
     const created = await booksApi.create({
       title: sb.title,
@@ -187,7 +224,13 @@
     try {
       const bookId = await ensureBookId();
 
-      const body = {
+      const body: {
+        bookId: string
+        transactionType: OfferType
+        price?: number
+        exchangeCondition?: string
+        exchangeDetails?: string
+      } = {
         bookId,
         transactionType: form.offerType,
       };
@@ -197,7 +240,8 @@
       }
 
       if (form.offerType === 'swap') {
-        body.exchangeCondition = swapConditionMap[form.offerDetails.swapLooking] ?? 'anything';
+        const swapMap = swapConditionMap as Record<string, string>;
+        body.exchangeCondition = swapMap[form.offerDetails.swapLooking] ?? 'anything';
         if (form.offerDetails.swapLooking === 'book') {
           body.exchangeDetails = form.offerDetails.swapBookTitle || undefined;
         } else if (form.offerDetails.swapLooking === 'genre') {
@@ -218,15 +262,27 @@
   };
 
   /* Dropzone logic */
-  const triggerFileInput = () => { if (!previewUrl.value) fileInput.value.click(); };
-  const handleFileChange = (e) => { processFile(e.target.files[0]); };
-  const handleDrop = (e) => { isDragOver.value = false; processFile(e.dataTransfer.files[0]); };
+  const triggerFileInput = () => {
+    if (!previewUrl.value) fileInput.value?.click();
+  };
+  const handleFileChange = (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    if (input.files?.[0]) processFile(input.files[0]);
+  };
+  const handleDrop = (e: DragEvent) => {
+    isDragOver.value = false;
+    const file = e.dataTransfer?.files[0];
+    if (file) processFile(file);
+  };
 
-  const processFile = (file) => {
+  const processFile = (file: File) => {
     if (file && file.type.startsWith('image/')) {
       form.customCoverFile = file;
       const reader = new FileReader();
-      reader.onload = (e) => { previewUrl.value = e.target.result; };
+      reader.onload = (ev) => {
+        const result = ev.target?.result;
+        if (typeof result === 'string') previewUrl.value = result;
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -242,7 +298,8 @@
     try {
       genres.value = await booksApi.getGenres();
       // Domyślnie pierwszy gatunek, żeby pole nie było puste przy wysyłce.
-      if (genres.value.length && !manualForm.genre) manualForm.genre = genres.value[0].id;
+      const firstGenre = genres.value[0];
+      if (firstGenre && !manualForm.genre) manualForm.genre = firstGenre.id;
     } catch {
       genres.value = [];
     }
@@ -294,8 +351,8 @@
         <div v-if="showResults && !isLoading" class="results-section">
           <div class="results-label">{{ searchResults.length }} wyników dla „{{ searchQuery }}”</div>
           <div class="results-list">
-            <div v-for="b in searchResults" :key="b.googleBooksId" class="result-row" @click="selectBook(b)">
-              <img v-if="coverOk(b)" :src="b.coverUrl" :alt="b.title" class="result-cover" @error="markCoverFailed(b.googleBooksId)">
+            <div v-for="b in searchResults" :key="b.googleBooksId ?? b.title" class="result-row" @click="selectBook(b)">
+              <img v-if="coverOk(b)" :src="b.coverUrl ?? undefined" :alt="b.title" class="result-cover" @error="b.googleBooksId && markCoverFailed(b.googleBooksId)">
               <div v-else class="result-cover result-cover-fallback" :style="{ background: coverColor(b.title) }">
                 <span class="rcf-title">{{ b.title }}</span>
                 <span class="rcf-author">{{ b.author }}</span>
@@ -417,7 +474,7 @@
       </div>
     </div>
 
-    <div v-else key="wizard-step-2" class="wizard-card">
+    <div v-else-if="form.selectedBook" key="wizard-step-2" class="wizard-card">
       <div class="wcard-head">
         <h2 class="wcard-title">Jak chcesz udostępnić tę książkę?</h2>
         <p class="wcard-desc">Wybierz typ oferty i uzupełnij szczegóły. Możesz to zmienić później.</p>
