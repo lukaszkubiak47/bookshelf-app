@@ -68,6 +68,7 @@ export function mapUserBookToCard(dto: UserBookDto) {
     type: dto.transactionType,
     genre: dto.book.genreName ?? 'Inne',
     city: dto.owner.city,
+    ownerId: dto.owner.id,
     owner: dto.owner.username,
     av: avSeed,
     img: imgSeed,

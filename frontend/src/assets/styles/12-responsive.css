@@ -360,36 +360,8 @@ html {
   }
 }
 
-/* ─── Profil ─── */
+/* ─── Profil (szczegóły mobilne: 10-page-profile.css @640) ─── */
 @media (max-width: 768px) {
-  .profile-hero {
-    height: 180px;
-  }
-
-  .profile-info-inner {
-    padding: 0 16px;
-    margin-top: -48px;
-  }
-
-  .profile-name {
-    font-size: 24px;
-  }
-
-  .profile-meta {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .profile-stats {
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .profile-page {
-    padding: 0 16px 48px;
-  }
-
   .form-grid-2,
   .form-row {
     grid-template-columns: 1fr;

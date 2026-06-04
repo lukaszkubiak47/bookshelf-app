@@ -12,8 +12,10 @@
   import OfferModal from '../components/OfferModal.vue';
   import { userBooksApi } from '../lib/userBooks';
   import { mapUserBookToCard } from '../lib/mappers';
+  import { useAuthStore } from '../stores/auth';
 
   const route = useRoute();
+  const auth = useAuthStore();
   const router = useRouter();
   const pageRef = ref(null);
   const books = ref([]);
@@ -158,6 +160,8 @@
   watch(() => route.query.offer, syncOfferFromQuery, { immediate: true });
 
   const cardDelayClass = (i) => `anim-d${(i % 5) + 1}`;
+
+  const isOwnOffer = (book) => !!auth.user?.id && book.ownerId === auth.user.id;
 </script>
 
 <template>
@@ -222,6 +226,7 @@
             :key="book.id"
             :class="['anim', cardDelayClass(i)]"
             :book="book"
+            :is-own="isOwnOffer(book)"
             @select="openModal"
           />
         </div>
