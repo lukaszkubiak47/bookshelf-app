@@ -15,6 +15,8 @@
   const v = reactive({ email: '', password: '' });
   const touched = reactive({ email: false, password: false });
   const shaking = ref(false);
+  const resetShaking = ref(false);
+  const resetStepAnim = ref('');
   const loading = ref(false);
   const done = ref(false);
   const hov = ref(false);
@@ -93,6 +95,11 @@
     setTimeout(() => { shaking.value = false; }, 600);
   };
 
+  const triggerResetShake = () => {
+    resetShaking.value = true;
+    setTimeout(() => { resetShaking.value = false; }, 600);
+  };
+
   const submit = async () => {
     touched.email = true;
     touched.password = true;
@@ -121,9 +128,16 @@
   const openResetModal = () => {
     resetOpen.value = true;
     resetStep.value = 1;
+    resetStepAnim.value = '';
     resetSuccess.value = false;
     resetServerError.value = '';
     reset.email = v.email;
+  };
+
+  const goBackToResetStep1 = () => {
+    resetStepAnim.value = 'anim-reset-step-back';
+    resetStep.value = 1;
+    resetServerError.value = '';
   };
 
   const closeResetModal = () => {
@@ -145,7 +159,7 @@
     resetServerError.value = '';
 
     if (Object.keys(resetIdentityErrors.value).length > 0) {
-      triggerShake();
+      triggerResetShake();
       return;
     }
 
@@ -155,12 +169,13 @@
         method: 'POST',
         body: JSON.stringify(buildResetVerificationPayload()),
       });
+      resetStepAnim.value = 'anim-reset-step-in';
       resetStep.value = 2;
     } catch (e) {
       resetServerError.value = (e instanceof Error && e.message)
         ? e.message
         : 'Podane dane nie pasuja do zadnego konta';
-      triggerShake();
+      triggerResetShake();
     } finally {
       resetLoading.value = false;
     }
@@ -172,7 +187,7 @@
     resetServerError.value = '';
 
     if (Object.keys(resetPasswordErrors.value).length > 0) {
-      triggerShake();
+      triggerResetShake();
       return;
     }
 
@@ -192,7 +207,7 @@
       resetServerError.value = (e instanceof Error && e.message)
         ? e.message
         : 'Nie udalo sie zresetowac hasla';
-      triggerShake();
+      triggerResetShake();
     } finally {
       resetLoading.value = false;
     }
@@ -208,6 +223,83 @@
       Zalogowano pomyślnie!
     </h3>
     <p :style="{ color: T.t2, fontSize: '14px' }">Przekierowanie za chwilę…</p>
+  </div>
+
+  <div v-else-if="resetOpen" class="anim-slide-right" :class="{ 'anim-shake': resetShaking }"
+       :style="{ willChange: 'transform, opacity' }">
+    <button type="button" @click="closeResetModal" :disabled="resetLoading"
+            :style="{ background: 'none', border: 'none', color: T.t2, fontSize: '13px', cursor: resetLoading ? 'default' : 'pointer', fontFamily: '\'DM Sans\', sans-serif', padding: 0, marginBottom: '18px', opacity: resetLoading ? .6 : 1 }">
+      ← Wróć do logowania
+    </button>
+
+    <div :style="{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start', marginBottom: '18px' }">
+      <div>
+        <h2 :style="AUTH_STYLES.heading">
+          Reset hasła
+        </h2>
+        <p :style="{ ...AUTH_STYLES.subheading, marginBottom: 0 }">
+          {{ resetStep === 1 ? 'Podaj dane konta, żeby potwierdzić, że to Ty.' : 'Dane pasują. Ustaw nowe hasło.' }}
+        </p>
+      </div>
+    </div>
+
+    <div v-if="resetSuccess" class="anim-reset-success" :style="{ textAlign: 'center', padding: '12px 0 4px' }">
+      <div class="anim-reset-success-icon" :style="{ width: '54px', height: '54px', borderRadius: '50%', background: '#EBF7F0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" :stroke="T.success" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" v-html="P.check" />
+      </div>
+      <h4 :style="{ color: T.t1, fontSize: '18px', marginBottom: '8px' }">Hasło zostało zmienione</h4>
+      <p :style="{ color: T.t2, fontSize: '13px', marginBottom: '18px' }">Możesz teraz zalogować się nowym hasłem.</p>
+      <button type="button" class="btn btn-filled" @click="closeResetModal" :style="{ width: '100%' }">
+        Wróć do logowania
+      </button>
+    </div>
+
+    <div v-else>
+      <div v-if="resetStep === 1" :key="'reset-step-1'" :class="resetStepAnim"
+           :style="{ display: 'flex', flexDirection: 'column', gap: '14px', willChange: 'transform, opacity' }">
+        <FormField label="Email" type="email" icon="mail" placeholder="jan.kowalski@email.com"
+                   v-model="reset.email" @blur="resetBlur('email')" v-bind="resetFs('email')" />
+        <FormField label="Nick" icon="at" placeholder="jankowalski"
+                   v-model="reset.username" @blur="resetBlur('username')" v-bind="resetFs('username')" />
+        <div :style="{ display: 'flex', flexDirection: 'column', gap: '5px' }">
+          <label :style="{ fontSize: '12px', fontWeight: 500, color: T.t2, letterSpacing: '0.3px' }">Miesiąc założenia konta</label>
+          <select v-model="reset.createdMonth" @blur="resetBlur('createdMonth')" class="bk-input"
+                  :data-s="resetTouched.createdMonth && resetIdentityErrors.createdMonth ? 'error' : resetTouched.createdMonth && reset.createdMonth ? 'success' : undefined">
+            <option value="">Wybierz miesiąc</option>
+            <option v-for="month in 12" :key="month" :value="String(month)">{{ month }}</option>
+          </select>
+          <p v-if="resetTouched.createdMonth && resetIdentityErrors.createdMonth" :style="{ fontSize: '12px', color: T.danger, marginTop: '1px' }">
+            {{ resetIdentityErrors.createdMonth }}
+          </p>
+        </div>
+        <FormField label="Bonusowe pytanie: jak ma na imię założyciel strony?" placeholder="Opcjonalnie, dla klimatu"
+                   v-model="reset.founderAnswer" />
+      </div>
+
+      <div v-else :key="'reset-step-2'" :class="resetStepAnim"
+           :style="{ display: 'flex', flexDirection: 'column', gap: '14px', willChange: 'transform, opacity' }">
+        <FormField label="Nowe hasło" type="password" icon="lock" placeholder="Min. 8 znaków"
+                   v-model="reset.newPassword" @blur="resetBlur('newPassword')" v-bind="resetFs('newPassword')" />
+        <FormField label="Powtórz nowe hasło" type="password" icon="lock" placeholder="Powtórz hasło"
+                   v-model="reset.confirmPassword" @blur="resetBlur('confirmPassword')" v-bind="resetFs('confirmPassword')" />
+      </div>
+
+      <p v-if="resetServerError" role="alert"
+         :style="{ background: '#FBEDEC', color: T.danger, fontSize: '13px', padding: '10px 12px', borderRadius: '8px', marginTop: '16px', border: `1px solid ${T.danger}33` }">
+        {{ resetServerError }}
+      </p>
+
+      <div :style="{ display: 'flex', gap: '10px', marginTop: '22px' }">
+        <button v-if="resetStep === 2" type="button" class="btn btn-outline" @click="goBackToResetStep1" :style="{ flex: 1 }">
+          Wstecz
+        </button>
+        <button type="button" class="btn btn-filled" :disabled="resetLoading"
+                @click="resetStep === 1 ? goToPasswordStep() : submitResetPassword()"
+                :style="{ flex: 1, opacity: resetLoading ? .7 : 1 }">
+          {{ resetLoading ? 'Zapisywanie…' : resetStep === 1 ? 'Dalej' : 'Zmień hasło' }}
+        </button>
+      </div>
+    </div>
   </div>
 
   <form v-else @submit.prevent="submit" :class="{ 'anim-shake': shaking }" noValidate>
@@ -257,82 +349,4 @@
       </button>
     </p>
   </form>
-
-  <div v-if="resetOpen"
-       :style="{ position: 'fixed', inset: 0, background: 'rgba(44,24,16,.32)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }"
-       @click.self="closeResetModal">
-    <div :class="{ 'anim-shake': shaking }"
-         :style="{ width: '100%', maxWidth: '430px', background: T.white, borderRadius: '14px', padding: '24px', boxShadow: '0 18px 60px rgba(44,24,16,.18)', border: `1px solid ${T.border}` }">
-      <div :style="{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start', marginBottom: '18px' }">
-        <div>
-          <h3 :style="{ fontFamily: '\'Playfair Display\', serif', fontSize: '24px', color: T.t1, marginBottom: '6px' }">
-            Reset hasla
-          </h3>
-          <p :style="{ color: T.t2, fontSize: '13px', lineHeight: 1.45 }">
-            {{ resetStep === 1 ? 'Podaj dane konta, zeby potwierdzic, ze to Ty.' : 'Dane pasuja. Ustaw nowe haslo.' }}
-          </p>
-        </div>
-        <button type="button" @click="closeResetModal"
-                :style="{ border: 'none', background: T.tagBg, color: T.t2, width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }">
-          x
-        </button>
-      </div>
-
-      <div v-if="resetSuccess" :style="{ textAlign: 'center', padding: '12px 0 4px' }">
-        <div :style="{ width: '54px', height: '54px', borderRadius: '50%', background: '#EBF7F0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" :stroke="T.success" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" v-html="P.check" />
-        </div>
-        <h4 :style="{ color: T.t1, fontSize: '18px', marginBottom: '8px' }">Haslo zostalo zmienione</h4>
-        <p :style="{ color: T.t2, fontSize: '13px', marginBottom: '18px' }">Mozesz teraz zalogowac sie nowym haslem.</p>
-        <button type="button" class="btn btn-filled" @click="closeResetModal" :style="{ width: '100%' }">
-          Wroc do logowania
-        </button>
-      </div>
-
-      <div v-else>
-        <div v-if="resetStep === 1" :style="{ display: 'flex', flexDirection: 'column', gap: '14px' }">
-          <FormField label="Email" type="email" icon="mail" placeholder="jan.kowalski@email.com"
-                     v-model="reset.email" @blur="resetBlur('email')" v-bind="resetFs('email')" />
-          <FormField label="Nick" icon="at" placeholder="jankowalski"
-                     v-model="reset.username" @blur="resetBlur('username')" v-bind="resetFs('username')" />
-          <div :style="{ display: 'flex', flexDirection: 'column', gap: '5px' }">
-            <label :style="{ fontSize: '12px', fontWeight: 500, color: T.t2, letterSpacing: '0.3px' }">Miesiac zalozenia konta</label>
-            <select v-model="reset.createdMonth" @blur="resetBlur('createdMonth')" class="bk-input"
-                    :data-s="resetTouched.createdMonth && resetIdentityErrors.createdMonth ? 'error' : resetTouched.createdMonth && reset.createdMonth ? 'success' : undefined">
-              <option value="">Wybierz miesiac</option>
-              <option v-for="month in 12" :key="month" :value="String(month)">{{ month }}</option>
-            </select>
-            <p v-if="resetTouched.createdMonth && resetIdentityErrors.createdMonth" :style="{ fontSize: '12px', color: T.danger, marginTop: '1px' }">
-              {{ resetIdentityErrors.createdMonth }}
-            </p>
-          </div>
-          <FormField label="Bonusowe pytanie: jak ma na imie zalozyciel strony?" placeholder="Opcjonalnie, dla klimatu"
-                     v-model="reset.founderAnswer" />
-        </div>
-
-        <div v-else :style="{ display: 'flex', flexDirection: 'column', gap: '14px' }">
-          <FormField label="Nowe haslo" type="password" icon="lock" placeholder="Min. 8 znakow"
-                     v-model="reset.newPassword" @blur="resetBlur('newPassword')" v-bind="resetFs('newPassword')" />
-          <FormField label="Powtorz nowe haslo" type="password" icon="lock" placeholder="Powtorz haslo"
-                     v-model="reset.confirmPassword" @blur="resetBlur('confirmPassword')" v-bind="resetFs('confirmPassword')" />
-        </div>
-
-        <p v-if="resetServerError" role="alert"
-           :style="{ background: '#FBEDEC', color: T.danger, fontSize: '13px', padding: '10px 12px', borderRadius: '8px', marginTop: '16px', border: `1px solid ${T.danger}33` }">
-          {{ resetServerError }}
-        </p>
-
-        <div :style="{ display: 'flex', gap: '10px', marginTop: '22px' }">
-          <button v-if="resetStep === 2" type="button" class="btn btn-outline" @click="resetStep = 1" :style="{ flex: 1 }">
-            Wroc
-          </button>
-          <button type="button" class="btn btn-filled" :disabled="resetLoading"
-                  @click="resetStep === 1 ? goToPasswordStep() : submitResetPassword()"
-                  :style="{ flex: 1, opacity: resetLoading ? .7 : 1 }">
-            {{ resetLoading ? 'Zapisywanie...' : resetStep === 1 ? 'Dalej' : 'Zmien haslo' }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 </template>
