@@ -1,0 +1,11 @@
+# Artefakty buildu .NET — nie kopiujemy do kontekstu (obraz robi czysty restore + publish).
+bin/
+obj/
+
+# Smieci IDE / lokalne.
+.vs/
+*.user
+
+# Same pliki docker — niepotrzebne w obrazie.
+Dockerfile
+.dockerignore

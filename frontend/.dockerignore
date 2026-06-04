@@ -1,0 +1,12 @@
+# Zaleznosci i artefakty buildu — obraz robi czysty npm ci + npm run build.
+node_modules/
+dist/
+
+# Lokalne smieci / IDE.
+*.log
+.vscode/
+
+# Same pliki docker — niepotrzebne w obrazie.
+# UWAGA: nginx.conf ZOSTAJE w kontekscie (kopiowany w etapie serve).
+Dockerfile
+.dockerignore

@@ -82,6 +82,31 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+// AUTO-MIGRACJA — tylko w kontenerze (flaga RunMigrations=true z docker-compose).
+// Lokalny dev (LocalDB) NIE ustawia flagi -> migracje dalej recznie: dotnet ef database update.
+if (app.Configuration.GetValue<bool>("RunMigrations"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    const int maxAttempts = 10;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++)
+    {
+        try
+        {
+            db.Database.Migrate();           // tworzy baze jesli brak + aplikuje migracje + seed
+            logger.LogInformation("Migracje zastosowane (proba {Attempt}/{Max}).", attempt, maxAttempts);
+            break;
+        }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            logger.LogWarning(ex, "Baza niegotowa (proba {Attempt}/{Max}) — ponawiam za 5s...", attempt, maxAttempts);
+            await Task.Delay(TimeSpan.FromSeconds(5));
+        }
+    }
+}
+
 // Globalna obsługa wyjątków: MUSI być pierwszym middleware w pipeline, więć tego proszę NIE RUSZAĆ!!!!! 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
