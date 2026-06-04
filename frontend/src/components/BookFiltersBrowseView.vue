@@ -1,15 +1,25 @@
 <script setup>
   /** Panel filtrów bocznych na stronie Przeglądaj (typ, gatunek, miasto, szukaj). */
+  import DataList from './DataList.vue';
+
   defineProps({
     search: String,
     city: String,
     types: Set,
     genres: Set,
     availableGenres: Array,
-    counts: Object
+    counts: Object,
   });
 
   defineEmits(['update:search', 'update:city', 'toggle-type', 'toggle-genre', 'reset']);
+
+  const offerTypeFilters = [
+    { key: 'loan', label: 'Do wypożyczenia', badgeClass: 'flt-loan' },
+    { key: 'swap', label: 'Do wymiany', badgeClass: 'flt-swap' },
+    { key: 'sale', label: 'Do sprzedaży', badgeClass: 'flt-sale' },
+  ];
+
+  const genreInputId = (name) => `g_${name.replace(/\s/g, '_')}`;
 </script>
 
 <template>
@@ -38,37 +48,44 @@
 
     <div class="filter-section">
       <div class="filter-section-title">Typ oferty</div>
-      <ul class="check-list">
-        <li class="check-item">
-          <input type="checkbox" id="fLoan" :checked="types.has('loan')" @change="$emit('toggle-type', 'loan')">
-          <label class="check-label" for="fLoan">Do wypożyczenia</label>
-          <span class="flt-badge flt-loan">{{ counts.loan }}</span>
-        </li>
-        <li class="check-item">
-          <input type="checkbox" id="fSwap" :checked="types.has('swap')" @change="$emit('toggle-type', 'swap')">
-          <label class="check-label" for="fSwap">Do wymiany</label>
-          <span class="flt-badge flt-swap">{{ counts.swap }}</span>
-        </li>
-        <li class="check-item">
-          <input type="checkbox" id="fSale" :checked="types.has('sale')" @change="$emit('toggle-type', 'sale')">
-          <label class="check-label" for="fSale">Do sprzedaży</label>
-          <span class="flt-badge flt-sale">{{ counts.sale }}</span>
-        </li>
-      </ul>
+      <DataList
+        :items="offerTypeFilters"
+        item-key="key"
+        list-class="check-list"
+        item-class="check-item"
+      >
+        <template #default="{ item: offerType }">
+          <input
+            type="checkbox"
+            :id="`f_${offerType.key}`"
+            :checked="types.has(offerType.key)"
+            @change="$emit('toggle-type', offerType.key)"
+          >
+          <label class="check-label" :for="`f_${offerType.key}`">{{ offerType.label }}</label>
+          <span :class="['flt-badge', offerType.badgeClass]">{{ counts[offerType.key] }}</span>
+        </template>
+      </DataList>
     </div>
 
     <div class="filter-section">
       <div class="filter-section-title">Gatunek</div>
-      <ul class="check-list">
-        <li v-for="genre in availableGenres" :key="genre.name" class="check-item">
-          <input type="checkbox"
-                 :id="'g_' + genre.name.replace(/\s/g,'_')"
-                 :checked="genres.has(genre.name)"
-                 @change="$emit('toggle-genre', genre.name)">
-          <label class="check-label" :for="'g_' + genre.name.replace(/\s/g,'_')">{{ genre.name }}</label>
+      <DataList
+        :items="availableGenres"
+        item-key="name"
+        list-class="check-list"
+        item-class="check-item"
+      >
+        <template #default="{ item: genre }">
+          <input
+            type="checkbox"
+            :id="genreInputId(genre.name)"
+            :checked="genres.has(genre.name)"
+            @change="$emit('toggle-genre', genre.name)"
+          >
+          <label class="check-label" :for="genreInputId(genre.name)">{{ genre.name }}</label>
           <span class="flt-badge flt-cnt">{{ genre.count }}</span>
-        </li>
-      </ul>
+        </template>
+      </DataList>
     </div>
 
     <div class="filter-section">

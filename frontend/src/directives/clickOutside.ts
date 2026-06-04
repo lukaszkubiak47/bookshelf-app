@@ -1,27 +1,19 @@
 import type { Directive, DirectiveBinding } from 'vue'
+import { onClickOutside } from '@vueuse/core'
 
 type ClickOutsideHandler = (event: MouseEvent) => void
 
 interface ClickOutsideElement extends HTMLElement {
-  _clickOutsideHandler?: (event: MouseEvent) => void
+  _stopClickOutside?: () => void
 }
 
-/** Zamyka dropdown/menu po kliknięciu poza elementem (handler w binding.value). */
+/** Zamyka dropdown/menu po kliknięciu poza elementem (VueUse onClickOutside). */
 export const clickOutside: Directive<ClickOutsideElement, ClickOutsideHandler | undefined> = {
   mounted(el, binding: DirectiveBinding<ClickOutsideHandler | undefined>) {
-    const handler = (event: MouseEvent) => {
-      if (!el.contains(event.target as Node)) {
-        binding.value?.(event)
-      }
-    }
-    el._clickOutsideHandler = handler
-    document.addEventListener('click', handler)
+    el._stopClickOutside = onClickOutside(el, (event) => binding.value?.(event))
   },
   unmounted(el) {
-    const handler = el._clickOutsideHandler
-    if (handler) {
-      document.removeEventListener('click', handler)
-      delete el._clickOutsideHandler
-    }
+    el._stopClickOutside?.()
+    delete el._stopClickOutside
   },
 }

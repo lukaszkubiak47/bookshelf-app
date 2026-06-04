@@ -143,18 +143,30 @@
                 </div>
               </div>
 
-              <p v-if="isOwn" class="offer-note">To Twoja oferta.</p>
-              <p v-else-if="isUnavailable" class="offer-note">Ta oferta nie jest już dostępna.</p>
-              <div v-else-if="sent" class="offer-sent">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                Prośba wysłana!
-              </div>
-              <template v-else-if="!isUnavailable">
-                <p v-if="sendError" class="offer-send-error">{{ sendError }}</p>
-                <button class="btn btn-filled offer-cta" type="button" :disabled="sending" @click="sendRequest">
-                  {{ sending ? 'Wysyłanie…' : (auth.isLoggedIn ? 'Wyślij prośbę' : 'Zaloguj się, aby wysłać prośbę') }}
-                </button>
-              </template>
+              <slot
+                name="actions"
+                :offer="offer"
+                :is-own="isOwn"
+                :is-unavailable="isUnavailable"
+                :sent="sent"
+                :sending="sending"
+                :send-error="sendError"
+                :send-request="sendRequest"
+                :is-logged-in="auth.isLoggedIn"
+              >
+                <p v-if="isOwn" class="offer-note">To Twoja oferta.</p>
+                <p v-else-if="isUnavailable" class="offer-note">Ta oferta nie jest już dostępna.</p>
+                <div v-else-if="sent" class="offer-sent">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  Prośba wysłana!
+                </div>
+                <template v-else-if="!isUnavailable">
+                  <p v-if="sendError" class="offer-send-error">{{ sendError }}</p>
+                  <button class="btn btn-filled offer-cta" type="button" :disabled="sending" @click="sendRequest">
+                    {{ sending ? 'Wysyłanie…' : (auth.isLoggedIn ? 'Wyślij prośbę' : 'Zaloguj się, aby wysłać prośbę') }}
+                  </button>
+                </template>
+              </slot>
             </div>
           </div>
         </div>

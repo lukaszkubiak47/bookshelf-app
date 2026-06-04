@@ -9,7 +9,6 @@ export interface PageAnimationsOptions {
 }
 
 export function runHeroAnimations(): void
-export function setupScrollAnimations(root?: HTMLElement | Document): IntersectionObserver
-export function observeAnimationsIn(root?: HTMLElement | Document): IntersectionObserver
-export function setupButtonRipple(root?: HTMLElement | Document): () => void
+export function setupScrollAnimations(root?: HTMLElement | Document): IntersectionObserver | void
+export function observeAnimationsIn(root?: HTMLElement | Document): IntersectionObserver | void
 export function usePageAnimations(options?: PageAnimationsOptions): void
