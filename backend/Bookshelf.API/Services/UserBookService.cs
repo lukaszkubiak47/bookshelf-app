@@ -223,7 +223,8 @@ namespace Bookshelf.API.Services
                 userBook.ExchangeDetails = dto.ExchangeDetails;
 
             if (dto.BookDescription != null)
-                userBook.Book.Description = string.IsNullOrWhiteSpace(dto.BookDescription)
+                // Opis trafia na poziom OFERTY (UserBook), nie na współdzieloną encję Book.
+                userBook.Description = string.IsNullOrWhiteSpace(dto.BookDescription)
                     ? null
                     : dto.BookDescription.Trim();
 
@@ -377,7 +378,8 @@ namespace Bookshelf.API.Services
                     Id = ub.Book.Id,
                     Title = ub.Book.Title,
                     Author = ub.Book.Author,
-                    Description = ub.Book.Description,
+                    // Opis oferty (UserBook) jeśli ustawiony, inaczej fallback na katalogowy (Book).
+                    Description = ub.Description ?? ub.Book.Description,
                     CoverUrl = ResolveCoverUrl(ub),
                     ISBN = ub.Book.ISBN,
                     GenreName = ub.Book.Genre?.Name
