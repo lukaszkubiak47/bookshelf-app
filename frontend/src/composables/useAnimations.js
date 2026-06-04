@@ -1,6 +1,9 @@
 /**
  * Animacje scroll / hero / ripple przycisków (klasy .anim z main.css).
  * usePageAnimations — podłącz na widoku; observeAnimationsIn — po załadowaniu list z API.
+ *
+ * Uwaga: obserwatory muszą używać natywnego API — VueUse composables wymagają
+ * synchronicznego wywołania w setup(), a te funkcje działają też z onMounted/watch.
  */
 import { onMounted, onUnmounted, nextTick } from 'vue';
 
@@ -17,12 +20,12 @@ export function runHeroAnimations() {
 
 /** Scroll: .anim poza sekcją .hero — IntersectionObserver. */
 export function setupScrollAnimations(root = document) {
-  const observer = new IntersectionObserver(
+  const obs = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
+          obs.unobserve(entry.target);
         }
       });
     },
@@ -30,20 +33,20 @@ export function setupScrollAnimations(root = document) {
   );
 
   root.querySelectorAll('.anim').forEach((el) => {
-    if (!el.closest('.hero')) observer.observe(el);
+    if (!el.closest('.hero')) obs.observe(el);
   });
 
-  return observer;
+  return obs;
 }
 
 /** Obserwuje nowe elementy .anim (np. po załadowaniu listy z API). */
 export function observeAnimationsIn(root = document) {
-  const observer = new IntersectionObserver(
+  const obs = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
+          obs.unobserve(entry.target);
         }
       });
     },
@@ -51,10 +54,10 @@ export function observeAnimationsIn(root = document) {
   );
 
   root.querySelectorAll('.anim:not(.is-visible)').forEach((el) => {
-    if (!el.closest('.hero')) observer.observe(el);
+    if (!el.closest('.hero')) obs.observe(el);
   });
 
-  return observer;
+  return obs;
 }
 
 /** Efekt ripple na przyciskach .btn (jak w mockupie strony głównej). */

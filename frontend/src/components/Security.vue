@@ -3,8 +3,9 @@
   import { ref, reactive, computed } from 'vue';
   import { usersApi } from '../lib/users';
   import { ApiError } from '../lib/client';
+  import { useToast } from '../composables/useToast.js';
 
-  const emit = defineEmits(['notify']);
+  const showToast = useToast();
 
   const isOpen = ref(false);
   const passwords = reactive({ current: '', new: '', confirm: '' });
@@ -66,9 +67,9 @@
       strength.text = 'Wpisz hasło aby ocenić siłę';
       strength.bg = '';
 
-      emit('notify', { message: 'Hasło zmienione ✓', type: 'success' });
+      showToast({ message: 'Hasło zmienione ✓', type: 'success' });
     } catch (err) {
-      emit('notify', {
+      showToast({
         message: err instanceof ApiError ? err.message : 'Nie udało się zmienić hasła',
         type: 'error',
       });

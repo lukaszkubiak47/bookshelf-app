@@ -144,15 +144,17 @@
 
       <div :style="{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }">
         <FormField label="Hasło" type="password" icon="lock" placeholder="Min. 8 znaków" v-model="v.password" @blur="blur('password')" v-bind="fs('password')">
-          <div v-if="v.password" :style="{ marginTop: '6px' }">
-            <div :style="{ display: 'flex', gap: '4px' }">
-              <div v-for="i in 4" :key="i" class="strength-seg"
-                   :style="{ background: i <= pwStrength ? strColor[pwStrength] : undefined }" />
+          <template #hint>
+            <div v-if="v.password" :style="{ marginTop: '6px' }">
+              <div :style="{ display: 'flex', gap: '4px' }">
+                <div v-for="i in 4" :key="i" class="strength-seg"
+                     :style="{ background: i <= pwStrength ? strColor[pwStrength] : undefined }" />
+              </div>
+              <p :style="{ fontSize: '11px', color: strColor[pwStrength], marginTop: '4px', fontWeight: 500 }">
+                {{ strLabel[pwStrength] }}
+              </p>
             </div>
-            <p :style="{ fontSize: '11px', color: strColor[pwStrength], marginTop: '4px', fontWeight: 500 }">
-              {{ strLabel[pwStrength] }}
-            </p>
-          </div>
+          </template>
         </FormField>
 
         <FormField label="Potwierdź hasło" type="password" icon="lock" placeholder="Powtórz" v-model="v.confirmPw" @blur="blur('confirmPw')" v-bind="fs('confirmPw')" />

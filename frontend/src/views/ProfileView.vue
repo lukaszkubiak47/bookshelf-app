@@ -1,6 +1,6 @@
 <script setup>
-  /** Profil użytkownika: nagłówek + PersonalData + Security; toast po zapisie. */
-  import { ref, reactive, computed, onMounted } from 'vue';
+  /** Profil użytkownika: nagłówek + PersonalData + Security. */
+  import { ref, computed, onMounted } from 'vue';
   import PersonalData from '../components/PersonalData.vue';
   import Security from '../components/Security.vue';
   import { usersApi } from '../lib/users';
@@ -12,9 +12,6 @@
   const profileLoading = ref(true);
   const profileError = ref('');
   const auth = useAuthStore();
-
-  const toast = reactive({ visible: false, message: '', type: 'success', icon: '' });
-  let toastTimer = null;
 
   const memberSince = computed(() => {
     if (!user.value?.createdAt) return '';
@@ -42,18 +39,6 @@
 
   const updateUser = (updatedData) => {
     user.value = updatedData;
-  };
-
-  const triggerToast = ({ message, type = 'success' }) => {
-    toast.message = message;
-    toast.type = type;
-    toast.icon = type === 'success'
-      ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`
-      : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
-
-    toast.visible = true;
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { toast.visible = false; }, 2800);
   };
 </script>
 
@@ -134,12 +119,8 @@
       </div>
 
       <div class="profile-page">
-        <PersonalData :user="user" @update:user="updateUser" @notify="triggerToast" @saved="loadProfile" />
-        <Security @notify="triggerToast" />
-      </div>
-
-      <div :class="['toast', toast.type === 'success' ? 'success-toast' : 'error-toast', { show: toast.visible }]">
-        <span v-html="toast.icon"></span> {{ toast.message }}
+        <PersonalData :user="user" @update:user="updateUser" @saved="loadProfile" />
+        <Security />
       </div>
     </template>
   </div>
