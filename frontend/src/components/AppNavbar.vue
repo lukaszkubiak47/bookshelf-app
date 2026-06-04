@@ -9,6 +9,7 @@
   const router = useRouter();
 
   const menuOpen = ref(false);
+  const mobileNavOpen = ref(false);
   const avatarWrapRef = ref(null);
 
   const displayName = computed(() => {
@@ -39,8 +40,17 @@
 
   const logout = () => {
     closeMenu();
+    mobileNavOpen.value = false;
     auth.logout();
     router.push('/');
+  };
+
+  const toggleMobileNav = () => {
+    mobileNavOpen.value = !mobileNavOpen.value;
+  };
+
+  const closeMobileNav = () => {
+    mobileNavOpen.value = false;
   };
 
   onMounted(() => document.addEventListener('click', onDocumentClick));
@@ -57,13 +67,14 @@
       </svg>
       Bookshelf
     </RouterLink>
-    <ul class="nav-links">
-      <li><RouterLink to="/">Strona główna</RouterLink></li>
-      <li><RouterLink to="/przegladanie">Przeglądaj książki</RouterLink></li>
+    <ul id="nav-links" class="nav-links" :class="{ 'is-open': mobileNavOpen }">
+      <li><RouterLink to="/" @click="closeMobileNav">Strona główna</RouterLink></li>
+      <li><RouterLink to="/przegladanie" @click="closeMobileNav">Przeglądaj książki</RouterLink></li>
       <template v-if="auth.isLoggedIn">
-        <li><RouterLink to="/polka">Moja półka</RouterLink></li>
+        <li><RouterLink to="/polka" @click="closeMobileNav">Moja półka</RouterLink></li>
       </template>
     </ul>
+
     <div class="nav-actions">
       <div v-if="auth.isLoggedIn"
            ref="avatarWrapRef"
@@ -85,7 +96,7 @@
               <a :href="`mailto:${auth.user?.email}`">{{ auth.user?.email }}</a>
             </span>
           </div>
-          <RouterLink to="/profil" class="dd-item" @click="closeMenu">
+          <RouterLink to="/profil" class="dd-item" @click="closeMenu(); closeMobileNav()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <circle cx="12" cy="8" r="4" />
               <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
@@ -108,5 +119,24 @@
         <RouterLink to="/logowanie?tab=register" class="btn btn-filled">Dołącz</RouterLink>
       </template>
     </div>
+
+    <button
+      type="button"
+      class="nav-menu-btn"
+      :aria-expanded="mobileNavOpen"
+      aria-controls="nav-links"
+      aria-label="Menu nawigacji"
+      @click="toggleMobileNav"
+    >
+      <svg v-if="!mobileNavOpen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <line x1="4" y1="7" x2="20" y2="7" />
+        <line x1="4" y1="12" x2="20" y2="12" />
+        <line x1="4" y1="17" x2="20" y2="17" />
+      </svg>
+      <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <line x1="6" y1="6" x2="18" y2="18" />
+        <line x1="18" y1="6" x2="6" y2="18" />
+      </svg>
+    </button>
   </nav>
 </template>
