@@ -66,6 +66,34 @@ namespace Bookshelf.API.Services
             };
         }
 
+        public async Task VerifyPasswordResetAsync(VerifyPasswordResetDto dto)
+        {
+            // Szukamy konta po danych weryfikacyjnych. Przy bledzie zawsze zwracamy ten sam komunikat.
+            _ = await GetUserForPasswordResetOrThrowAsync(dto);
+        }
+
+        public async Task ResetPasswordAsync(ResetPasswordDto dto)
+        {
+            var user = await GetUserForPasswordResetOrThrowAsync(dto.Verification);
+
+            // Odpowiedz na zabawne pytanie nie jest weryfikowana - to tylko element formularza.
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            await _db.SaveChangesAsync();
+        }
+
+        private async Task<User> GetUserForPasswordResetOrThrowAsync(VerifyPasswordResetDto dto)
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(u =>
+                u.Email == dto.Email &&
+                u.Username == dto.Username &&
+                u.CreatedAt.Month == dto.CreatedMonth);
+
+            if (user == null)
+                throw new BadRequestException("Podane dane nie pasuja do zadnego konta");
+
+            return user;
+        }
+
         private static UserDto MapToUserDto(User user)
         {
             return new UserDto

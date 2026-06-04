@@ -6,5 +6,7 @@ namespace Bookshelf.API.Services
     {
         Task<AuthResponseDto> RegisterAsync(RegisterDto dto);
         Task<AuthResponseDto> LoginAsync(LoginDto dto);
+        Task VerifyPasswordResetAsync(VerifyPasswordResetDto dto);
+        Task ResetPasswordAsync(ResetPasswordDto dto);
     }
 }
