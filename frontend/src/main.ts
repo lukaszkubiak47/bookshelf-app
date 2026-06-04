@@ -1,3 +1,7 @@
+/**
+ * Punkt wejścia aplikacji Vue.
+ * Montuje App, rejestruje Pinia (stan globalny) i Vue Router (trasy).
+ */
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 

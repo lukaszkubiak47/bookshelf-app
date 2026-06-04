@@ -1,3 +1,6 @@
+/**
+ * Profil zalogowanego użytkownika: odczyt, edycja, hasło, avatar.
+ */
 import { apiRequest } from './client'
 import type { UserProfile } from './types'
 

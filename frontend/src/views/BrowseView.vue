@@ -1,12 +1,26 @@
 <script setup>
-  import { ref, computed, watch, onMounted } from 'vue';
+  /**
+   * Przeglądaj książki: lista publicznych ofert, filtry, sortowanie, modal szczegółów.
+   * Po akceptacji/zakończeniu transakcji odświeża listę (OFFERS_CHANGED_EVENT).
+   */
+  import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
+  import { OFFERS_CHANGED_EVENT } from '../lib/offers';
+  import { usePageAnimations, observeAnimationsIn } from '../composables/useAnimations';
   import BookFiltersBrowseView from '../components/BookFiltersBrowseView.vue';
   import BookCard from '../components/BookCard.vue';
   import OfferModal from '../components/OfferModal.vue';
   import { userBooksApi } from '../lib/userBooks';
   import { mapUserBookToCard } from '../lib/mappers';
 
+  const route = useRoute();
+  const router = useRouter();
+  const pageRef = ref(null);
   const books = ref([]);
+
+  usePageAnimations({ scroll: true, ripple: true, root: pageRef });
+
+  // --- Filtry i paginacja ---
   const total = ref(0);
   const loading = ref(false);
   const loadError = ref('');
@@ -52,6 +66,7 @@
     page.value = 1;
   };
 
+  /** Pobiera oferty z API; append=true dokleja kolejną stronę (przycisk „Więcej”). */
   async function fetchBooks(append = false) {
     loading.value = true;
     loadError.value = '';
@@ -70,6 +85,8 @@
       const mapped = result.items.map(mapUserBookToCard);
       books.value = append ? [...books.value, ...mapped] : mapped;
       total.value = result.total;
+      await nextTick();
+      if (pageRef.value) observeAnimationsIn(pageRef.value);
     } catch {
       loadError.value = 'Nie udało się pobrać ofert. Upewnij się, że backend działa.';
       if (!append) books.value = [];
@@ -87,9 +104,31 @@
     }, 350);
   }, { deep: true });
 
-  onMounted(() => fetchBooks());
+  function refreshBrowse() {
+    page.value = 1;
+    fetchBooks();
+  }
 
-  const displayedBooks = computed(() => books.value);
+  watch(
+    () => route.name,
+    (name) => {
+      if (name === 'browse') refreshBrowse();
+    },
+    { immediate: true },
+  );
+
+  onMounted(() => {
+    window.addEventListener(OFFERS_CHANGED_EVENT, refreshBrowse);
+  });
+
+  onUnmounted(() => {
+    window.removeEventListener(OFFERS_CHANGED_EVENT, refreshBrowse);
+  });
+
+  /** Dodatkowy filtr po stronie klienta — tylko status available (spójnie z backendem). */
+  const displayedBooks = computed(() =>
+    books.value.filter((b) => b.status === 'available'),
+  );
 
   const loadMore = () => {
     if (books.value.length >= total.value) return;
@@ -101,11 +140,29 @@
   const openModal = (id) => {
     selectedOfferId.value = id;
   };
+
+  const closeModal = () => {
+    selectedOfferId.value = null;
+    if (route.query.offer) {
+      router.replace({ name: 'browse', query: {} });
+    }
+  };
+
+  /** Otwarcie modala z ?offer= (klik okładki na stronie głównej / logowaniu). */
+  function syncOfferFromQuery() {
+    const raw = route.query.offer;
+    const id = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : null;
+    selectedOfferId.value = id || null;
+  }
+
+  watch(() => route.query.offer, syncOfferFromQuery, { immediate: true });
+
+  const cardDelayClass = (i) => `anim-d${(i % 5) + 1}`;
 </script>
 
 <template>
-  <div class="page-wrapper">
-    <div class="page-header">
+  <div ref="pageRef" class="page-wrapper">
+    <div class="page-header anim">
       <h1 class="page-title">Przeglądaj książki</h1>
       <span class="result-count">Znaleziono <strong>{{ total }}</strong> ofert</span>
     </div>
@@ -160,10 +217,13 @@
         </div>
 
         <div v-else :class="['books-grid', { 'list': viewMode === 'list' }]">
-          <BookCard v-for="book in displayedBooks"
-                    :key="book.id"
-                    :book="book"
-                    @select="openModal" />
+          <BookCard
+            v-for="(book, i) in displayedBooks"
+            :key="book.id"
+            :class="['anim', cardDelayClass(i)]"
+            :book="book"
+            @select="openModal"
+          />
         </div>
 
         <div class="load-more" v-if="books.length < total">
@@ -174,7 +234,7 @@
       </main>
     </div>
 
-    <OfferModal :offer-id="selectedOfferId" @close="selectedOfferId = null" />
+    <OfferModal :offer-id="selectedOfferId" @close="closeModal" />
   </div>
 </template>
 

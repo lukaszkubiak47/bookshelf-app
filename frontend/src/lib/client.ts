@@ -1,3 +1,7 @@
+/**
+ * Główna warstwa HTTP (fetch): buduje URL API, JWT, JSON/FormData, ApiError.
+ * Większość modułów lib/* korzysta z apiRequest(); wyjątek: stores/auth → lib/api.ts.
+ */
 import type { ApiErrorBody } from './types'
 
 export class ApiError extends Error {

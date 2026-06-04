@@ -1,5 +1,5 @@
 <script setup>
-  /* Koniecznie do zmiany */
+  /** Strona główna: składa sekcje hero, świeże oferty i „Jak to działa”. */
   import FirstSectionHomeView from '../components/FirstSectionHomeView.vue'
   import SecondSectionHomeView from '../components/SecondSectionHomeView.vue'
   import ThirdSectionHomeView from '../components/ThirdSectionHomeView.vue'

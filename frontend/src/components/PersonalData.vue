@@ -1,4 +1,5 @@
 <script setup>
+  /** Edycja profilu: dane osobowe, wybór avatara, PUT /api/users/me. */
   import { ref, reactive } from 'vue';
   import { usersApi } from '../lib/users';
   import { mapUserToProfile } from '../lib/mappers';

@@ -1,4 +1,7 @@
 <script setup>
+  /**
+   * Główny layout: nawigacja (oprócz /logowanie), treść z routera, stopka.
+   */
   import AppNavbar from './components/AppNavbar.vue'
   import AppFooter from './components/AppFooter.vue'
   import { RouterView } from 'vue-router'
@@ -7,9 +10,7 @@
 <template>
   <div id="app-layout">
     <AppNavbar v-if="$route.path !== '/logowanie'" />
-    <!--  1. v-if jest AuthView = brak 2. zalogowany: avatar + @username + wyloguj; niezalogowany: zaloguj się + dołącz -->
     <main>
-    <!-- 1. Jesli niezalogowany to nie da sie wejsc na ProfileView -->
     <RouterView />
     </main>
     <AppFooter />

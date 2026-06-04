@@ -1,4 +1,5 @@
 <script setup>
+  /** Górne menu: linki, avatar, wylogowanie. */
   import { ref, computed, onMounted, onUnmounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '../stores/auth';

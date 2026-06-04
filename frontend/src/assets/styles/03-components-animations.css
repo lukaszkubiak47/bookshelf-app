@@ -1,0 +1,38 @@
+/* Scroll / hero: .anim + .anim-d1…d5, ripple — strona główna, przeglądaj, półka. */
+.anim {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+
+  .anim.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+.anim-d1 {
+  transition-delay: .08s;
+}
+
+.anim-d2 {
+  transition-delay: .16s;
+}
+
+.anim-d3 {
+  transition-delay: .24s;
+}
+
+.anim-d4 {
+  transition-delay: .32s;
+}
+
+.anim-d5 {
+  transition-delay: .40s;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}

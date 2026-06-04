@@ -1,3 +1,6 @@
+/**
+ * Prośby o wypożyczenie/wymianę/sprzedaż: wysłane, otrzymane, akceptacja, odrzucenie, zakończenie.
+ */
 import { apiRequest } from './client'
 import type { TransactionDto, TransactionContact } from './types'
 

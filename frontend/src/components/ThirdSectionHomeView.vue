@@ -1,33 +1,24 @@
 <script setup>
-  document.addEventListener('DOMContentLoaded', () => {
-    // ── Everything else animates on scroll ──
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1, rootMargin: '0px 0px -32px 0px' });
+  /** Strona główna: sekcja „Jak to działa” (3 kroki, statyczna treść). */
+  import { ref } from 'vue';
+  import { usePageAnimations } from '../composables/useAnimations';
 
-    document.querySelectorAll(':not(.hero)').forEach(el => observer.observe(el));
-    });
+  const sectionRef = ref(null);
+  usePageAnimations({ hero: false, scroll: true, ripple: false, root: sectionRef });
 </script>
 
 <template>
-  <!-- ════════════════════════ JAK TO DZIAŁA ════════════════════════ -->
-  <section class="how-section">
+  <section ref="sectionRef" class="how-section">
     <div class="section-inner">
 
       <div class="how-header">
-        <h2 class="section-title">Jak to działa?</h2>
-        <p>Trzy proste kroki dzielą Cię od wymarzonej lektury</p>
+        <h2 class="section-title anim">Jak to działa?</h2>
+        <p class="anim anim-d1">Trzy proste kroki dzielą Cię od wymarzonej lektury</p>
       </div>
 
       <div class="how-cards">
 
-        <!-- Krok 1 -->
-        <div class="how-card">
+        <div class="how-card anim anim-d1">
           <div class="how-step-num">1</div>
           <div class="how-icon-wrap">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
@@ -40,8 +31,7 @@
           <p>Przeglądaj tysiące ofert od czytelników w Twoim mieście. Filtruj po gatunku, autorze i typie oferty.</p>
         </div>
 
-        <!-- Krok 2 -->
-        <div class="how-card">
+        <div class="how-card anim anim-d2">
           <div class="how-step-num">2</div>
           <div class="how-icon-wrap">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
@@ -56,8 +46,7 @@
           <p>Skontaktuj się z właścicielem jednym kliknięciem. Zaproponuj wymianę lub umów się na wypożyczenie.</p>
         </div>
 
-        <!-- Krok 3 -->
-        <div class="how-card">
+        <div class="how-card anim anim-d3">
           <div class="how-step-num">3</div>
           <div class="how-icon-wrap">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none"

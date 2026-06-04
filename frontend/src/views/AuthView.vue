@@ -1,4 +1,5 @@
 <script setup>
+  /** Logowanie / rejestracja: przełącznik zakładek, lewy panel dekoracyjny, formularze. */
   import { ref, computed } from 'vue';
   import { useRoute } from 'vue-router';
   import { T } from '../assets/constants.js';

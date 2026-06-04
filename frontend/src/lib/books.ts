@@ -1,3 +1,6 @@
+/**
+ * Katalog książek w bazie: wyszukiwanie Google Books, gatunki, zapis nowej książki.
+ */
 import { apiRequest } from './client'
 import type { BookDto, Genre, GoogleBookResult } from './types'
 

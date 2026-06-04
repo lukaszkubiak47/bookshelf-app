@@ -1,3 +1,7 @@
+/**
+ * Mapowanie DTO z API → kształt wygodny dla Vue (karty, półka, profil).
+ * Tu też: URL okładek/avatarów, kolory zastępcze okładek, format dat.
+ */
 import type { TransactionDto, UserBookDto } from './types'
 import { resolveApiUrl } from './client'
 
@@ -57,6 +61,7 @@ export function mapUserBookToCard(dto: UserBookDto) {
 
   return {
     id: dto.id,
+    status: dto.status,
     bookId: dto.book.id,
     title: dto.book.title,
     author: dto.book.author,
@@ -152,7 +157,12 @@ export function mapUserBookToListed(dto: UserBookDto) {
     coverUrl: realCoverUrl(dto.book.coverUrl),
     price: dto.price,
     dateAdded: new Date(dto.createdAt).toLocaleDateString('pl-PL'),
-    listStatus: dto.status === 'available' ? 'available' : 'active',
+    listStatus:
+      dto.status === 'available'
+        ? 'available'
+        : dto.status === 'completed' || dto.status === 'sold'
+          ? 'completed'
+          : 'active',
   }
 }
 

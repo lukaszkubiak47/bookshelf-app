@@ -1,12 +1,20 @@
 <script setup>
+  /**
+   * Kreator dodawania oferty (2 kroki): wyszukiwanie Google Books → typ i szczegóły oferty.
+   * Zapis: POST książki (jeśli nowa) + POST userbooks + opcjonalnie okładka.
+   */
   import { ref, reactive, onMounted, watch } from 'vue';
   import { booksApi } from '../lib/books';
   import { userBooksApi } from '../lib/userBooks';
   import { mapBookSearchResult, seedFromGuid, coverColor } from '../lib/mappers';
   import { ApiError } from '../lib/client';
+  import { useWizardStepTransition } from '../composables/useWizardStepTransition';
+  import { usePageAnimations } from '../composables/useAnimations';
 
-  /* ────── STAN APLIKACJI ────── */
   const currentStep = ref(1);
+  const wizardRef = ref(null);
+  const { goToStep, wizardTransition } = useWizardStepTransition(currentStep);
+  usePageAnimations({ scroll: false, ripple: true, root: wizardRef });
   const searchQuery = ref('');
   const isLoading = ref(false);
   const showResults = ref(false);
@@ -20,6 +28,9 @@
   const failedCovers = ref(new Set());
   const markCoverFailed = (id) => { failedCovers.value = new Set(failedCovers.value).add(id); };
   const coverOk = (b) => b.coverUrl && !failedCovers.value.has(b.googleBooksId);
+
+  const selectedCoverFailed = ref(false);
+  const resetSelectedCover = () => { selectedCoverFailed.value = false; };
 
   const form = reactive({
     selectedBook: null,
@@ -81,7 +92,7 @@
       googleBooksId: book.googleBooksId,
       title: book.title,
       author: book.author,
-      description: book.desc || null,
+      description: book.desc || '',
       isbn: book.isbn && book.isbn !== '—' ? book.isbn : null,
       coverUrl: book.coverUrl || null,
       genreId: '',
@@ -91,11 +102,13 @@
       img: book.img,
     };
     showResults.value = false;
+    resetSelectedCover();
   };
 
   const changeBookSelection = () => {
     form.selectedBook = null;
     showResults.value = true;
+    resetSelectedCover();
   };
 
   // Ręczne dane: tylko stage'ujemy lokalnie. Zapis do bazy (POST /api/books) następuje przy publikacji oferty.
@@ -124,6 +137,7 @@
     };
     isManualOpen.value = false;
     showResults.value = false;
+    resetSelectedCover();
   };
 
   const swapConditionMap = {
@@ -140,7 +154,7 @@
     const created = await booksApi.create({
       title: sb.title,
       author: sb.author,
-      description: sb.description || undefined,
+      description: sb.description?.trim() || undefined,
       isbn: sb.isbn || undefined,
       genreId: sb.genreId,
       googleBooksId: sb.googleBooksId || undefined,
@@ -191,7 +205,10 @@
         }
       }
 
-      await userBooksApi.create(body);
+      const created = await userBooksApi.create(body);
+      if (form.customCoverFile) {
+        await userBooksApi.uploadCover(created.id, form.customCoverFile);
+      }
       showSuccess.value = true;
     } catch (err) {
       submitError.value = err instanceof ApiError ? err.message : 'Nie udało się dodać oferty';
@@ -234,7 +251,7 @@
 </script>
 
 <template>
-  <div class="wizard-outer">
+  <div ref="wizardRef" class="wizard-outer">
 
     <div class="progress-bar">
       <div class="pb-step" :class="{ active: currentStep === 1, done: currentStep > 1 }">
@@ -255,7 +272,8 @@
       </div>
     </div>
 
-    <div v-if="currentStep === 1" class="wizard-card animate-in">
+    <Transition :name="wizardTransition" mode="out-in">
+    <div v-if="currentStep === 1" key="wizard-step-1" class="wizard-card">
       <div class="wcard-head">
         <h2 class="wcard-title">Znajdź swoją książkę</h2>
         <p class="wcard-desc">Wyszukaj książkę, którą chcesz wystawić. Pobierzemy dane automatycznie.</p>
@@ -319,7 +337,17 @@
           <div class="sel-check">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
           </div>
-          <img :src="`https://picsum.photos/72/96?random=${form.selectedBook.img}`" alt="" class="sel-cover">
+          <img
+            v-if="form.selectedBook.coverUrl && !selectedCoverFailed"
+            :src="form.selectedBook.coverUrl"
+            :alt="form.selectedBook.title"
+            class="sel-cover"
+            @error="selectedCoverFailed = true"
+          >
+          <div v-else class="sel-cover sel-cover-fallback" :style="{ background: coverColor(form.selectedBook.title) }">
+            <span class="scf-title">{{ form.selectedBook.title }}</span>
+            <span class="scf-author">{{ form.selectedBook.author }}</span>
+          </div>
           <div class="sel-info">
             <div class="sel-title">{{ form.selectedBook.title }}</div>
             <div class="sel-author">{{ form.selectedBook.author }}</div>
@@ -381,7 +409,7 @@
 
         <div class="step-footer" style="margin-top:24px">
           <a href="#" style="font-size:13px;color:var(--text-3);text-decoration:none">Anuluj</a>
-          <button class="btn btn-filled btn-lg" :disabled="!form.selectedBook" @click="currentStep = 2">
+          <button class="btn btn-filled btn-lg" :disabled="!form.selectedBook" @click="goToStep(2)">
             Dalej
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
           </button>
@@ -389,7 +417,7 @@
       </div>
     </div>
 
-    <div v-if="currentStep === 2" class="wizard-card animate-in">
+    <div v-else key="wizard-step-2" class="wizard-card">
       <div class="wcard-head">
         <h2 class="wcard-title">Jak chcesz udostępnić tę książkę?</h2>
         <p class="wcard-desc">Wybierz typ oferty i uzupełnij szczegóły. Możesz to zmienić później.</p>
@@ -397,12 +425,22 @@
       <div class="wcard-body">
 
         <div class="book-recap">
-          <img :src="`https://picsum.photos/48/64?random=${form.selectedBook.img}`" alt="" class="recap-cover">
+          <img
+            v-if="form.selectedBook.coverUrl && !selectedCoverFailed"
+            :src="form.selectedBook.coverUrl"
+            :alt="form.selectedBook.title"
+            class="recap-cover"
+            @error="selectedCoverFailed = true"
+          >
+          <div v-else class="recap-cover recap-cover-fallback" :style="{ background: coverColor(form.selectedBook.title) }">
+            <span class="rcf-title">{{ form.selectedBook.title }}</span>
+            <span class="rcf-author">{{ form.selectedBook.author }}</span>
+          </div>
           <div class="recap-info">
             <div class="recap-title">{{ form.selectedBook.title }}</div>
             <div class="recap-author">{{ form.selectedBook.author }}</div>
           </div>
-          <a href="#" class="recap-change" @click.prevent="currentStep = 1">← Zmień</a>
+          <a href="#" class="recap-change" @click.prevent="goToStep(1)">← Zmień</a>
         </div>
 
         <div v-if="form.selectedBook?.googleBooksId" class="form-field" style="margin-bottom:18px">
@@ -411,6 +449,17 @@
             <option value="" disabled>Wybierz gatunek…</option>
             <option v-for="g in genres" :key="g.id" :value="g.id">{{ g.name }}</option>
           </select>
+        </div>
+
+        <div v-if="form.selectedBook?.googleBooksId" class="form-field" style="margin-bottom:18px">
+          <label class="form-label">Opis (opcjonalnie)</label>
+          <textarea
+            class="form-input"
+            v-model="form.selectedBook.description"
+            rows="3"
+            placeholder="Dodaj własny opis lub zostaw opis z Google Books…"
+            style="resize:vertical"
+          ></textarea>
         </div>
 
         <div class="offer-type-heading">Wybierz typ oferty</div>
@@ -520,7 +569,7 @@
         </div>
 
         <div class="step-footer" style="margin-top:28px">
-          <button class="btn btn-outline" @click="currentStep = 1">
+          <button class="btn btn-outline" @click="goToStep(1)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
             Wróć
           </button>
@@ -532,6 +581,7 @@
         </div>
       </div>
     </div>
+    </Transition>
   </div>
 
   <div class="success-overlay" :class="{ open: showSuccess }">
@@ -570,6 +620,40 @@
   }
 
   .result-cover-fallback .rcf-author {
+    font-size: 8px;
+    opacity: 0.8;
+  }
+
+  .sel-cover-fallback,
+  .recap-cover-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 4px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.92);
+    overflow: hidden;
+  }
+
+  .sel-cover-fallback .scf-title,
+  .recap-cover-fallback .rcf-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .sel-cover-fallback .scf-title {
+    font-size: 9px;
+  }
+
+  .recap-cover-fallback .rcf-title {
+    font-size: 8px;
+  }
+
+  .sel-cover-fallback .scf-author,
+  .recap-cover-fallback .rcf-author {
     font-size: 8px;
     opacity: 0.8;
   }
