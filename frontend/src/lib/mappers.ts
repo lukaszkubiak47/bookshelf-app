@@ -185,7 +185,6 @@ export function mapUserToProfile(dto: {
     nick: dto.username,
     city: dto.city,
     email: dto.email,
-    bio: '',
     avatar: avatarImageUrl({ id: dto.id, avatarUrl: dto.avatarUrl }),
     createdAt: dto.createdAt,
     booksCount: dto.booksCount,

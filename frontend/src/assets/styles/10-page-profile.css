@@ -324,6 +324,7 @@
 
 .profile-page .input-icon {
   position: absolute;
+  left: auto;
   right: 11px;
   top: 50%;
   transform: translateY(-50%);

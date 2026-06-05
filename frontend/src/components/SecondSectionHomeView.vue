@@ -1,34 +1,25 @@
 <script setup>
-  /** Strona główna: siatka ostatnich ofert z API (GET /api/userbooks/recent). */
-  import { ref, onMounted, watch, nextTick } from 'vue';
+  /** Strona główna: siatka ostatnich ofert z API — dane z HomeView (bez duplikatów względem hero). */
+  import { ref, watch, nextTick } from 'vue';
   import { RouterLink, useRouter } from 'vue-router';
-  import { userBooksApi } from '../lib/userBooks';
-  import { mapUserBookToCard, coverColor } from '../lib/mappers';
   import { openBrowseOffer } from '../lib/browseNavigation';
+  import { coverColor } from '../lib/mappers';
   import { usePageAnimations, observeAnimationsIn } from '../composables/useAnimations';
   import { offerBadgeClass, offerBrowseLabel } from '../lib/offerTypes';
+
+  const props = defineProps({
+    recentBooks: { type: Array, required: true },
+    loadingRecent: { type: Boolean, default: false },
+  });
 
   const router = useRouter();
   const coverFailed = ref({});
 
-  const recentBooks = ref([]);
-  const loadingRecent = ref(true);
   const sectionRef = ref(null);
 
   usePageAnimations({ hero: false, scroll: true, ripple: true, root: sectionRef });
 
-  onMounted(async () => {
-    try {
-      const items = await userBooksApi.getRecent(5);
-      recentBooks.value = items.map(mapUserBookToCard);
-    } catch {
-      recentBooks.value = [];
-    } finally {
-      loadingRecent.value = false;
-    }
-  });
-
-  watch(recentBooks, async () => {
+  watch(() => props.recentBooks, async () => {
     await nextTick();
     if (sectionRef.value) observeAnimationsIn(sectionRef.value);
   });

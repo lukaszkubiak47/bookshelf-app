@@ -121,8 +121,14 @@
 <template>
   <div ref="pageRef" class="shelf-page">
     <div class="page-header anim">
-      <h1 class="page-title">Moja półka</h1>
-      <span class="page-count">Razem: {{ totalCount }}</span>
+      <div class="page-header-start">
+        <h1 class="page-title">Moja półka</h1>
+        <span class="page-count">Razem: {{ totalCount }}</span>
+      </div>
+      <RouterLink to="/dodawanie" class="btn btn-filled">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="7" y1="1" x2="7" y2="13" /><line x1="1" y1="7" x2="13" y2="7" /></svg>
+        Dodaj książkę
+      </RouterLink>
     </div>
 
     <p v-if="loadError" class="load-error">{{ loadError }}</p>

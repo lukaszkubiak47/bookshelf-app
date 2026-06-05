@@ -25,7 +25,7 @@
   // Sam zapis imienia/miasta nie może podmieniać avatara.
   const avatarTouched = ref(false);
 
-  const form = reactive({ name: '', surname: '', nick: '', city: '', bio: '', avatar: '' });
+  const form = reactive({ name: '', surname: '', nick: '', city: '', avatar: '' });
   const errors = reactive({ name: false, surname: false });
 
   const enterEditMode = () => {
@@ -149,10 +149,6 @@
           <span class="data-label">Email</span>
           <span class="data-value">{{ user.email }}</span>
         </div>
-        <div class="data-row">
-          <span class="data-label">O mnie</span>
-          <span class="data-value">{{ user.bio || '—' }}</span>
-        </div>
       </div>
     </div>
 
@@ -234,10 +230,6 @@
             </span>
           </div>
           <span style="font-size:11px;color:var(--text-3);margin-top:3px">Zmiana emaila wymaga weryfikacji — skontaktuj się z pomocą techniczną</span>
-        </div>
-        <div class="form-field full">
-          <label class="form-label" for="fBio">O mnie (opcjonalnie)</label>
-          <textarea v-model="form.bio" class="form-input" id="fBio" rows="3" placeholder="Kilka słów o sobie i swoich ulubionych gatunkach…" style="resize:vertical"></textarea>
         </div>
       </div>
 

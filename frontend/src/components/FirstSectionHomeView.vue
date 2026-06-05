@@ -5,14 +5,16 @@
   import { useStatsStore } from '../stores/stats';
   import { useAuthStore } from '../stores/auth';
   import { usePageAnimations } from '../composables/useAnimations';
-  import { useShowcaseOffers } from '../composables/useShowcaseOffers';
   import { openBrowseOffer } from '../lib/browseNavigation';
   import { coverColor } from '../lib/showcaseOffers';
+
+  defineProps({
+    showcaseSlots: { type: Array, required: true },
+  });
 
   const router = useRouter();
   const statsStore = useStatsStore();
   const auth = useAuthStore();
-  const { slots: showcaseSlots } = useShowcaseOffers(6, { w: 112, h: 150 });
   const coverFailed = ref({});
   usePageAnimations({ hero: true, scroll: false, ripple: false });
 

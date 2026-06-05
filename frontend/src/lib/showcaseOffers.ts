@@ -78,4 +78,53 @@ export async function fetchShowcaseSlots(
   }
 }
 
+const HOME_HERO_COUNT = 6
+const HOME_RECENT_COUNT = 5
+
+function pickRecentBooks(
+  available: MappedOfferCard[],
+  heroIds: Set<string>,
+  count: number,
+): MappedOfferCard[] {
+  const recent: MappedOfferCard[] = []
+  for (const book of available) {
+    if (recent.length >= count) break
+    if (!heroIds.has(book.id)) recent.push(book)
+  }
+  if (recent.length < count) {
+    for (const book of available) {
+      if (recent.length >= count) break
+      recent.push(book)
+    }
+  }
+  return recent
+}
+
+/** Hero + „Świeże oferty” — bez duplikatów, dopóki starczy unikalnych pozycji. */
+export async function fetchHomeShowcase(coverSize?: { w: number; h: number }) {
+  try {
+    const result = await userBooksApi.getAll({
+      page: 1,
+      limit: HOME_HERO_COUNT + HOME_RECENT_COUNT,
+      sort: 'newest',
+    })
+    const available = result.items
+      .map(mapUserBookToCard)
+      .filter((book) => book.status === 'available')
+
+    const heroSlots = buildShowcaseSlots(available, HOME_HERO_COUNT, coverSize)
+    const heroIds = new Set(
+      heroSlots.filter((slot) => !slot.isPlaceholder).map((slot) => slot.id),
+    )
+    const recentBooks = pickRecentBooks(available, heroIds, HOME_RECENT_COUNT)
+
+    return { heroSlots, recentBooks }
+  } catch {
+    return {
+      heroSlots: buildShowcaseSlots([], HOME_HERO_COUNT, coverSize),
+      recentBooks: [] as MappedOfferCard[],
+    }
+  }
+}
+
 export { coverColor, seedFromGuid }

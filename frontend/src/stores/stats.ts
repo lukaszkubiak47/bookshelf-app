@@ -4,6 +4,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiFetch } from '../lib/api'
+import { userBooksApi } from '../lib/userBooks'
 
 // Odpowiada StatsDto z backendu
 export interface Stats {
@@ -24,7 +25,15 @@ export const useStatsStore = defineStore('stats', () => {
     loading.value = true
     error.value = false
     try {
-      stats.value = await apiFetch<Stats>('/stats')
+      const [statsData, offersResult] = await Promise.all([
+        apiFetch<Stats>('/stats'),
+        userBooksApi.getAll({ page: 1, limit: 1 }),
+      ])
+      stats.value = {
+        ...statsData,
+        // Ta sama logika co „Przeglądaj książki” (WhereBrowsable), nie licznik z /stats.
+        activeOffers: offersResult.total,
+      }
     } catch {
       error.value = true
     } finally {
