@@ -1,7 +1,11 @@
 <script setup>
   /**
-   * Przeglądaj książki: lista publicznych ofert, filtry, sortowanie, modal szczegółów.
-   * Po akceptacji/zakończeniu transakcji odświeża listę (OFFERS_CHANGED_EVENT).
+   * Trasa: /przegladanie (name: browse) — publiczna lista ofert.
+   * Cel: przeglądanie, filtrowanie i sortowanie książek; modal szczegółów oferty.
+   * API: userBooksApi.getAll (paginacja, filtry, sortowanie).
+   * Komponenty: BookFiltersBrowseView, BookCard, OfferModal.
+   * Odświeża listę po OFFERS_CHANGED_EVENT (akceptacja/zakończenie transakcji).
+   * Query ?offer=id otwiera modal (np. klik okładki na stronie głównej).
    */
   import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
@@ -166,6 +170,7 @@
 
 <template>
   <div ref="pageRef" class="page-wrapper">
+    <!-- SEKCJA: Nagłówek + licznik wyników -->
     <div class="page-header anim">
       <h1 class="page-title">Przeglądaj książki</h1>
       <span class="result-count">Znaleziono <strong>{{ total }}</strong> ofert</span>
@@ -173,7 +178,9 @@
 
     <p v-if="loadError" class="load-error">{{ loadError }}</p>
 
+    <!-- SEKCJA: Układ dwukolumnowy — filtry boczne + główna lista -->
     <div class="page-layout">
+      <!-- SEKCJA: Panel filtrów (wyszukiwanie, miasto, typ, gatunek) -->
       <BookFiltersBrowseView v-model:search="search"
                              v-model:city="city"
                              :types="stateTypes"
@@ -185,6 +192,7 @@
                              @reset="resetFilters" />
 
       <main>
+        <!-- SEKCJA: Pasek narzędzi — dodaj książkę, sortowanie, przełącznik widoku -->
         <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
           <RouterLink to="/dodawanie" class="btn btn-filled">
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="7" y1="1" x2="7" y2="13" /><line x1="1" y1="7" x2="13" y2="7" /></svg>
@@ -211,6 +219,7 @@
           </div>
         </div>
 
+        <!-- SEKCJA: Siatka/lista kart ofert lub stan pusty -->
         <div v-if="loading && books.length === 0" class="empty">
           <p>Ładowanie ofert…</p>
         </div>
@@ -242,6 +251,7 @@
           </BookCard>
         </div>
 
+        <!-- SEKCJA: Paginacja — doładowanie kolejnej strony -->
         <div class="load-more" v-if="books.length < total">
           <button class="btn btn-outline" :disabled="loading" @click="loadMore" style="min-width:200px">
             {{ loading ? 'Ładowanie…' : 'Załaduj więcej ofert' }}
@@ -250,6 +260,7 @@
       </main>
     </div>
 
+    <!-- SEKCJA: Modal szczegółów oferty i wysyłki prośby o transakcję -->
     <OfferModal :offer-id="selectedOfferId" @close="closeModal" />
   </div>
 </template>

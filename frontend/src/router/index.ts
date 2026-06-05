@@ -1,17 +1,31 @@
 /**
- * Definicja tras URL → widoków oraz strażnik logowania (meta.requiresAuth / guestOnly).
+ * Konfiguracja Vue Router — mapowanie URL → widoków.
+ *
+ * Cel: centralna definicja tras, lazy-loading widoków i ochrona tras wymagających logowania.
+ * Kiedy używać: dodajesz nową stronę tutaj; w komponentach nawigujesz przez useRouter()
+ * lub <RouterLink>, a nie importując widoków bezpośrednio.
+ *
+ * Powiązane pliki:
+ * - main.ts — rejestruje router przez app.use(router)
+ * - stores/auth.ts — stan logowania sprawdzany w beforeEach
+ * - views/* — komponenty ładowane dynamicznie (import())
+ * - App.vue — <RouterView /> renderuje aktywny widok
+ * - components/AppNavbar.vue — linki nawigacyjne do tras
  */
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
+// --- Definicja tras ---
+// meta.requiresAuth — tylko dla zalogowanych; meta.guestOnly — tylko dla gości (np. logowanie)
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-  // --- Publiczne ---
+    // Publiczne
     { path: '/', name: 'home', component: () => import('../views/HomeView.vue') },
     { path: '/przegladanie', name: 'browse', component: () => import('../views/BrowseView.vue') },
     { path: '/logowanie', name: 'auth', component: () => import('../views/AuthView.vue'), meta: { guestOnly: true } },
-    // --- Wymagają zalogowania ---
+    // Wymagają zalogowania
     { path: '/polka', name: 'shelf', component: () => import('../views/ShelfView.vue'), meta: { requiresAuth: true } },
     { path: '/dodawanie', name: 'addbook', component: () => import('../views/AddBookView.vue'), meta: { requiresAuth: true } },
     { path: '/polka/edytuj/:id', name: 'editbook', component: () => import('../views/EditBookView.vue'), meta: { requiresAuth: true } },
@@ -29,8 +43,9 @@ const router = createRouter({
   ]
 })
 
-// Ochrona tras: trasy z requiresAuth wymagają logowania; guestOnly (logowanie) przekierowuje
-// zalogowanych na stronę główną.
+// --- Strażnik nawigacji (navigation guard) ---
+// Uruchamia się przed każdą zmianą trasy; zwrócenie { name: '...' } = przekierowanie.
+
 router.beforeEach((to) => {
   const auth = useAuthStore()
   if (to.meta.requiresAuth && !auth.isLoggedIn) {

@@ -1,4 +1,4 @@
-/* Dodaj / edytuj książkę: kreator kroków, wyszukiwanie, typ oferty, overlay sukcesu. */
+/* Dodaj / edytuj książkę (AddBookView, EditBookView): kreator kroków, typ oferty, overlay sukcesu. */
 .wizard-outer {
   max-width: 700px;
   margin: 0 auto;

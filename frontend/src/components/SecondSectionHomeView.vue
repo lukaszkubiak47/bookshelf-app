@@ -1,34 +1,30 @@
 <script setup>
-  /** Strona główna: siatka ostatnich ofert z API (GET /api/userbooks/recent). */
-  import { ref, onMounted, watch, nextTick } from 'vue';
+  /**
+   * Sekcja „Świeże oferty” na stronie głównej — siatka kart z API.
+   * Użycie: HomeView.vue — druga sekcja pod hero.
+   * Props: recentBooks (tablica ofert), loadingRecent (stan ładowania).
+   * Klik w kartę przekierowuje do przeglądania z otwartym modalem oferty.
+   */
+  import { ref, watch, nextTick } from 'vue';
   import { RouterLink, useRouter } from 'vue-router';
-  import { userBooksApi } from '../lib/userBooks';
-  import { mapUserBookToCard, coverColor } from '../lib/mappers';
   import { openBrowseOffer } from '../lib/browseNavigation';
+  import { coverColor } from '../lib/mappers';
   import { usePageAnimations, observeAnimationsIn } from '../composables/useAnimations';
   import { offerBadgeClass, offerBrowseLabel } from '../lib/offerTypes';
+
+  const props = defineProps({
+    recentBooks: { type: Array, required: true },
+    loadingRecent: { type: Boolean, default: false },
+  });
 
   const router = useRouter();
   const coverFailed = ref({});
 
-  const recentBooks = ref([]);
-  const loadingRecent = ref(true);
   const sectionRef = ref(null);
 
   usePageAnimations({ hero: false, scroll: true, ripple: true, root: sectionRef });
 
-  onMounted(async () => {
-    try {
-      const items = await userBooksApi.getRecent(5);
-      recentBooks.value = items.map(mapUserBookToCard);
-    } catch {
-      recentBooks.value = [];
-    } finally {
-      loadingRecent.value = false;
-    }
-  });
-
-  watch(recentBooks, async () => {
+  watch(() => props.recentBooks, async () => {
     await nextTick();
     if (sectionRef.value) observeAnimationsIn(sectionRef.value);
   });
@@ -59,6 +55,7 @@
         </RouterLink>
       </div>
 
+      <!-- Stany: ładowanie, pusto, siatka ofert -->
       <p v-if="loadingRecent" class="section-hint">Ładowanie ofert…</p>
       <p v-else-if="recentBooks.length === 0" class="section-hint">Brak ofert — dodaj pierwszą książkę!</p>
 

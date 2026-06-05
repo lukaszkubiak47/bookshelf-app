@@ -1,5 +1,9 @@
 <script setup lang="ts">
-  /** Filtry statusu i typu na zakładkach transakcji (Moja półka). */
+  /**
+   * Dwa selecty filtrujące transakcje na stronie Moja półka.
+   * Użycie: ShelfView.vue — zakładki „Otrzymane” / „Wysłane”.
+   * v-model: statusFilter (pending|accepted|done|rejected), typeFilter (loan|swap|sale).
+   */
   const statusFilter = defineModel<string>('statusFilter');
   const typeFilter = defineModel<string>('typeFilter');
 </script>

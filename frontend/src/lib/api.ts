@@ -1,6 +1,11 @@
 /**
- * Uproszczony fetch pod /api — używany wyłącznie przez stores/auth (login, register).
- * Reszta aplikacji powinna iść przez client.ts → apiRequest.
+ * Uproszczony fetch HTTP — legacy wrapper pod ścieżki /api.
+ *
+ * Kiedy tu zajrzeć: tylko przy stores/auth (login, register) i stores/stats (GET /stats).
+ * Nowe moduły API → lib/client.ts → apiRequest().
+ *
+ * Eksporty: apiFetch, ApiError.
+ * Backend: POST /api/auth/login, POST /api/auth/register, GET /api/stats.
  */
 
 const BASE = '/api'

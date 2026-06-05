@@ -1,5 +1,10 @@
 <script setup>
-  /** Edycja profilu: dane osobowe, wybór avatara, PUT /api/users/me. */
+  /**
+   * Karta edycji danych osobowych użytkownika (tryb podglądu / edycji).
+   * Użycie: ProfileView.vue — sekcja „Dane osobowe”.
+   * Props: user (obiekt profilu z mapUserToProfile).
+   * Emity: update:user (zaktualizowany profil), saved (po udanym zapisie).
+   */
   import { ref, reactive } from 'vue';
   import { usersApi } from '../lib/users';
   import { mapUserToProfile } from '../lib/mappers';
@@ -25,7 +30,7 @@
   // Sam zapis imienia/miasta nie może podmieniać avatara.
   const avatarTouched = ref(false);
 
-  const form = reactive({ name: '', surname: '', nick: '', city: '', bio: '', avatar: '' });
+  const form = reactive({ name: '', surname: '', nick: '', city: '', avatar: '' });
   const errors = reactive({ name: false, surname: false });
 
   const enterEditMode = () => {
@@ -119,6 +124,7 @@
 </script>
 
 <template>
+  <!-- Karta profilu: nagłówek + tryb podglądu lub edycji -->
   <div class="card">
     <div class="card-header">
       <div>
@@ -131,6 +137,7 @@
       </button>
     </div>
 
+    <!-- Tryb podglądu — tylko odczyt pól publicznych -->
     <div v-if="!isEditMode" class="card-body">
       <div class="profile-data-grid">
         <div class="data-row">
@@ -149,13 +156,10 @@
           <span class="data-label">Email</span>
           <span class="data-value">{{ user.email }}</span>
         </div>
-        <div class="data-row">
-          <span class="data-label">O mnie</span>
-          <span class="data-value">{{ user.bio || '—' }}</span>
-        </div>
       </div>
     </div>
 
+    <!-- Tryb edycji: avatar (preset / upload) + formularz danych -->
     <div v-else class="card-body">
       <div class="edit-subsection-title">Zdjęcie profilowe</div>
       <div class="avatar-picker-layout">
@@ -234,10 +238,6 @@
             </span>
           </div>
           <span style="font-size:11px;color:var(--text-3);margin-top:3px">Zmiana emaila wymaga weryfikacji — skontaktuj się z pomocą techniczną</span>
-        </div>
-        <div class="form-field full">
-          <label class="form-label" for="fBio">O mnie (opcjonalnie)</label>
-          <textarea v-model="form.bio" class="form-input" id="fBio" rows="3" placeholder="Kilka słów o sobie i swoich ulubionych gatunkach…" style="resize:vertical"></textarea>
         </div>
       </div>
 

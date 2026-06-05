@@ -1,9 +1,16 @@
 /**
- * Profil zalogowanego użytkownika: odczyt, edycja, hasło, avatar.
+ * Profil zalogowanego użytkownika — odczyt, edycja, hasło, avatar.
+ *
+ * Kiedy tu zajrzeć: PersonalData.vue, zmiana hasła, upload/preset avatara, syncFromProfile w auth store.
+ * Wszystkie metody wymagają auth: true (endpoint /me).
+ *
+ * Eksport: usersApi.
+ * Backend: GET/PUT /api/users/me, PUT /me/password, PUT /me/avatar-preset, POST /me/avatar.
  */
 import { apiRequest } from './client'
 import type { UserProfile } from './types'
 
+/** Wywołania REST pod kontroler Users */
 export const usersApi = {
   getMe() {
     return apiRequest<UserProfile>('/api/users/me', { auth: true })

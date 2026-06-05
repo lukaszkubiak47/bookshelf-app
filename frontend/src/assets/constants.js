@@ -1,6 +1,14 @@
 /**
- * Stałe strony logowania / rejestracji (inline style z mockupu).
- * Paleta odpowiada zmiennym :root w styles/01-foundation.css.
+ * Stałe i tokeny designu dla ekranu logowania/rejestracji (inline :style).
+ *
+ * Kiedy tu zajrzeć: AuthView, LoginForm, RegisterForm, AuthLeftPanel — kolory i style inline.
+ * Paleta T odpowiada zmiennym :root w styles/01-foundation.css.
+ *
+ * Eksporty:
+ * - T — paleta kolorów (bg, green, gold, tekst, border…)
+ * - AUTH_STYLES — gotowe obiekty :style dla formularzy auth
+ * - P — ścieżki SVG (ikony w AuthLeftPanel)
+ * - AUTH_DEMO_BOOK_BADGE — kolory badge typu oferty na panelu auth
  */
 
 export const T = {

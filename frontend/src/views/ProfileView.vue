@@ -1,5 +1,10 @@
 <script setup>
-  /** Profil użytkownika: nagłówek + PersonalData + Security. */
+  /**
+   * Trasa: /profil (name: profile) — wymaga zalogowania (meta.requiresAuth).
+   * Cel: wyświetlanie i edycja danych konta, zmiana hasła.
+   * API: usersApi.getMe (ładowanie profilu; sync z auth store).
+   * Komponenty: PersonalData (dane osobowe), Security (hasło).
+   */
   import { ref, computed, onMounted } from 'vue';
   import PersonalData from '../components/PersonalData.vue';
   import Security from '../components/Security.vue';
@@ -44,10 +49,12 @@
 
 <template>
   <div class="profile-view-wrapper">
+    <!-- SEKCJA: Stany ładowania i błędu profilu -->
     <p v-if="profileLoading" class="profile-status">Ładowanie profilu…</p>
     <p v-else-if="profileError" class="profile-status profile-status--error">{{ profileError }}</p>
 
     <template v-else-if="user">
+      <!-- SEKCJA: Baner hero z avatarem i dekoracyjną półką -->
       <div class="profile-hero">
         <div class="hero-pattern"></div>
         <svg class="hero-shelves" viewBox="0 0 1200 188" fill="none" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
@@ -96,6 +103,7 @@
         </div>
       </div>
 
+      <!-- SEKCJA: Imię, nick, lokalizacja i statystyki użytkownika -->
       <div class="profile-info-section">
         <div class="profile-info-inner">
           <h1 class="profile-name">{{ user.name }} {{ user.surname }}</h1>
@@ -118,6 +126,7 @@
         </div>
       </div>
 
+      <!-- SEKCJA: Formularze edycji — dane osobowe i bezpieczeństwo -->
       <div class="profile-page">
         <PersonalData :user="user" @update:user="updateUser" @saved="loadProfile" />
         <Security />

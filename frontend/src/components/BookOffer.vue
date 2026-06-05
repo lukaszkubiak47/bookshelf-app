@@ -1,6 +1,10 @@
 <script setup lang="ts">
   /**
-   * Karta na „Moja półka”: tryb transakcji (akceptuj/odrzuć/zakończ) lub wystawiona oferta (edytuj/usuń).
+   * Karta oferty lub transakcji na stronie Moja półka.
+   * Użycie: ShelfView.vue — zakładki transakcji i wystawione oferty.
+   * Props: item (dane karty), isListed (true = wystawiona oferta), direction (received|sent).
+   * Emity: action (zmiana statusu), delete, edit.
+   * Dwa widoki: listed-card (menu edycji) lub tx-card (akceptacja/odrzucenie/kontakt).
    */
   import { ref, computed, onMounted } from 'vue';
   import { coverColor } from '../lib/mappers';
@@ -107,6 +111,7 @@
 </script>
 
 <template>
+  <!-- Widok A: wystawiona oferta z menu edycji/usuwania -->
   <div v-if="isListed" class="listed-card" :style="cardStyle">
     <div class="lc-cover-wrap">
       <img v-if="item.coverUrl && !coverFailed" :src="item.coverUrl" :alt="item.bookTitle" class="lc-cover" loading="lazy" @error="coverFailed = true">
@@ -147,6 +152,7 @@
     </div>
   </div>
 
+  <!-- Widok B: transakcja — status, akcje właściciela, dane kontaktowe po akceptacji -->
   <div v-else :class="['tx-card', offerTxCardClass(item.type), { dimmed: isDimmed, 'pending-pulse': item.status === 'pending' }, flashClass]">
     <div class="tx-main">
       <div class="tx-left">

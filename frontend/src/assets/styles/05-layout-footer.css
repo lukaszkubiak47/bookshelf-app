@@ -1,4 +1,4 @@
-/* Stopka aplikacji (AppFooter) oraz wariant na stronie auth. */
+/* Stopka aplikacji (AppFooter) — wariant na stronie auth i globalny layout. */
 .footer {
   background: var(--surface);
   border-top: 1px solid var(--border);

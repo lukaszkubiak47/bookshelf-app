@@ -1,4 +1,5 @@
-/* Mój profil: nagłówek, dane osobowe, avatar, sekcja hasła (Security). */
+/* Mój profil (ProfileView): nagłówek, dane osobowe, avatar, sekcja hasła.
+   Komponenty: PersonalData, Security. */
 .profile-view-wrapper {
   min-width: 0;
   overflow-x: clip;
@@ -324,6 +325,7 @@
 
 .profile-page .input-icon {
   position: absolute;
+  left: auto;
   right: 11px;
   top: 50%;
   transform: translateY(-50%);

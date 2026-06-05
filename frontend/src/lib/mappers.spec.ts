@@ -1,3 +1,4 @@
+/** Testy jednostkowe lib/mappers.ts (seedFromGuid, coverColor). */
 import { describe, expect, it } from 'vitest'
 
 import { coverColor, seedFromGuid } from './mappers'

@@ -1,9 +1,16 @@
 /**
- * Prośby o wypożyczenie/wymianę/sprzedaż: wysłane, otrzymane, akceptacja, odrzucenie, zakończenie.
+ * Transakcje — prośby o wypożyczenie, wymianę lub sprzedaż między użytkownikami.
+ *
+ * Kiedy tu zajrzeć: Moja półka (zakładki wysłane/otrzymane), OfferModal (wyślij prośbę),
+ * akceptacja/odrzucenie/zakończenie, pobranie danych kontaktowych po akceptacji.
+ *
+ * Eksport: transactionsApi.
+ * Backend: /api/transactions, /received, /sent, /{id}/accept|reject|finish|contact.
  */
 import { apiRequest } from './client'
 import type { TransactionDto, TransactionContact } from './types'
 
+/** Wywołania REST pod kontroler Transactions */
 export const transactionsApi = {
   // Dane kontaktowe drugiej strony — działa tylko dla accepted/done i tylko dla strony transakcji.
   getContact(id: string) {

@@ -1,3 +1,4 @@
+/** Testy jednostkowe lib/offerTypes.ts (isOfferType, etykiety, klasy CSS). */
 import { describe, expect, it } from 'vitest'
 
 import {

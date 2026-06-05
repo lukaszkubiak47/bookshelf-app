@@ -1,5 +1,10 @@
 <script setup>
-  /** Zmiana hasła w profilu — rozwijana sekcja, PUT /api/users/me/password. */
+  /**
+   * Rozwijana karta zmiany hasła w profilu użytkownika.
+   * Użycie: ProfileView.vue — sekcja „Bezpieczeństwo”.
+   * Brak propsów i emitów; zapis przez usersApi.changePassword.
+   * Walidacja lokalna + wskaźnik siły nowego hasła.
+   */
   import { ref, reactive, computed } from 'vue';
   import { usersApi } from '../lib/users';
   import { ApiError } from '../lib/client';
@@ -78,6 +83,7 @@
 </script>
 
 <template>
+  <!-- Akordeon: nagłówek klikalny + zwijana treść formularza hasła -->
   <div class="card">
     <div class="sec-header" @click="toggleOpen" role="button" tabindex="0" :aria-expanded="isOpen">
       <div class="sec-title-wrap">
@@ -94,6 +100,7 @@
       </div>
     </div>
 
+    <!-- Formularz: aktualne hasło, nowe (z paskiem siły), potwierdzenie -->
     <div :class="['sec-body', { open: isOpen }]">
       <div class="form-grid-2" style="margin-bottom:0">
         <div class="form-field full">

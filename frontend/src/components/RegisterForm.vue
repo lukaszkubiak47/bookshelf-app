@@ -1,5 +1,10 @@
 <script setup>
-  /** Rejestracja konta — walidacja, siła hasła, authStore.register. */
+  /**
+   * Formularz rejestracji nowego konta użytkownika.
+   * Użycie: AuthView.vue — zakładka „register”.
+   * Emity: switch — przełączenie na LoginForm.
+   * Po sukcesie: authStore.register → przekierowanie na /.
+   */
   import { ref, reactive, computed } from 'vue';
   import { useRouter } from 'vue-router';
   import { T, P, AUTH_STYLES } from '../assets/constants.js';
@@ -116,6 +121,7 @@
 </script>
 
 <template>
+  <!-- Sukces rejestracji lub formularz z walidacją i akceptacją regulaminu -->
   <div v-if="done" :style="AUTH_STYLES.successScreen">
     <div :style="AUTH_STYLES.successIconCircle">
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" :stroke="T.success" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="P.check" />

@@ -1,7 +1,11 @@
 <script setup lang="ts">
   /**
-   * Moja półka: transakcje (otrzymane/wysłane) + wystawione oferty.
-   * Akceptacja/zakończenie wywołuje notifyOffersChanged() — ukrywa ofertę w przeglądaj.
+   * Trasa: /polka (name: shelf) — wymaga zalogowania (meta.requiresAuth).
+   * Cel: panel użytkownika — transakcje (otrzymane/wysłane) i wystawione oferty.
+   * API: transactionsApi.getReceived/getSent, transactionsApi.accept/reject/finish,
+   *       userBooksApi.getMy/remove.
+   * Komponenty: BookFiltersShelfView, BookOffer.
+   * Po akceptacji/zakończeniu transakcji wywołuje notifyOffersChanged() — odświeża przeglądaj.
    */
   import { ref, computed, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
@@ -120,14 +124,23 @@
 
 <template>
   <div ref="pageRef" class="shelf-page">
+    <!-- SEKCJA: Nagłówek strony + przycisk dodawania książki -->
     <div class="page-header anim">
-      <h1 class="page-title">Moja półka</h1>
-      <span class="page-count">Razem: {{ totalCount }}</span>
+      <div class="page-header-start">
+        <h1 class="page-title">Moja półka</h1>
+        <span class="page-count">Razem: {{ totalCount }}</span>
+      </div>
+      <RouterLink to="/dodawanie" class="btn btn-filled">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="7" y1="1" x2="7" y2="13" /><line x1="1" y1="7" x2="13" y2="7" /></svg>
+        Dodaj książkę
+      </RouterLink>
     </div>
 
+    <!-- SEKCJA: Komunikaty ładowania i błędów -->
     <p v-if="loadError" class="load-error">{{ loadError }}</p>
     <p v-if="loading" class="load-hint">Ładowanie…</p>
 
+    <!-- SEKCJA: Zakładki (Otrzymane / Wysłane / Wystawione) + filtry transakcji -->
     <div class="controls-row anim anim-d1">
       <div class="tabs">
         <button :class="['tab-btn', { active: currentTab === 'received' }]" @click="currentTab = 'received'">
@@ -146,7 +159,9 @@
                    v-model:typeFilter="typeFilter" />
     </div>
 
+    <!-- SEKCJA: Panele zakładek — lista transakcji lub wystawionych ofert -->
     <div class="tab-panels-wrap">
+      <!-- Panel transakcji: grupowanie po statusie (oczekujące / aktywne / zakończone) -->
       <div v-if="currentTab === 'received' || currentTab === 'sent'" class="tab-panel active">
         <div v-if="activeTransactionList.length === 0" class="empty-state">
           <div class="empty-icon">📂</div>
@@ -186,6 +201,7 @@
         </div>
       </div>
 
+      <!-- Panel wystawionych ofert — edycja i usuwanie własnych książek -->
       <div v-if="currentTab === 'listed'" class="tab-panel active">
         <div v-if="listedBooks.length === 0" class="empty-state">
           <div class="empty-icon">📚</div>

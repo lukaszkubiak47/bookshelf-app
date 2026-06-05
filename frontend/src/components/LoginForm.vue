@@ -1,5 +1,10 @@
 <script setup>
-  /** Formularz logowania — wywołuje authStore.login, potem przekierowanie na /. */
+  /**
+   * Formularz logowania z wbudowanym dwuetapowym resetem hasła.
+   * Użycie: AuthView.vue — zakładka „login”.
+   * Emity: switch — przełączenie na RegisterForm.
+   * Po sukcesie: authStore.login → przekierowanie na /.
+   */
   import { ref, reactive, computed } from 'vue';
   import { useRouter } from 'vue-router';
   import { T, P, AUTH_STYLES } from '../assets/constants';
@@ -215,6 +220,7 @@
 </script>
 
 <template>
+  <!-- Trzy widoki: sukces logowania | reset hasła (2 kroki) | formularz logowania -->
   <div v-if="done" :style="AUTH_STYLES.successScreen">
     <div :style="AUTH_STYLES.successIconCircle">
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" :stroke="T.success" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="P.check" />
@@ -225,6 +231,7 @@
     <p :style="{ color: T.t2, fontSize: '14px' }">Przekierowanie za chwilę…</p>
   </div>
 
+  <!-- Reset hasła: krok 1 (weryfikacja tożsamości) → krok 2 (nowe hasło) -->
   <div v-else-if="resetOpen" class="anim-slide-right" :class="{ 'anim-shake': resetShaking }"
        :style="{ willChange: 'transform, opacity' }">
     <button type="button" @click="closeResetModal" :disabled="resetLoading"

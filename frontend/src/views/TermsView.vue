@@ -1,9 +1,14 @@
 <script setup>
-  // Strona statyczna — regulamin korzystania z platformy Bookshelf.
+  /**
+   * Trasa: /regulamin (name: terms) — strona publiczna, bez API.
+   * Cel: regulamin korzystania z platformy Bookshelf (treść statyczna).
+   * Komponenty: brak — cała treść w szablonie tego widoku.
+   */
 </script>
 
 <template>
   <div class="legal-page">
+    <!-- SEKCJA: Karta z treścią regulaminu -->
     <article class="legal-card">
       <h1 class="legal-title">Regulamin</h1>
       <p class="legal-lead">

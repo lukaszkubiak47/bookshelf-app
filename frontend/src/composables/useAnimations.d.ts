@@ -1,4 +1,14 @@
-/** Typy TypeScript dla useAnimations.js (używane m.in. w ShelfView.vue). */
+/**
+ * Deklaracje TypeScript dla useAnimations.js.
+ *
+ * Cel: typowanie opcji i eksportów animacji w plikach .vue / .ts (bez importu implementacji JS).
+ * Kiedy używać: gdy komponent w TypeScript importuje funkcje z useAnimations.js i potrzebuje autouzupełniania.
+ *
+ * Powiązane pliki:
+ * - composables/useAnimations.js — implementacja
+ * - views/ShelfView.vue, BrowseView.vue — usePageAnimations + observeAnimationsIn
+ * - assets/main.css — klasy .anim, .is-visible, animacja ripple
+ */
 import type { Ref } from 'vue'
 
 export interface PageAnimationsOptions {

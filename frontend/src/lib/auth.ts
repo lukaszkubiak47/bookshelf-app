@@ -1,6 +1,11 @@
 /**
- * Endpointy auth przez client.ts (alternatywa dla stores/auth + lib/api.ts).
- * Obecnie store auth nie korzysta z tego pliku — zostawiony dla ewentualnej unifikacji HTTP.
+ * Endpointy logowania i rejestracji przez client.ts (apiRequest).
+ *
+ * Kiedy tu zajrzeć: przy unifikacji HTTP — store auth dziś używa lib/api.ts zamiast tego pliku.
+ * Po migracji auth store można tu przenieść login/register i usunąć duplikat ApiError.
+ *
+ * Eksporty: authApi, LoginPayload, RegisterPayload.
+ * Backend: POST /api/auth/login, POST /api/auth/register.
  */
 import { apiRequest } from './client'
 import type { AuthResponse } from './types'
@@ -19,6 +24,7 @@ export interface RegisterPayload {
   city: string
 }
 
+/** Wywołania REST pod kontroler Auth */
 export const authApi = {
   login(payload: LoginPayload) {
     return apiRequest<AuthResponse>('/api/auth/login', { method: 'POST', body: payload })

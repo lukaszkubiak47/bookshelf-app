@@ -1,6 +1,11 @@
 /**
- * Oferty do dekoracyjnych okładek (hero, panel logowania).
- * Pobiera te same dane co przeglądaj; brakujące sloty uzupełnia losowymi picsum (bez linku).
+ * Oferty do dekoracyjnych okładek na stronie głównej i panelu logowania.
+ *
+ * Kiedy tu zajrzeć: hero z okładkami, sekcja „Świeże oferty”, useHomeShowcase composable.
+ * Pobiera dostępne oferty z userBooksApi; brakujące sloty uzupełnia placeholderami picsum.
+ *
+ * Eksporty: fetchShowcaseSlots, fetchHomeShowcase, buildShowcaseSlots, ShowcaseSlot, MappedOfferCard.
+ * Backend: GET /api/userbooks (paginacja, sort: newest) — ten sam endpoint co przeglądaj.
  */
 import { userBooksApi } from './userBooks'
 import { mapUserBookToCard, coverColor, seedFromGuid } from './mappers'
@@ -20,6 +25,7 @@ export interface ShowcaseSlot {
   isPlaceholder: boolean
 }
 
+/** Budowanie siatki slotów (prawdziwe oferty + placeholdery) */
 export function placeholderSlot(index: number, width = 112, height = 150): ShowcaseSlot {
   const seed = 300 + index
   return {
@@ -61,6 +67,7 @@ export function buildShowcaseSlots(
   return slots
 }
 
+/** Pobieranie danych z API i układ strony głównej */
 export async function fetchShowcaseSlots(
   count: number,
   coverSize?: { w: number; h: number },
@@ -75,6 +82,55 @@ export async function fetchShowcaseSlots(
     return buildShowcaseSlots(mapped, count, coverSize)
   } catch {
     return buildShowcaseSlots([], count, coverSize)
+  }
+}
+
+const HOME_HERO_COUNT = 6
+const HOME_RECENT_COUNT = 5
+
+function pickRecentBooks(
+  available: MappedOfferCard[],
+  heroIds: Set<string>,
+  count: number,
+): MappedOfferCard[] {
+  const recent: MappedOfferCard[] = []
+  for (const book of available) {
+    if (recent.length >= count) break
+    if (!heroIds.has(book.id)) recent.push(book)
+  }
+  if (recent.length < count) {
+    for (const book of available) {
+      if (recent.length >= count) break
+      recent.push(book)
+    }
+  }
+  return recent
+}
+
+/** Hero + „Świeże oferty” — bez duplikatów, dopóki starczy unikalnych pozycji. */
+export async function fetchHomeShowcase(coverSize?: { w: number; h: number }) {
+  try {
+    const result = await userBooksApi.getAll({
+      page: 1,
+      limit: HOME_HERO_COUNT + HOME_RECENT_COUNT,
+      sort: 'newest',
+    })
+    const available = result.items
+      .map(mapUserBookToCard)
+      .filter((book) => book.status === 'available')
+
+    const heroSlots = buildShowcaseSlots(available, HOME_HERO_COUNT, coverSize)
+    const heroIds = new Set(
+      heroSlots.filter((slot) => !slot.isPlaceholder).map((slot) => slot.id),
+    )
+    const recentBooks = pickRecentBooks(available, heroIds, HOME_RECENT_COUNT)
+
+    return { heroSlots, recentBooks }
+  } catch {
+    return {
+      heroSlots: buildShowcaseSlots([], HOME_HERO_COUNT, coverSize),
+      recentBooks: [] as MappedOfferCard[],
+    }
   }
 }
 

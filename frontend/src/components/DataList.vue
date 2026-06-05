@@ -1,6 +1,9 @@
 <script setup lang="ts" generic="T">
   /**
-   * Generyczna lista — renderuje items przez scoped slot (np. filtry, siatki).
+   * Generyczny wrapper listy — renderuje tablicę przez scoped slot.
+   * Użycie: BookFiltersBrowseView.vue — listy checkboxów typów i gatunków.
+   * Props: items, itemKey (pole :key), tag/itemTag (domyślnie ul/li), listClass, itemClass.
+   * Slot default: { item, index } — treść pojedynczego elementu.
    * @example
    * <DataList :items="genres" item-key="name" list-class="check-list">
    *   <template #default="{ item }">…</template>

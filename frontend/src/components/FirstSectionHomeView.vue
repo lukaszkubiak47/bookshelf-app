@@ -1,18 +1,25 @@
 <script setup>
-  /** Sekcja hero na stronie głównej: statystyki platformy, CTA, animacje wejścia. */
+  /**
+   * Sekcja hero strony głównej — nagłówek, CTA, statystyki i dekoracyjna siatka okładek.
+   * Użycie: HomeView.vue — pierwsza sekcja (showcaseSlots z useHomeShowcase).
+   * Props: showcaseSlots (tablica slotów okładek z ofertami lub placeholderami).
+   * Klik w okładkę z offerId otwiera ofertę w przeglądaniu.
+   */
   import { ref, computed, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { useStatsStore } from '../stores/stats';
   import { useAuthStore } from '../stores/auth';
   import { usePageAnimations } from '../composables/useAnimations';
-  import { useShowcaseOffers } from '../composables/useShowcaseOffers';
   import { openBrowseOffer } from '../lib/browseNavigation';
   import { coverColor } from '../lib/showcaseOffers';
+
+  defineProps({
+    showcaseSlots: { type: Array, required: true },
+  });
 
   const router = useRouter();
   const statsStore = useStatsStore();
   const auth = useAuthStore();
-  const { slots: showcaseSlots } = useShowcaseOffers(6, { w: 112, h: 150 });
   const coverFailed = ref({});
   usePageAnimations({ hero: true, scroll: false, ripple: false });
 
@@ -36,11 +43,11 @@
 </script>
 
 <template>
-  <!-- ════════════════════════ HERO ════════════════════════ -->
+  <!-- Hero: lewa kolumna (tekst, CTA, statystyki) + prawa (siatka okładek) -->
   <section class="hero">
     <div class="hero-inner">
 
-      <!-- LEFT -->
+      <!-- Lewa kolumna — nagłówek, przyciski, liczniki z API -->
       <div class="hero-left">
         <div class="hero-eyebrow anim">
           <span class="hero-eyebrow-dot"></span>
@@ -72,7 +79,7 @@
         </div>
       </div>
 
-      <!-- RIGHT — decorative book grid -->
+      <!-- Prawa kolumna — dekoracyjna siatka okładek (klikalne oferty) -->
       <div class="hero-right anim anim-d2">
         <div class="hero-blob"></div>
         <div class="hero-books">
