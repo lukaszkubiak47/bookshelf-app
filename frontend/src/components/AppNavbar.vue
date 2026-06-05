@@ -1,5 +1,10 @@
 <script setup>
-  /** Górne menu: linki, avatar, wylogowanie. */
+  /**
+   * Górne menu nawigacji — linki, stan zalogowania, menu użytkownika.
+   * Użycie: App.vue — ukryte na /logowanie.
+   * Brak propsów; stan z authStore (avatar, username, isLoggedIn).
+   * Mobilne menu hamburger + dropdown profilu z wylogowaniem.
+   */
   import { ref, computed } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '../stores/auth';
@@ -49,6 +54,7 @@
 </script>
 
 <template>
+  <!-- Nawigacja: logo, linki (desktop/mobile), akcje auth lub avatar -->
   <nav class="navbar">
     <RouterLink to="/" class="nav-logo">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -66,6 +72,7 @@
       </template>
     </ul>
 
+    <!-- Zalogowany: dropdown profilu | Gość: przyciski logowania i rejestracji -->
     <div class="nav-actions">
       <div v-if="auth.isLoggedIn"
            v-click-outside="closeMenu"

@@ -1,4 +1,5 @@
-/* Strona główna: hero, siatka „Świeże oferty”, sekcja „Jak to działa”. */
+/* Strona główna (HomeView): hero, siatka „Świeże oferty”, sekcja „Jak to działa”.
+   Komponenty: FirstSectionHomeView, SecondSectionHomeView, ThirdSectionHomeView. */
 .hero {
   min-height: calc(100vh - 60px);
   display: flex;

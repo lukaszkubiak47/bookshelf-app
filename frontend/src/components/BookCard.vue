@@ -1,5 +1,11 @@
 <script setup>
-  /** Karta pojedynczej oferty na liście przeglądaj (klik → modal). */
+  /**
+   * Karta pojedynczej oferty książki w siatce przeglądania.
+   * Użycie: BrowseView.vue — klik emituje select i otwiera OfferModal.
+   * Props: book (obiekt oferty), isOwn (podświetlenie własnej oferty).
+   * Emity: select (id oferty).
+   * Sloty: cover-badges, meta — nadpisanie domyślnych odznak i metadanych właściciela.
+   */
   import { ref, computed } from 'vue';
   import { coverColor } from '../lib/mappers';
   import { offerBadgeClass, offerBrowseLabel } from '../lib/offerTypes';
@@ -26,6 +32,7 @@
 </script>
 
 <template>
+  <!-- Klikalna karta: okładka z odznakami + tytuł i właściciel -->
   <div :class="['book-card', { 'book-card--own': isOwn }]" @click="$emit('select', book.id)">
     <div class="cover-wrap">
       <img v-if="book.coverUrl && !coverFailed" :src="book.coverUrl" :alt="book.title" class="cover-img" loading="lazy" @error="coverFailed = true">

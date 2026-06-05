@@ -1,6 +1,11 @@
 /**
- * Stan sesji użytkownika (JWT + dane w localStorage przez VueUse).
- * Używany przez navbar, guard routera, formularze logowania i profil.
+ * Pinia store — sesja użytkownika (JWT + dane w localStorage).
+ *
+ * Kiedy tu zajrzeć: logowanie/rejestracja, guard routera, navbar (isLoggedIn, user),
+ * wylogowanie, aktualizacja user po zapisie profilu (syncFromProfile).
+ *
+ * Eksporty: useAuthStore, typy User, RegisterPayload.
+ * Backend: POST /api/auth/login, POST /api/auth/register (przez lib/api.ts → apiFetch).
  */
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
@@ -35,6 +40,7 @@ export interface RegisterPayload {
 const TOKEN_KEY = 'bookshelf_token'
 const USER_KEY = 'bookshelf_user'
 
+/** Odczyt user z localStorage z obsługą uszkodzonego JSON */
 function readStoredUser(raw: string | null): User | null {
   if (!raw) return null
   try {
@@ -44,6 +50,7 @@ function readStoredUser(raw: string | null): User | null {
   }
 }
 
+/** Reaktywny stan sesji — token i user w localStorage (VueUse) */
 export const useAuthStore = defineStore('auth', () => {
   const token = useLocalStorage<string | null>(TOKEN_KEY, null)
   const user = useLocalStorage<User | null>(USER_KEY, null, {

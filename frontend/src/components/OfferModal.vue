@@ -1,5 +1,11 @@
 <script setup>
-  /** Modal szczegółów oferty + wysłanie prośby o transakcję (POST /api/transactions). */
+  /**
+   * Modal szczegółów oferty z możliwością wysłania prośby o transakcję.
+   * Użycie: BrowseView.vue — otwierany po kliknięciu BookCard (offerId z query/route).
+   * Props: offerId (null = zamknięty).
+   * Emity: close.
+   * Slot actions — nadpisanie domyślnych przycisków (np. własna oferta, niedostępna).
+   */
   import { ref, watch, computed } from 'vue';
   import { useRouter } from 'vue-router';
   import { userBooksApi } from '../lib/userBooks';
@@ -101,6 +107,7 @@
 </script>
 
 <template>
+  <!-- Teleport do body — overlay + dialog z okładką i akcjami -->
   <Teleport to="body">
     <Transition name="offer-fade">
       <div v-if="offerId" class="offer-backdrop" @click.self="close">
@@ -112,6 +119,7 @@
           <p v-if="loading" class="offer-status">Ładowanie oferty…</p>
           <p v-else-if="error" class="offer-status offer-status--error">{{ error }}</p>
 
+          <!-- Siatka: okładka | szczegóły książki, właściciel, CTA -->
           <div v-else-if="offer" class="offer-grid">
             <div class="offer-cover-col">
               <img v-if="coverUrl && !coverFailed" :src="coverUrl" :alt="offer.book.title" class="offer-cover" @error="coverFailed = true">

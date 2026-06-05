@@ -1,9 +1,14 @@
 <script setup>
-  // Strona statyczna — polityka prywatności platformy Bookshelf.
+  /**
+   * Trasa: /polityka-prywatnosci (name: privacy) — strona publiczna, bez API.
+   * Cel: polityka prywatności — jakie dane zbiera Bookshelf i komu je udostępnia.
+   * Komponenty: brak — cała treść w szablonie tego widoku.
+   */
 </script>
 
 <template>
   <div class="legal-page">
+    <!-- SEKCJA: Karta z treścią polityki prywatności -->
     <article class="legal-card">
       <h1 class="legal-title">Polityka prywatności</h1>
       <p class="legal-lead">

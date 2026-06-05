@@ -1,5 +1,9 @@
 <script setup>
-  /** Strona główna: sekcja „Jak to działa” (3 kroki, statyczna treść). */
+  /**
+   * Sekcja „Jak to działa?” — trzy kroki onboardingowe (treść statyczna).
+   * Użycie: HomeView.vue — trzecia sekcja na dole strony.
+   * Brak propsów i emitów; animacje scroll przez usePageAnimations.
+   */
   import { ref } from 'vue';
   import { usePageAnimations } from '../composables/useAnimations';
 
@@ -16,6 +20,7 @@
         <p class="anim anim-d1">Trzy proste kroki dzielą Cię od wymarzonej lektury</p>
       </div>
 
+      <!-- Trzy karty kroków: znajdź → wyślij prośbę → dogadaj szczegóły -->
       <div class="how-cards">
 
         <div class="how-card anim anim-d1">

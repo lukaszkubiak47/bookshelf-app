@@ -1,5 +1,10 @@
 <script setup>
-  /** Stopka z logo i copyright; ukryta na /logowanie. */
+  /**
+   * Stopka aplikacji z logo i copyright.
+   * Użycie: App.vue — globalnie pod router-view.
+   * Pełna stopka ukryta na /logowanie (zostaje tylko tekst copyright).
+   * Brak propsów i emitów; route.path steruje widocznością.
+   */
   import { useRoute } from 'vue-router';
   const route = useRoute();
 </script>

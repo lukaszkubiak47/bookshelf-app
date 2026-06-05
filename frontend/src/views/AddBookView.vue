@@ -1,7 +1,10 @@
 <script setup>
   /**
-   * Kreator dodawania oferty (2 kroki): wyszukiwanie Google Books → typ i szczegóły oferty.
-   * Zapis: POST książki (jeśli nowa) + POST userbooks + opcjonalnie okładka.
+   * Trasa: /dodawanie (name: addbook) — wymaga zalogowania (meta.requiresAuth).
+   * Cel: kreator 2-krokowy — wyszukaj książkę → skonfiguruj typ oferty i opublikuj.
+   * API: booksApi.search/getGenres/create, userBooksApi.create/uploadCover.
+   * Komponenty: brak — wizard w całości w tym widoku.
+   * Zapis: POST /api/books (jeśli nowa książka) + POST userbooks + opcjonalna okładka.
    */
   import { ref, reactive, onMounted, watch } from 'vue';
   import { booksApi } from '../lib/books';
@@ -253,6 +256,7 @@
 <template>
   <div ref="wizardRef" class="wizard-outer">
 
+    <!-- SEKCJA: Pasek postępu kreatora (krok 1 → krok 2) -->
     <div class="progress-bar">
       <div class="pb-step" :class="{ active: currentStep === 1, done: currentStep > 1 }">
         <div class="pb-circle">
@@ -273,6 +277,7 @@
     </div>
 
     <Transition :name="wizardTransition" mode="out-in">
+    <!-- SEKCJA: Krok 1 — wyszukiwanie Google Books lub formularz ręczny -->
     <div v-if="currentStep === 1" key="wizard-step-1" class="wizard-card">
       <div class="wcard-head">
         <h2 class="wcard-title">Znajdź swoją książkę</h2>
@@ -417,6 +422,7 @@
       </div>
     </div>
 
+    <!-- SEKCJA: Krok 2 — typ oferty (wypożyczenie/wymiana/sprzedaż) i szczegóły -->
     <div v-else key="wizard-step-2" class="wizard-card">
       <div class="wcard-head">
         <h2 class="wcard-title">Jak chcesz udostępnić tę książkę?</h2>
@@ -584,6 +590,7 @@
     </Transition>
   </div>
 
+  <!-- SEKCJA: Overlay sukcesu po opublikowaniu oferty -->
   <div class="success-overlay" :class="{ open: showSuccess }">
     <div class="success-box">
       <div class="success-icon">

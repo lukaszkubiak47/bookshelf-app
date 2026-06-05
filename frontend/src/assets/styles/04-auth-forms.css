@@ -1,4 +1,5 @@
-/* Logowanie / rejestracja: pola formularza, siła hasła, animacje przełączania widoków. */
+/* Logowanie / rejestracja (AuthView): pola formularza, siła hasła, animacje przełączania widoków.
+   Komponenty: LoginForm, RegisterForm, AuthLeftPanel, FormField. */
 .bk-input {
   width: 100%;
   height: 44px;

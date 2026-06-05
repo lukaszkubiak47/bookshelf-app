@@ -1,6 +1,11 @@
 /**
- * Oferty do dekoracyjnych okładek (hero, panel logowania).
- * Pobiera te same dane co przeglądaj; brakujące sloty uzupełnia losowymi picsum (bez linku).
+ * Oferty do dekoracyjnych okładek na stronie głównej i panelu logowania.
+ *
+ * Kiedy tu zajrzeć: hero z okładkami, sekcja „Świeże oferty”, useHomeShowcase composable.
+ * Pobiera dostępne oferty z userBooksApi; brakujące sloty uzupełnia placeholderami picsum.
+ *
+ * Eksporty: fetchShowcaseSlots, fetchHomeShowcase, buildShowcaseSlots, ShowcaseSlot, MappedOfferCard.
+ * Backend: GET /api/userbooks (paginacja, sort: newest) — ten sam endpoint co przeglądaj.
  */
 import { userBooksApi } from './userBooks'
 import { mapUserBookToCard, coverColor, seedFromGuid } from './mappers'
@@ -20,6 +25,7 @@ export interface ShowcaseSlot {
   isPlaceholder: boolean
 }
 
+/** Budowanie siatki slotów (prawdziwe oferty + placeholdery) */
 export function placeholderSlot(index: number, width = 112, height = 150): ShowcaseSlot {
   const seed = 300 + index
   return {
@@ -61,6 +67,7 @@ export function buildShowcaseSlots(
   return slots
 }
 
+/** Pobieranie danych z API i układ strony głównej */
 export async function fetchShowcaseSlots(
   count: number,
   coverSize?: { w: number; h: number },

@@ -1,5 +1,10 @@
 <script setup>
-  /** Lewa kolumna /logowanie: branding, animowane okładki (prawdziwe oferty), statystyki z API. */
+  /**
+   * Lewy panel strony logowania/rejestracji — branding i wizualna prezentacja platformy.
+   * Użycie: AuthView.vue — stała kolumna obok LoginForm / RegisterForm.
+   * Brak propsów; okładki z useShowcaseOffers, statystyki ze statsStore.
+   * Klik w okładkę z offerId otwiera ofertę w przeglądaniu.
+   */
   import { ref, computed, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { T, P, AUTH_DEMO_BOOK_BADGE } from '../assets/constants';
@@ -53,6 +58,7 @@
 </script>
 
 <template>
+  <!-- Zielony panel: logo, fan okładek, liczniki platformy -->
   <div class="left-panel" :style="{
     flex: '0 0 50%',
     position: 'sticky', top: 0, height: '100vh',
@@ -100,6 +106,7 @@
       </p>
     </div>
 
+    <!-- Trzy nachodzące okładki z animacją float — prawdziwe oferty lub placeholdery -->
     <div :style="{ position: 'relative', width: '200px', height: '290px', zIndex: 2 }">
       <div
         v-for="(slot, i) in showcaseSlots"

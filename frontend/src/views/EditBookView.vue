@@ -1,5 +1,11 @@
 <script setup>
-  /** Edycja wystawionej oferty (właściciel): typ, cena/warunki, opis, okładka — PUT userbooks/:id. */
+  /**
+   * Trasa: /polka/edytuj/:id (name: editbook) — wymaga zalogowania (meta.requiresAuth).
+   * Cel: edycja własnej wystawionej oferty — typ, warunki, opis, okładka.
+   * API: userBooksApi.getById, userBooksApi.update/uploadCover/removeCover.
+   * Komponenty: brak — formularz w całości w tym widoku.
+   * Dostęp tylko dla właściciela oferty (sprawdzenie owner.id).
+   */
   import { ref, reactive, onMounted } from 'vue';
   import { useRoute } from 'vue-router';
   import { userBooksApi } from '../lib/userBooks';
@@ -180,9 +186,11 @@
 <template>
   <div class="wizard-outer">
 
+    <!-- SEKCJA: Stany ładowania i błędu oferty -->
     <p v-if="loadError" class="load-error">{{ loadError }}</p>
     <p v-if="isLoadingOffer" class="load-hint">Ładowanie oferty…</p>
 
+    <!-- SEKCJA: Formularz edycji oferty (tylko dla właściciela) -->
     <template v-if="!isLoadingOffer && !loadError && form.selectedBook">
 
       <div class="wizard-card animate-in">
@@ -346,6 +354,7 @@
     </div>
   </div>
 
+  <!-- SEKCJA: Overlay sukcesu po zapisaniu zmian -->
   <div class="success-overlay" :class="{ open: showSuccess }">
     <div class="success-box">
       <div class="success-icon">

@@ -1,16 +1,25 @@
 /**
- * Animacje scroll / hero / ripple (klasy .anim z main.css).
- * Scroll reveal: @vueuse/core useIntersectionObserver; ripple: useEventListener (delegacja).
+ * Composable: animacje strony — scroll reveal, hero, efekt ripple na przyciskach.
+ *
+ * Cel: centralna logika animacji oparta na klasach CSS (.anim → .is-visible) i IntersectionObserver.
+ * Kiedy używać: usePageAnimations() w widoku/sekcji; observeAnimationsIn() po dynamicznym dodaniu elementów (np. lista z API).
+ *
+ * Powiązane pliki:
+ * - assets/main.css — style .anim, .hero, @keyframes ripple
+ * - views/ShelfView.vue, BrowseView.vue, AddBookView.vue — usePageAnimations
+ * - components/FirstSectionHomeView.vue, SecondSectionHomeView.vue — sekcje strony głównej
+ * - useAnimations.d.ts — typy TypeScript dla tego modułu
  */
 import { onMounted, onUnmounted, nextTick, shallowRef, onScopeDispose, computed } from 'vue';
 import { useIntersectionObserver, useEventListener } from '@vueuse/core';
 
 const SCROLL_IO = { threshold: 0.1, rootMargin: '0px 0px -32px 0px' };
 
-/** Aktywne skanery z usePageAnimations — observeAnimationsIn woła wszystkie. */
+// Rejestr skanerów — pozwala observeAnimationsIn() odświeżyć obserwatory po załadowaniu nowych .anim
 const scrollScanners = new Set();
 
-/** Hero: elementy .hero .anim pojawiają się od razu. */
+// --- Hero: natychmiastowe ujawnienie elementów w sekcji .hero ---
+
 export function runHeroAnimations() {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
@@ -20,6 +29,8 @@ export function runHeroAnimations() {
     });
   });
 }
+
+// --- Pomocnicze: rozwiązanie root (document / HTMLElement / Ref) i zbieranie celów ---
 
 function resolveScope(root) {
   if (!root) return document;
@@ -35,6 +46,8 @@ function collectAnimTargets(root) {
     (el) => !el.closest('.hero') && !el.classList.contains('is-visible'),
   );
 }
+
+// --- Scroll reveal: IntersectionObserver przez @vueuse/core ---
 
 function useScrollAnimTargets() {
   const targets = shallowRef([]);
@@ -99,6 +112,8 @@ export function setupScrollAnimations(root = document) {
   return observeAnimationsIn(root);
 }
 
+// --- Ripple: delegacja kliknięć na .btn w obrębie root ---
+
 function createRippleHandler() {
   return function handleRipple(e) {
     const rect = this.getBoundingClientRect();
@@ -124,6 +139,7 @@ function createRippleHandler() {
 }
 
 /**
+ * Główny composable strony — włącza wybrane animacje po onMounted.
  * @param {{ hero?: boolean, scroll?: boolean, ripple?: boolean, root?: HTMLElement | Document | import('vue').Ref }} options
  */
 export function usePageAnimations(options = {}) {

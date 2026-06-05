@@ -1,5 +1,10 @@
 <script setup>
-  /** Strona główna: siatka ostatnich ofert z API — dane z HomeView (bez duplikatów względem hero). */
+  /**
+   * Sekcja „Świeże oferty” na stronie głównej — siatka kart z API.
+   * Użycie: HomeView.vue — druga sekcja pod hero.
+   * Props: recentBooks (tablica ofert), loadingRecent (stan ładowania).
+   * Klik w kartę przekierowuje do przeglądania z otwartym modalem oferty.
+   */
   import { ref, watch, nextTick } from 'vue';
   import { RouterLink, useRouter } from 'vue-router';
   import { openBrowseOffer } from '../lib/browseNavigation';
@@ -50,6 +55,7 @@
         </RouterLink>
       </div>
 
+      <!-- Stany: ładowanie, pusto, siatka ofert -->
       <p v-if="loadingRecent" class="section-hint">Ładowanie ofert…</p>
       <p v-else-if="recentBooks.length === 0" class="section-hint">Brak ofert — dodaj pierwszą książkę!</p>
 

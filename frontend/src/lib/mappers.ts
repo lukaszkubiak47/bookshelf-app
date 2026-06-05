@@ -1,10 +1,17 @@
 /**
- * Mapowanie DTO z API → kształt wygodny dla Vue (karty, półka, profil).
- * Tu też: URL okładek/avatarów, kolory zastępcze okładek, format dat.
+ * Mapowanie DTO z API → kształt wygodny dla komponentów Vue.
+ *
+ * Kiedy tu zajrzeć: gdy komponent oczekuje pól img/av/price jako string, a API zwraca UserBookDto.
+ * Tu też: URL okładek/avatarów, kolory zastępcze okładek, format dat względnych.
+ *
+ * Eksporty: mapUserBookToCard, mapTransactionToShelfItem, mapUserBookToListed, mapUserToProfile,
+ *   mapBookSearchResult, coverImageUrl, avatarImageUrl, realCoverUrl, realAvatarUrl, coverColor, seedFromGuid.
+ * Backend: brak bezpośrednich wywołań — dane wejściowe z lib/types.ts.
  */
 import type { TransactionDto, UserBookDto } from './types'
 import { resolveApiUrl } from './client'
 
+/** Pomocnicze: deterministyczne seedy i URL obrazków */
 export function seedFromGuid(id: string, max = 70): number {
   let hash = 0
   for (let i = 0; i < id.length; i++) {
@@ -55,6 +62,7 @@ export function coverColor(title: string): string {
   return COVER_COLORS[Math.abs(hash) % COVER_COLORS.length] ?? '#445C4A'
 }
 
+/** Mapowania DTO → widoki (karty, półka, profil, wyszukiwarka) */
 export function mapUserBookToCard(dto: UserBookDto) {
   const imgSeed = seedFromGuid(dto.book.id, 80)
   const avSeed = seedFromGuid(dto.owner.id, 70)

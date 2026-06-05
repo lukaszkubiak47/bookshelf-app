@@ -1,5 +1,10 @@
 <script setup>
-  /** Edycja profilu: dane osobowe, wybór avatara, PUT /api/users/me. */
+  /**
+   * Karta edycji danych osobowych użytkownika (tryb podglądu / edycji).
+   * Użycie: ProfileView.vue — sekcja „Dane osobowe”.
+   * Props: user (obiekt profilu z mapUserToProfile).
+   * Emity: update:user (zaktualizowany profil), saved (po udanym zapisie).
+   */
   import { ref, reactive } from 'vue';
   import { usersApi } from '../lib/users';
   import { mapUserToProfile } from '../lib/mappers';
@@ -119,6 +124,7 @@
 </script>
 
 <template>
+  <!-- Karta profilu: nagłówek + tryb podglądu lub edycji -->
   <div class="card">
     <div class="card-header">
       <div>
@@ -131,6 +137,7 @@
       </button>
     </div>
 
+    <!-- Tryb podglądu — tylko odczyt pól publicznych -->
     <div v-if="!isEditMode" class="card-body">
       <div class="profile-data-grid">
         <div class="data-row">
@@ -152,6 +159,7 @@
       </div>
     </div>
 
+    <!-- Tryb edycji: avatar (preset / upload) + formularz danych -->
     <div v-else class="card-body">
       <div class="edit-subsection-title">Zdjęcie profilowe</div>
       <div class="avatar-picker-layout">

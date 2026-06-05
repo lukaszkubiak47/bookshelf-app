@@ -1,4 +1,5 @@
-/* Przeglądaj książki: layout, filtry boczne, karty ofert, widok listy/siatki. */
+/* Przeglądaj książki (BrowseView): layout, filtry boczne, karty ofert, widok listy/siatki.
+   Komponenty: BookFiltersBrowseView, BookCard, OfferModal. */
 .page-wrapper {
   max-width: 1280px;
   margin: 0 auto;

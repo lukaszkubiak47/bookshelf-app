@@ -1,5 +1,11 @@
 <script setup>
-  /** Pole formularza auth z ikoną SVG, walidacją wizualną i przełącznikiem hasła. */
+  /**
+   * Wspólne pole formularza auth z ikoną, walidacją wizualną i podglądem hasła.
+   * Użycie: LoginForm.vue, RegisterForm.vue.
+   * Props: label, type, icon, placeholder, modelValue, state (idle|error|success), error.
+   * Emity: update:modelValue, blur.
+   * Slot hint — np. pasek siły hasła w rejestracji.
+   */
   import { ref, computed } from 'vue';
   import { T, P } from '../assets/constants.js';
 

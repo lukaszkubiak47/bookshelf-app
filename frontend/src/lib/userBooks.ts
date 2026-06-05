@@ -1,5 +1,11 @@
 /**
- * Oferty użytkowników (UserBooks): przeglądanie, moja półka, CRUD, okładka.
+ * Oferty użytkowników (UserBooks) — przeglądanie, moja półka, CRUD, okładki.
+ *
+ * Kiedy tu zajrzeć: BrowseView (lista + filtry), ShelfView (moje oferty), dodawanie/edycja oferty.
+ * getAll() obsługuje paginację i filtry query; getMy() wymaga auth.
+ *
+ * Eksporty: userBooksApi, UserBooksQuery.
+ * Backend: GET/POST /api/userbooks, GET /my, GET /recent, PUT/DELETE /{id}, POST/DELETE /{id}/cover.
  */
 import { apiRequest } from './client'
 import type { PagedResult, UserBookDto } from './types'
@@ -14,6 +20,7 @@ export interface UserBooksQuery {
   sort?: string
 }
 
+/** Serializacja filtrów do query string */
 function toQuery(params: UserBooksQuery): string {
   const search = new URLSearchParams()
   for (const [key, value] of Object.entries(params) as [keyof UserBooksQuery, string | number | undefined][]) {
@@ -23,6 +30,7 @@ function toQuery(params: UserBooksQuery): string {
   return qs ? `?${qs}` : ''
 }
 
+/** Wywołania REST pod kontroler UserBooks */
 export const userBooksApi = {
   getAll(query: UserBooksQuery = {}) {
     return apiRequest<PagedResult<UserBookDto>>(`/api/userbooks${toQuery(query)}`)

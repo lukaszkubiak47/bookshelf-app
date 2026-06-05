@@ -1,11 +1,19 @@
 /**
- * Kreator „Dodaj książkę”: kierunek animacji przy zmianie kroku (wizard-forward / wizard-back).
+ * Composable: animacja przejścia między krokami kreatora „Dodaj książkę”.
+ *
+ * Cel: ustawia kierunek slajdu (do przodu / do tyłu) na podstawie numeru kroku.
+ * Kiedy używać: w widoku wieloetapowego formularza, gdzie <Transition :name="wizardTransition">.
+ *
+ * Powiązane pliki:
+ * - views/AddBookView.vue — główny konsument (currentStep + goToStep)
+ * - assets/main.css — klasy animacji wizard-forward / wizard-back
  */
 import { ref, computed } from 'vue';
 
-/** Przejścia kroków kreatora — slide jak w mockupie HTML. */
 export function useWizardStepTransition(currentStep) {
   const direction = ref('forward');
+
+  // --- Nawigacja między krokami — kierunek zależy od porównania numerów ---
 
   function goToStep(step) {
     if (step === currentStep.value) return;

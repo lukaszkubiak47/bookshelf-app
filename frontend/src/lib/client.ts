@@ -1,6 +1,11 @@
 /**
- * Główna warstwa HTTP (fetch): buduje URL API, JWT, JSON/FormData, ApiError.
- * Większość modułów lib/* korzysta z apiRequest(); wyjątek: stores/auth → lib/api.ts.
+ * Główna warstwa HTTP — fetch z JWT, JSON/FormData i obsługą błędów ASP.NET.
+ *
+ * Kiedy tu zajrzeć: przy każdym nowym endpoincie w lib/*; przy problemach z tokenem lub URL API.
+ * Ustaw VITE_API_BASE_URL w .env (pusty = proxy dev na /api).
+ *
+ * Eksporty: apiRequest, ApiError, getApiBaseUrl, resolveApiUrl, getStoredToken, setStoredToken.
+ * Backend: wszystkie ścieżki /api/* wywoływane przez moduły lib/*.
  */
 import type { ApiErrorBody } from './types'
 
@@ -16,6 +21,7 @@ export class ApiError extends Error {
 
 const TOKEN_KEY = 'bookshelf_token'
 
+/** Konfiguracja URL i token JWT w localStorage */
 export function getApiBaseUrl(): string {
   const base = import.meta.env.VITE_API_BASE_URL ?? ''
   return base.replace(/\/$/, '')
@@ -42,6 +48,7 @@ type RequestOptions = Omit<RequestInit, 'body'> & {
   auth?: boolean
 }
 
+/** Główna funkcja HTTP — auth: true dołącza Bearer z localStorage */
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { body, auth = false, headers: customHeaders, ...rest } = options
 

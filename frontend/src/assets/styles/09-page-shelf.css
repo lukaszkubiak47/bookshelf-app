@@ -1,4 +1,5 @@
-/* Moja półka: zakładki, transakcje (.tx-card), wystawione oferty (.listed-card). */
+/* Moja półka (ShelfView): zakładki, transakcje (.tx-card), wystawione oferty (.listed-card).
+   Komponenty: BookFiltersShelfView, BookOffer. */
 .shelf-page {
   max-width: 860px;
   margin: 0 auto;

@@ -1,5 +1,11 @@
 <script setup>
-  /** Logowanie / rejestracja: przełącznik zakładek, lewy panel dekoracyjny, formularze. */
+  /**
+   * Trasa: /logowanie (name: auth) — tylko dla gości (meta.guestOnly).
+   * Cel: logowanie i rejestracja na jednej stronie z przełącznikiem zakładek.
+   * API: obsługiwane w LoginForm / RegisterForm (authApi.login, authApi.register).
+   * Komponenty: AuthLeftPanel, LoginForm, RegisterForm.
+   * Query ?tab=register otwiera zakładkę rejestracji.
+   */
   import { ref, computed } from 'vue';
   import { useRoute } from 'vue-router';
   import { T } from '../assets/constants.js';
@@ -27,10 +33,13 @@
 
 <template>
   <div class="auth-page">
+    <!-- SEKCJA: Lewy panel dekoracyjny z okładkami książek -->
     <AuthLeftPanel />
 
+    <!-- SEKCJA: Prawy panel — przełącznik logowanie/rejestracja + formularz -->
     <div class="auth-panel right-panel">
       <div class="auth-panel-inner">
+        <!-- SEKCJA: Przełącznik zakładek Logowanie / Rejestracja -->
         <div :style="{ display: 'flex', background: T.tagBg, borderRadius: '10px', padding: '4px', marginBottom: '28px' }">
           <button
             v-for="[id, label] in [['login', 'Logowanie'], ['register', 'Rejestracja']]"
@@ -50,6 +59,7 @@
           </button>
         </div>
 
+        <!-- SEKCJA: Aktywny formularz (animacja przejścia między zakładkami) -->
         <div :key="viewKey" :class="animCls" :style="{ willChange: 'transform, opacity' }">
           <LoginForm v-if="mode === 'login'" @switch="switchTo('register')" />
           <RegisterForm v-else @switch="switchTo('login')" />

@@ -1,4 +1,4 @@
-/* Górny pasek nawigacji, menu użytkownika, linki aktywne. */
+/* Górny pasek nawigacji (AppNavbar): menu użytkownika, linki aktywne, dropdown. */
 .navbar {
   position: sticky;
   top: 0;

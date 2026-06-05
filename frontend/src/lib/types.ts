@@ -1,12 +1,19 @@
 /**
  * Typy odpowiedzi API (DTO) — odzwierciedlają kontrakty backendu ASP.NET.
- * Komponenty UI zwykle dostają dane po mapowaniu w lib/mappers.ts.
+ *
+ * Kiedy tu zajrzeć: przy dodawaniu endpointu, debugowaniu kształtu JSON lub TypeScript errors w lib/*.
+ * Komponenty UI zwykle dostają dane po mapowaniu w lib/mappers.ts, nie bezpośrednio te interfejsy.
+ *
+ * Kluczowe typy: AuthResponse, UserBookDto, TransactionDto, BookDto, GoogleBookResult, PagedResult.
+ * Backend: wszystkie kontrolery Bookshelf.API — nazwy pól muszą być zgodne z serializacją C#.
  */
+/** Ciało błędu z apiRequest (lib/client.ts) */
 export interface ApiErrorBody {
   statusCode: number
   message: string
 }
 
+/** Auth i profil użytkownika */
 export interface AuthUser {
   id: string
   email: string
@@ -28,6 +35,7 @@ export interface UserProfile extends AuthUser {
   transactionsCount: number
 }
 
+/** Książki i gatunki */
 export interface BookDto {
   id: string
   title: string
@@ -55,6 +63,7 @@ export interface GoogleBookResult {
   isbn?: string | null
 }
 
+/** Oferty użytkowników (UserBooks) */
 export interface UserBookDto {
   id: string
   status: string
@@ -81,7 +90,7 @@ export interface PagedResult<T> {
   totalPages: number
 }
 
-// Dane kontaktowe drugiej strony zaakceptowanej/zakończonej transakcji (GET /api/transactions/{id}/contact).
+/** Transakcje (prośby o wypożyczenie/wymianę/sprzedaż) */
 export interface TransactionContact {
   username: string
   email: string

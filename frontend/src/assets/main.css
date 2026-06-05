@@ -1,3 +1,20 @@
+/**
+ * Główny plik stylów — importowany w main.ts.
+ * Kolejność ma znaczenie: od fundamentu (zmienne) przez komponenty do stron i responsywności.
+ *
+ * 01-foundation      — :root, reset, typografia (cała aplikacja)
+ * 02-components-buttons — .btn, .btn-filled, .btn-outline
+ * 03-components-animations — .anim, ripple (wejścia scroll/hero)
+ * 04-auth-forms      — logowanie/rejestracja (.bk-input, siła hasła)
+ * 05-layout-footer   — AppFooter
+ * 06-layout-navbar   — AppNavbar
+ * 07-page-home       — strona główna (hero, świeże oferty)
+ * 08-page-browse     — przeglądaj książki (filtry, siatka kart)
+ * 09-page-shelf      — moja półka (zakładki, transakcje)
+ * 10-page-profile    — profil użytkownika
+ * 11-page-wizard     — dodawanie/edycja oferty (kreator)
+ * 12-responsive      — media queries (mobile/tablet)
+ */
 @import './styles/01-foundation.css';
 @import './styles/02-components-buttons.css';
 @import './styles/03-components-animations.css';

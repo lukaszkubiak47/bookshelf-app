@@ -1,5 +1,10 @@
 <script setup>
-  /** Panel filtrów bocznych na stronie Przeglądaj (typ, gatunek, miasto, szukaj). */
+  /**
+   * Boczny panel filtrów na stronie przeglądania ofert.
+   * Użycie: BrowseView.vue — sidebar obok siatki BookCard.
+   * Props: search, city, types (Set), genres (Set), availableGenres, counts.
+   * Emity: update:search, update:city, toggle-type, toggle-genre, reset.
+   */
   import DataList from './DataList.vue';
 
   defineProps({
@@ -23,6 +28,7 @@
 </script>
 
 <template>
+  <!-- Sidebar: szukaj, typ oferty, gatunki (DataList), miasto -->
   <aside class="sidebar">
     <div class="filter-header">
       <h3>Filtry</h3>

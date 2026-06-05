@@ -1,7 +1,13 @@
 <script setup>
   /**
-   * Główny layout: nawigacja (oprócz /logowanie), treść z routera, stopka.
-   * Provide: globalny toast + tokeny designu (constants.js).
+   * Główny szkielet aplikacji (root layout).
+   *
+   * Kiedy tu zajrzeć: globalny layout, toast, provide tokenów designu, ukrywanie navbara na /logowanie.
+   * Powiązane: main.ts (montuje ten komponent), router/index.ts (RouterView), AppNavbar, AppFooter.
+   *
+   * Provide:
+   * - toast — globalne powiadomienia (useToast)
+   * - designTokensKey (T) — paleta kolorów dla ekranu auth (constants.js)
    */
   import { provide } from 'vue'
   import AppNavbar from './components/AppNavbar.vue'
@@ -16,6 +22,7 @@
 </script>
 
 <template>
+  <!-- Layout: navbar (bez /logowanie) → treść routingu → stopka → toast globalny -->
   <div id="app-layout">
     <AppNavbar v-if="$route.path !== '/logowanie'" />
     <main>
@@ -23,6 +30,7 @@
     </main>
     <AppFooter />
 
+    <!-- Toast sukcesu/błędu — sterowany przez provideToast() / useToast() -->
     <div
       :class="['toast', toast.type === 'success' ? 'success-toast' : 'error-toast', { show: toast.visible }]"
       role="status"
