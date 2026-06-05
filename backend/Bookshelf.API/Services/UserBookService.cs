@@ -196,8 +196,16 @@ namespace Bookshelf.API.Services
 
             // Docelowy typ transakcji (nowy lub stary jeśli nie zmieniany)
             var newType = dto.TransactionType ?? userBook.TransactionType;
-            var newPrice = dto.Price ?? userBook.Price;
-            var newExchangeCondition = dto.ExchangeCondition ?? userBook.ExchangeCondition;
+
+            // Przy zmianie typu ignoruj stare pola specyficzne dla poprzedniego typu —
+            // i tak zostaną wyczyszczone poniżej; dto nie wysyła np. ceny przy loan/swap.
+            var newPrice = newType == "sale"
+                ? (dto.Price ?? userBook.Price)
+                : dto.Price;
+
+            var newExchangeCondition = newType == "swap"
+                ? (dto.ExchangeCondition ?? userBook.ExchangeCondition)
+                : dto.ExchangeCondition;
 
             // Walidacje biznesowe (te same co przy Create, ale dla nowych wartości)
             if (newType == "sale" && newPrice == null)
