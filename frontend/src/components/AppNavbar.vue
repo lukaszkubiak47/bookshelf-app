@@ -1,6 +1,6 @@
 <script setup>
   /** Górne menu: linki, avatar, wylogowanie. */
-  import { ref, computed, onMounted, onUnmounted } from 'vue';
+  import { ref, computed } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '../stores/auth';
   import { avatarImageUrl } from '../lib/mappers';
@@ -10,7 +10,6 @@
 
   const menuOpen = ref(false);
   const mobileNavOpen = ref(false);
-  const avatarWrapRef = ref(null);
 
   const displayName = computed(() => {
     const u = auth.user;
@@ -32,12 +31,6 @@
     menuOpen.value = false;
   };
 
-  const onDocumentClick = (event) => {
-    if (avatarWrapRef.value && !avatarWrapRef.value.contains(event.target)) {
-      closeMenu();
-    }
-  };
-
   const logout = () => {
     closeMenu();
     mobileNavOpen.value = false;
@@ -53,8 +46,6 @@
     mobileNavOpen.value = false;
   };
 
-  onMounted(() => document.addEventListener('click', onDocumentClick));
-  onUnmounted(() => document.removeEventListener('click', onDocumentClick));
 </script>
 
 <template>
@@ -77,7 +68,7 @@
 
     <div class="nav-actions">
       <div v-if="auth.isLoggedIn"
-           ref="avatarWrapRef"
+           v-click-outside="closeMenu"
            class="nav-avatar-wrap"
            :class="{ open: menuOpen }">
         <button type="button" class="nav-avatar-btn" aria-haspopup="true" :aria-expanded="menuOpen" @click="toggleMenu">

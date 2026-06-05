@@ -5,13 +5,15 @@
   import { mapUserToProfile } from '../lib/mappers';
   import { ApiError } from '../lib/client';
   import { useAuthStore } from '../stores/auth';
+  import { useToast } from '../composables/useToast.js';
 
   const props = defineProps({
     user: { type: Object, required: true }
   });
 
-  const emit = defineEmits(['update:user', 'notify', 'saved']);
+  const emit = defineEmits(['update:user', 'saved']);
   const auth = useAuthStore();
+  const showToast = useToast();
 
   const isEditMode = ref(false);
   const isDragging = ref(false);
@@ -104,9 +106,9 @@
       emit('update:user', mapped);
       isEditMode.value = false;
       emit('saved');
-      emit('notify', { message: 'Dane zostały zapisane ✓', type: 'success' });
+      showToast({ message: 'Dane zostały zapisane ✓', type: 'success' });
     } catch (err) {
-      emit('notify', {
+      showToast({
         message: err instanceof ApiError ? err.message : 'Nie udało się zapisać zmian',
         type: 'error',
       });

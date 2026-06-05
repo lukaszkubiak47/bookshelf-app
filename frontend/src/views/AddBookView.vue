@@ -408,7 +408,7 @@
         <p v-if="submitError" style="color:var(--danger);font-size:13px;margin:0 0 10px">{{ submitError }}</p>
 
         <div class="step-footer" style="margin-top:24px">
-          <a href="#" style="font-size:13px;color:var(--text-3);text-decoration:none">Anuluj</a>
+          <RouterLink to="/przegladanie" style="font-size:13px;color:var(--text-3);text-decoration:none">Anuluj</RouterLink>
           <button class="btn btn-filled btn-lg" :disabled="!form.selectedBook" @click="goToStep(2)">
             Dalej
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>

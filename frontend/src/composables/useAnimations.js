@@ -1,10 +1,16 @@
 /**
- * Animacje scroll / hero / ripple przycisków (klasy .anim z main.css).
- * usePageAnimations — podłącz na widoku; observeAnimationsIn — po załadowaniu list z API.
+ * Animacje scroll / hero / ripple (klasy .anim z main.css).
+ * Scroll reveal: @vueuse/core useIntersectionObserver; ripple: useEventListener (delegacja).
  */
-import { onMounted, onUnmounted, nextTick } from 'vue';
+import { onMounted, onUnmounted, nextTick, shallowRef, onScopeDispose, computed } from 'vue';
+import { useIntersectionObserver, useEventListener } from '@vueuse/core';
 
-/** Hero: elementy .hero .anim pojawiają się od razu (jak w index.html). */
+const SCROLL_IO = { threshold: 0.1, rootMargin: '0px 0px -32px 0px' };
+
+/** Aktywne skanery z usePageAnimations — observeAnimationsIn woła wszystkie. */
+const scrollScanners = new Set();
+
+/** Hero: elementy .hero .anim pojawiają się od razu. */
 export function runHeroAnimations() {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
@@ -15,10 +21,27 @@ export function runHeroAnimations() {
   });
 }
 
-/** Scroll: .anim poza sekcją .hero — IntersectionObserver. */
-export function setupScrollAnimations(root = document) {
-  const observer = new IntersectionObserver(
-    (entries) => {
+function resolveScope(root) {
+  if (!root) return document;
+  if (root instanceof HTMLElement || root === document) return root;
+  if (typeof root === 'object' && root.value) return root.value;
+  return document;
+}
+
+function collectAnimTargets(root) {
+  const scope = resolveScope(root);
+  if (!scope?.querySelectorAll) return [];
+  return [...scope.querySelectorAll('.anim')].filter(
+    (el) => !el.closest('.hero') && !el.classList.contains('is-visible'),
+  );
+}
+
+function useScrollAnimTargets() {
+  const targets = shallowRef([]);
+
+  useIntersectionObserver(
+    targets,
+    (entries, observer) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           entry.target.classList.add('is-visible');
@@ -26,40 +49,58 @@ export function setupScrollAnimations(root = document) {
         }
       });
     },
-    { threshold: 0.1, rootMargin: '0px 0px -32px 0px' },
+    SCROLL_IO,
   );
 
-  root.querySelectorAll('.anim').forEach((el) => {
-    if (!el.closest('.hero')) observer.observe(el);
-  });
+  const scan = (root) => {
+    const found = collectAnimTargets(root);
+    if (!found.length) return;
+    const merged = new Set(targets.value);
+    found.forEach((el) => merged.add(el));
+    targets.value = [...merged];
+  };
 
-  return observer;
+  scrollScanners.add(scan);
+  onScopeDispose(() => scrollScanners.delete(scan));
+
+  return { scan };
+}
+
+/** Fallback gdy observeAnimationsIn wywołane przed montowaniem usePageAnimations. */
+function observeAnimationsLegacy(root = document) {
+  const obs = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          obs.unobserve(entry.target);
+        }
+      });
+    },
+    SCROLL_IO,
+  );
+
+  collectAnimTargets(root).forEach((el) => obs.observe(el));
+  return obs;
 }
 
 /** Obserwuje nowe elementy .anim (np. po załadowaniu listy z API). */
 export function observeAnimationsIn(root = document) {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.1, rootMargin: '0px 0px -32px 0px' },
-  );
-
-  root.querySelectorAll('.anim:not(.is-visible)').forEach((el) => {
-    if (!el.closest('.hero')) observer.observe(el);
-  });
-
-  return observer;
+  const scope = resolveScope(root);
+  if (scrollScanners.size) {
+    scrollScanners.forEach((scan) => scan(scope));
+    return;
+  }
+  return observeAnimationsLegacy(scope);
 }
 
-/** Efekt ripple na przyciskach .btn (jak w mockupie strony głównej). */
-export function setupButtonRipple(root = document) {
-  const handler = function handleRipple(e) {
+/** @deprecated alias — używaj observeAnimationsIn */
+export function setupScrollAnimations(root = document) {
+  return observeAnimationsIn(root);
+}
+
+function createRippleHandler() {
+  return function handleRipple(e) {
     const rect = this.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height);
     const ripple = document.createElement('span');
@@ -80,18 +121,6 @@ export function setupButtonRipple(root = document) {
     this.appendChild(ripple);
     setTimeout(() => ripple.remove(), 500);
   };
-
-  const buttons = root.querySelectorAll('.btn');
-  buttons.forEach((btn) => btn.addEventListener('click', handler));
-
-  return () => buttons.forEach((btn) => btn.removeEventListener('click', handler));
-}
-
-function resolveScope(root) {
-  if (!root) return document;
-  if (root instanceof HTMLElement || root === document) return root;
-  if (typeof root === 'object' && root.value) return root.value;
-  return document;
 }
 
 /**
@@ -99,20 +128,27 @@ function resolveScope(root) {
  */
 export function usePageAnimations(options = {}) {
   const { hero = false, scroll = true, ripple = true, root } = options;
-  let observer;
-  let cleanupRipple;
+  let scrollScan = () => {};
+
+  if (scroll) {
+    ({ scan: scrollScan } = useScrollAnimTargets());
+  }
+
+  const eventRoot = computed(() => resolveScope(root) || document);
+
+  if (ripple) {
+    useEventListener(eventRoot, 'click', (e) => {
+      const btn = e.target?.closest?.('.btn');
+      if (!btn || !eventRoot.value?.contains(btn)) return;
+      createRippleHandler().call(btn, e);
+    });
+  }
 
   onMounted(async () => {
     await nextTick();
     const scope = resolveScope(root);
 
     if (hero) runHeroAnimations();
-    if (scroll) observer = setupScrollAnimations(scope);
-    if (ripple) cleanupRipple = setupButtonRipple(scope);
-  });
-
-  onUnmounted(() => {
-    observer?.disconnect();
-    cleanupRipple?.();
+    if (scroll) scrollScan(scope);
   });
 }

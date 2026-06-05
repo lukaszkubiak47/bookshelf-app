@@ -58,8 +58,8 @@
               <path d="M17 7h-1a2 2 0 0 1 0-4h3v18" />
             </svg>
           </div>
-          <h3>Dogadajcie się</h3>
-          <p>Ustalcie szczegóły przez wbudowany czat. Spotkajcie się lokalnie lub wyślijcie pocztą — jak wam wygodnie.</p>
+          <h3>Dogadaj szczegóły</h3>
+          <p>Ustal szczegóły mailowo. Możecie spotkać się lokalnie lub wybrać wysyłkę – tak, jak Wam wygodnie.</p>
         </div>
 
       </div>

@@ -1,10 +1,10 @@
 /**
- * Stan sesji użytkownika (JWT + dane w localStorage).
+ * Stan sesji użytkownika (JWT + dane w localStorage przez VueUse).
  * Używany przez navbar, guard routera, formularze logowania i profil.
- * Logowanie/rejestracja idą przez apiFetch (lib/api.ts) — starsza warstwa HTTP.
  */
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
+import { useLocalStorage } from '@vueuse/core'
 import { apiFetch } from '../lib/api'
 
 export interface User {
@@ -35,25 +35,29 @@ export interface RegisterPayload {
 const TOKEN_KEY = 'bookshelf_token'
 const USER_KEY = 'bookshelf_user'
 
-function readUser(): User | null {
+function readStoredUser(raw: string | null): User | null {
+  if (!raw) return null
   try {
-    return JSON.parse(localStorage.getItem(USER_KEY) ?? 'null')
+    return JSON.parse(raw) as User
   } catch {
     return null
   }
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref<string | null>(localStorage.getItem(TOKEN_KEY))
-  const user = ref<User | null>(readUser())
+  const token = useLocalStorage<string | null>(TOKEN_KEY, null)
+  const user = useLocalStorage<User | null>(USER_KEY, null, {
+    serializer: {
+      read: readStoredUser,
+      write: (value) => JSON.stringify(value),
+    },
+  })
 
   const isLoggedIn = computed(() => !!token.value)
 
   function setSession(res: AuthResponse) {
     token.value = res.token
     user.value = res.user
-    localStorage.setItem(TOKEN_KEY, res.token)
-    localStorage.setItem(USER_KEY, JSON.stringify(res.user))
   }
 
   async function login(email: string, password: string) {
@@ -75,14 +79,11 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     token.value = null
     user.value = null
-    localStorage.removeItem(TOKEN_KEY)
-    localStorage.removeItem(USER_KEY)
   }
 
   /** Po zapisie profilu — aktualizuje user w pamięci i localStorage (np. nick w navbarze). */
   function syncFromProfile(updatedUser: User) {
     user.value = updatedUser
-    localStorage.setItem(USER_KEY, JSON.stringify(updatedUser))
   }
 
   return { token, user, isLoggedIn, login, register, logout, syncFromProfile }

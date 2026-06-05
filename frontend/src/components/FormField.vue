@@ -73,6 +73,6 @@
     </div>
 
     <p v-if="error" :style="{ fontSize: '12px', color: T.danger, marginTop: '1px', lineHeight: 1.3 }">{{ error }}</p>
-    <slot />
+    <slot name="hint" :state="state" />
   </div>
 </template>

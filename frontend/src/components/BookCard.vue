@@ -7,13 +7,16 @@
   const props = defineProps({
     book: {
       type: Object,
-      required: true
-    }
+      required: true,
+    },
+    isOwn: {
+      type: Boolean,
+      default: false,
+    },
   });
 
   defineEmits(['select']);
 
-  // Okładka z coverUrl, która nie załaduje się (np. Google blokuje referer z localhost) -> kafelek zastępczy.
   const coverFailed = ref(false);
 
   const badgeClass = computed(() => offerBadgeClass(props.book.type));
@@ -23,26 +26,39 @@
 </script>
 
 <template>
-  <div class="book-card" @click="$emit('select', book.id)">
+  <div :class="['book-card', { 'book-card--own': isOwn }]" @click="$emit('select', book.id)">
     <div class="cover-wrap">
       <img v-if="book.coverUrl && !coverFailed" :src="book.coverUrl" :alt="book.title" class="cover-img" loading="lazy" @error="coverFailed = true">
       <div v-else class="cover-img cover-fallback" :style="{ background: coverColor(book.title) }">
         <span class="cover-fallback-title">{{ book.title }}</span>
         <span class="cover-fallback-author">{{ book.author }}</span>
       </div>
-      <span :class="['bk-badge', badgeClass]">{{ badgeText }}</span>
+      <div class="cover-badges">
+        <slot name="cover-badges" :book="book" :is-own="isOwn" :badge-class="badgeClass" :badge-text="badgeText">
+          <div v-if="isOwn" class="own-offer-badge" aria-label="Twoja oferta">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <span>Twoja oferta</span>
+          </div>
+          <span :class="['bk-badge', badgeClass]">{{ badgeText }}</span>
+        </slot>
+      </div>
       <button class="see-btn">Zobacz ofertę</button>
     </div>
     <div class="card-body">
       <h3 class="card-title">{{ book.title }}</h3>
       <p class="card-author">{{ book.author }}</p>
-      <div class="card-meta">
-        <img v-if="book.avatarUrl" :src="book.avatarUrl" :alt="book.owner" class="meta-av">
-        <div v-else class="meta-av meta-av-fallback" aria-hidden="true">{{ ownerInitial }}</div>
-        <div class="meta-info">
-          <span class="meta-nick">@{{ book.owner }}</span><br>{{ book.city }}
+      <slot name="meta" :book="book" :owner-initial="ownerInitial">
+        <div class="card-meta">
+          <img v-if="book.avatarUrl" :src="book.avatarUrl" :alt="book.owner" class="meta-av">
+          <div v-else class="meta-av meta-av-fallback" aria-hidden="true">{{ ownerInitial }}</div>
+          <div class="meta-info">
+            <span class="meta-nick">@{{ book.owner }}</span><br>{{ book.city }}
+          </div>
         </div>
-      </div>
+      </slot>
     </div>
   </div>
 </template>

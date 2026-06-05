@@ -12,8 +12,10 @@
   import OfferModal from '../components/OfferModal.vue';
   import { userBooksApi } from '../lib/userBooks';
   import { mapUserBookToCard } from '../lib/mappers';
+  import { useAuthStore } from '../stores/auth';
 
   const route = useRoute();
+  const auth = useAuthStore();
   const router = useRouter();
   const pageRef = ref(null);
   const books = ref([]);
@@ -158,6 +160,8 @@
   watch(() => route.query.offer, syncOfferFromQuery, { immediate: true });
 
   const cardDelayClass = (i) => `anim-d${(i % 5) + 1}`;
+
+  const isOwnOffer = (book) => !!auth.user?.id && book.ownerId === auth.user.id;
 </script>
 
 <template>
@@ -222,8 +226,20 @@
             :key="book.id"
             :class="['anim', cardDelayClass(i)]"
             :book="book"
+            :is-own="isOwnOffer(book)"
             @select="openModal"
-          />
+          >
+            <template v-if="viewMode === 'list'" #meta="{ book: cardBook, ownerInitial }">
+              <div class="card-meta card-meta--list">
+                <img v-if="cardBook.avatarUrl" :src="cardBook.avatarUrl" :alt="cardBook.owner" class="meta-av">
+                <div v-else class="meta-av meta-av-fallback" aria-hidden="true">{{ ownerInitial }}</div>
+                <div class="meta-info">
+                  <span class="meta-nick">@{{ cardBook.owner }}</span>
+                  <span class="meta-city">{{ cardBook.city }}</span>
+                </div>
+              </div>
+            </template>
+          </BookCard>
         </div>
 
         <div class="load-more" v-if="books.length < total">
@@ -239,6 +255,40 @@
 </template>
 
 <style scoped>
+  .card-meta--list {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-meta--list .meta-city {
+    display: block;
+    font-size: 12px;
+    color: var(--text-3);
+  }
+
+  .card-meta--list .meta-av {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .card-meta--list .meta-av-fallback {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tag-bg);
+    color: var(--text-2);
+    font-weight: 600;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
   .load-error {
     color: var(--danger, #c0392b);
     margin-bottom: 16px;
