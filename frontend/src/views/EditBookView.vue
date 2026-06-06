@@ -313,7 +313,7 @@
           </div>
 
           <div class="form-field" style="margin-top:20px">
-            <label class="form-label">Opis (opcjonalnie)</label>
+            <label class="form-label">Opis (opcjonalnie - max 2000 znaków)</label>
             <textarea class="form-input" v-model="bookDescription" rows="3" placeholder="Krótki opis książki…" style="resize:vertical"></textarea>
           </div>
 

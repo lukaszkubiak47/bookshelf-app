@@ -78,6 +78,36 @@
 
   const totalCount = computed(() => receivedBooks.value.length + sentBooks.value.length + listedBooks.value.length);
 
+  const offerIdsWithPending = computed(() =>
+    new Set(
+      receivedBooks.value
+        .filter((t) => t.status === 'pending')
+        .map((t) => t.offerId as string),
+    ),
+  );
+
+  const listedBooksWithEditFlag = computed(() =>
+    listedBooks.value.map((b) => {
+      const hasPending = offerIdsWithPending.value.has(b.id);
+      const isBrowsable = b.listStatus === 'available';
+      let editBlockReason: string | undefined;
+      let editBlockBanner: string | undefined;
+      if (hasPending) {
+        editBlockReason = 'Najpierw odrzuć oczekujące prośby w zakładce Otrzymane';
+        editBlockBanner = 'Aktywna prośba';
+      } else if (!isBrowsable) {
+        editBlockReason = 'Nie można edytować oferty niewidocznej w Przeglądaj książki';
+        editBlockBanner = b.listStatus === 'completed' ? 'Transakcja zakończona' : 'Transakcja aktywna';
+      }
+      return {
+        ...b,
+        canEdit: isBrowsable && !hasPending,
+        editBlockReason,
+        editBlockBanner,
+      };
+    }),
+  );
+
   async function reloadTransactions() {
     const [received, sent] = await Promise.all([
       transactionsApi.getReceived(),
@@ -85,6 +115,11 @@
     ]);
     receivedBooks.value = received.map((t) => mapTransactionToShelfItem(t, 'received'));
     sentBooks.value = sent.map((t) => mapTransactionToShelfItem(t, 'sent'));
+  }
+
+  async function reloadListed() {
+    const listed = await userBooksApi.getMy();
+    listedBooks.value = listed.map(mapUserBookToListed);
   }
 
   const handleTransactionAction = async (payload: { id: string, status: string, returnDate?: string }) => {
@@ -101,6 +136,7 @@
       }
       await reloadTransactions();
       if (payload.status === 'accepted' || payload.status === 'finish') {
+        await reloadListed();
         notifyOffersChanged();
       }
     } catch (err) {
@@ -209,7 +245,7 @@
           <p>Dodaj swoją pierwszą ofertę</p>
         </div>
         <div v-else class="listed-grid">
-          <BookOffer v-for="b in listedBooks"
+          <BookOffer v-for="b in listedBooksWithEditFlag"
                      :key="'listed-' + b.id"
                      :item="b"
                      :is-listed="true"
