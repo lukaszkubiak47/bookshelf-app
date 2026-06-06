@@ -36,7 +36,7 @@
   const fmt = (n) => (n == null ? '—' : n.toLocaleString('pl-PL'));
 
   const heroStats = computed(() => [
-    { num: fmt(statsStore.stats?.activeOffers), label: 'Książek w obiegu' },
+    { num: fmt(statsStore.stats?.activeOffers), label: 'Aktywnych ofert' },
     { num: fmt(statsStore.stats?.totalUsers), label: 'Czytelników' },
     { num: fmt(statsStore.stats?.totalCities), label: 'Miast w Polsce' },
   ]);

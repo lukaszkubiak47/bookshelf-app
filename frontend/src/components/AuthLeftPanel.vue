@@ -176,8 +176,8 @@
       </div>
     </div>
 
-    <div :style="{ display: 'flex', gap: '28px', position: 'relative', zIndex: 2 }">
-      <div v-for="(s, i) in stats" :key="i" :style="{ textAlign: 'center' }">
+    <div :style="{ display: 'flex', gap: '16px', justifyContent: 'center', position: 'relative', zIndex: 2 }">
+      <div v-for="(s, i) in stats" :key="i" :style="{ width: '100px', flexShrink: 0, textAlign: 'center' }">
         <div :style="{
           width: '40px', height: '40px', borderRadius: '10px',
           background: 'rgba(255,255,255,0.1)',
@@ -190,7 +190,7 @@
         <p :style="{ fontFamily: '\'Playfair Display\', serif', color: 'white', fontSize: '20px', fontWeight: 700, lineHeight: 1 }">
           {{ s.value }}
         </p>
-        <p :style="{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', marginTop: '3px' }">{{ s.label }}</p>
+        <p :style="{ color: 'rgba(255,255,255,0.55)', fontSize: '11px', marginTop: '3px', whiteSpace: 'nowrap' }">{{ s.label }}</p>
       </div>
     </div>
   </div>

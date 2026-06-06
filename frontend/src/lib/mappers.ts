@@ -138,6 +138,7 @@ export function mapTransactionToShelfItem(dto: TransactionDto, direction: 'recei
 
   return {
     id: dto.id,
+    offerId: dto.userBook.id,
     status: dto.status,
     type: dto.type,
     bookTitle: dto.userBook.book.title,

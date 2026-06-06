@@ -403,7 +403,7 @@
               </div>
             </div>
             <div class="form-field">
-              <label class="form-label">Opis (opcjonalnie)</label>
+              <label class="form-label">Opis (opcjonalnie max 2000 znaków)</label>
               <textarea class="form-input" v-model="manualForm.desc" rows="3" placeholder="Krótki opis książki…" style="resize:vertical"></textarea>
             </div>
             <button class="btn btn-filled btn-full" @click="submitManualForm">Użyj tych danych →</button>
@@ -458,7 +458,7 @@
         </div>
 
         <div v-if="form.selectedBook?.googleBooksId" class="form-field" style="margin-bottom:18px">
-          <label class="form-label">Opis (opcjonalnie)</label>
+          <label class="form-label">Opis (opcjonalnie - max 2000 znaków)</label>
           <textarea
             class="form-input"
             v-model="form.selectedBook.description"
