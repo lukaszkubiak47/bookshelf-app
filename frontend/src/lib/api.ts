@@ -6,9 +6,11 @@
  *
  * Eksporty: apiFetch, ApiError.
  * Backend: POST /api/auth/login, POST /api/auth/register, GET /api/stats.
+ * Adres API jak w lib/client.ts: VITE_API_BASE_URL (pusty = proxy /api w dev i nginx w Dockerze).
  */
+import { getApiBaseUrl } from './client'
 
-const BASE = '/api'
+const BASE = `${getApiBaseUrl()}/api`
 const TOKEN_KEY = 'bookshelf_token'
 
 export class ApiError extends Error {

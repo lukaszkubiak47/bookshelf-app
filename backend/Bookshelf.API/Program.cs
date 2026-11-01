@@ -23,7 +23,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         builder.Configuration.GetConnectionString("Default"),
         sql => sql.EnableRetryOnFailure()));
 
-// CORS — frontend na Static Web Apps ma inny adres niz API na App Service.
+// CORS — frontend (osobna aplikacja w App Service) ma inny adres niz API.
 // Lista dozwolonych adresow w konfiguracji: Cors:AllowedOrigins (w Azure: App Setting Cors__AllowedOrigins__0).
 const string FrontendCorsPolicy = "Frontend";
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
