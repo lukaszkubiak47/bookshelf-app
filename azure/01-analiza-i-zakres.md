@@ -53,7 +53,7 @@
 
 | Problem | Gdzie | Skutek | Kiedy naprawiamy |
 |---|---|---|---|
-| `lib/api.ts` ma adres `/api` wpisany na sztywno; korzystają z niego logowanie, rejestracja i statystyki | `frontend/src/lib/api.ts:11`, `stores/auth.ts`, `stores/stats.ts` | Na Static Web Apps (bez proxy) logowanie i rejestracja nie zadziałają | T1 |
+| `lib/api.ts` ma adres `/api` wpisany na sztywno; korzystają z niego logowanie, rejestracja i statystyki | `frontend/src/lib/api.ts:11`, `stores/auth.ts`, `stores/stats.ts` | Frontend pod własnym adresem (bez proxy): logowanie i rejestracja nie zadziałają | T1 |
 | Wgrany avatar dostaje adres `/api/users/me/avatar/image` (endpoint tylko dla zalogowanych, „me" = oglądający) | `UserService.cs:99`, `UsersController.cs:11,98` | Inni użytkownicy nie widzą cudzych wgranych avatarów (błąd już dziś) | T2 |
 | Obrazy (okładki, avatary) trzymane w bazie jako `varbinary(max)`; listy ofert mapowane po stronie aplikacji | `UserBookService.cs:80,117,352` | Każda lista ofert pobiera z bazy pełne obrazy, co jest ciężkie dla taniej bazy w chmurze | T2 (Blob) |
 | Reset hasła wymaga tylko e-maila, nazwy użytkownika i miesiąca założenia konta, bez limitu prób | `AuthService.cs:84-89` | Po publicznym wdrożeniu łatwo przejąć konto zgadywaniem | T1 (limit prób w Redis) |
@@ -91,7 +91,7 @@ Legenda: ✅ rdzeń · ➕ dodatek · ❓ zależy od testu w dniu 0 · ❌ nie r
 
 | Pozycja (maks.) | Decyzja | Zastosowanie w Bookshelf | Kiedy |
 |---|---|---|---|
-| Aplikacja w chmurze + baza + CRUD (2,5) | ✅ | Frontend na Static Web Apps, API na App Service, dane w Azure SQL Database; istniejący CRUD ofert, profili i transakcji | T1 |
+| Aplikacja w chmurze + baza + CRUD (2,5) | ✅ | Frontend i API na App Service (dwie aplikacje na jednym planie B1), dane w Azure SQL Database; istniejący CRUD ofert, profili i transakcji | T1 |
 | Redis cache (0,5) | ✅ | Azure Managed Redis w dwóch rolach: (1) rozproszony cache wyników Google Books, gatunków i statystyk; (2) limit prób logowania, rejestracji, resetu hasła i wysyłania próśb | T1 |
 | Bloby (0,25–0,5) | ✅ cel 0,5 | Okładki i avatary przeniesione z bazy do Blob Storage; dostęp przez krótkotrwałe linki SAS; miniatury; reguła cyklu życia | T2 |
 | Kolejki (0,25) | ✅ | Storage Queue: `transaction-events` (zdarzenia transakcji) i `image-jobs` (miniatury) | T2 |
@@ -105,11 +105,11 @@ Legenda: ✅ rdzeń · ➕ dodatek · ❓ zależy od testu w dniu 0 · ❌ nie r
 | Wirtualne maszyny (0,5) | ➕ | Środowisko staging na VM: Docker + gotowe obrazy (API + frontend) z GitHub Actions, baza staging w Azure SQL free tier. Dobre porównanie IaaS vs PaaS do raportu | dodatek 3 |
 | Files storage (0,25) | ➕ | Udział Azure Files montowany na VM staging (konfiguracja, logi) | dodatek 4 |
 | Service Bus (0,25) | ➕ | Topic `transaction-events` z subskrypcjami (historia, powiadomienia) zamiast kolejki zdarzeń. `image-jobs` zostaje na Storage Queue, więc pozycje się nie dublują | dodatek 5 |
-| CDN (0,25) | ❓ | Front Door przed Static Web Apps tylko w tygodniu demo. Klasyczny CDN nie przyjmuje nowych profili, a na kontach studenckich Front Door ma dławione pasmo; opłata bazowa ok. 35 USD/mies., liczona godzinowo | dodatek 6 |
+| CDN (0,25) | ❓ | Front Door przed frontendem tylko w tygodniu demo. Klasyczny CDN nie przyjmuje nowych profili, a na kontach studenckich Front Door ma dławione pasmo; opłata bazowa ok. 35 USD/mies., liczona godzinowo | dodatek 6 |
 | Worker role (0,25) | ❌ | Cloud Services są wygaszane; Functions liczymy jako serverless, więc nie dublujemy | – |
 | Skalowalna Web Role jako cloud service (0,25) | ❌ | Cloud Services (extended support) wygaszane do 31.03.2027; skalowalną witryną jest App Service | – |
 | Azure Kubernetes Service (0,5) | ❌ | Koszt węzłów i load balancera, limity kont studenckich, dużo pracy przy hostingu, który mamy na App Service | – |
-| Inne niewymienione | ➕ przy okazji | Static Web Apps, Application Insights, GitHub Actions, opcjonalnie e-maile przez Azure Communication Services. Nie liczymy ich w planie | T1–T3 |
+| Inne niewymienione | ➕ przy okazji | Application Insights, GitHub Actions, opcjonalnie e-maile przez Azure Communication Services. Nie liczymy ich w planie | T1–T3 |
 
 ### 3.3 Sumy
 
@@ -125,10 +125,10 @@ Legenda: ✅ rdzeń · ➕ dodatek · ❓ zależy od testu w dniu 0 · ❌ nie r
 
 ```mermaid
 flowchart LR
-  U[Użytkownik] -->|HTTPS| SWA[Static Web Apps:<br/>frontend Vue]
+  U[Użytkownik] -->|HTTPS| WEB[App Service:<br/>frontend Vue]
   U -.->|logowanie kontem Microsoft| EID[Entra ID]
-  FD[Front Door, dodatek] -.-> SWA
-  SWA -->|REST + JWT| API[App Service:<br/>Bookshelf.API]
+  FD[Front Door, dodatek] -.-> WEB
+  WEB -->|REST + JWT| API[App Service:<br/>Bookshelf.API]
   API --> SQL[(Azure SQL Database)]
   SQL -. geo-replikacja, dodatek .-> SQL2[(Kopia w 2. regionie)]
   API --> R[(Azure Managed Redis:<br/>cache + limity prób)]
@@ -170,7 +170,7 @@ flowchart LR
 ### 4.2 Uzasadnienie wyboru usług (do sekcji „Założenia" raportu)
 
 - **App Service:** zarządzany hosting .NET bez administrowania serwerem; skalowanie, deploy z GitHub Actions, sekrety w App Settings.
-- **Static Web Apps:** darmowy hosting SPA z globalną dystrybucją plików i gotowym CI/CD z GitHuba.
+- **Frontend na App Service:** druga aplikacja (Node 22, `pm2 serve --spa`) na planie API, więc bez dodatkowych kosztów i z tym samym sposobem wdrażania co API. Static Web Apps odpadło, bo polityka konta studenckiego nie dopuszcza żadnego z jego regionów (sprawdzone 01.11).
 - **Azure SQL Database:** ten sam silnik co lokalny SQL Server, więc migracje EF Core działają bez zmian; zarządzane kopie zapasowe, geo-replikacja.
 - **Blob Storage:** tani magazyn plików zamiast `varbinary` w bazie. Lżejsze zapytania (listy przestają ciągnąć obrazy) i dostęp do plików po URL.
 - **Storage Queue + Functions:** wolniejsze zadania w tle, bez serwera, z automatycznym skalowaniem; API odpowiada od razu.
@@ -200,8 +200,8 @@ flowchart LR
 - **Frontend:**
   - `lib/api.ts` ma korzystać z `getApiBaseUrl()` (albo przechodzimy na `apiRequest`);
   - build produkcyjny ma się wywalić, gdy `VITE_API_BASE_URL` jest pusty;
-  - `staticwebapp.config.json` z `navigationFallback` → `/index.html`.
-- **CORS:** `AddCors` z adresem Static Web Apps i `http://localhost:5173`; `UseCors()` przed uwierzytelnianiem. Środowiska podglądowe PR w Static Web Apps wyłączamy albo dopisujemy ich adresy.
+  - każdy adres SPA ma dostawać `index.html`: `pm2 serve --spa` (Startup Command aplikacji frontendu).
+- **CORS:** `AddCors` z adresem aplikacji frontendu i `http://localhost:5173`; `UseCors()` przed uwierzytelnianiem.
 - **Azure Managed Redis:** StackExchange.Redis obsługuje klaster bez dodatkowej konfiguracji. Uwierzytelnianie jest domyślnie przez Entra ID, więc najprościej świadomie włączyć klucze dostępu. Port 10000, TLS.
 - **Blob:**
   - anonimowy odczyt jest domyślnie wyłączony, więc obrazy wydajemy przez link SAS;
@@ -212,7 +212,7 @@ flowchart LR
   - trigger kolejki domyślnie oczekuje Base64, a `QueueClient` wysyła zwykły tekst. Trzeba ustawić `MessageEncoding = Base64` w kliencie (albo `messageEncoding: none` w host.json), inaczej komunikaty lądują w kolejce „poison".
 - **Cosmos DB:** free tier tylko jeden na subskrypcję; kontener 400 RU/s, partycja `/userId`, TTL 30 dni.
 - **Document Intelligence:** darmowy tier F0 (500 stron/mies.) nie jest dostępny w każdym regionie. Usuniętych zasobów AI nie zakładamy od nowa „na próbę": są przez 48 h w koszu i blokują darmowy slot.
-- **Entra ID:** rejestracja aplikacji typu „konta w dowolnej organizacji + osobiste konta Microsoft", adresy przekierowania SPA (Static Web Apps + localhost). Użytkownikowi z Microsoft uzupełniamy imię i nazwisko z tokenu, a miasto prosimy uzupełnić w profilu. `PasswordHash` ustawiamy na losową wartość, bo pole jest wymagane.
+- **Entra ID:** rejestracja aplikacji typu „konta w dowolnej organizacji + osobiste konta Microsoft", adresy przekierowania SPA (adres frontendu + localhost). Użytkownikowi z Microsoft uzupełniamy imię i nazwisko z tokenu, a miasto prosimy uzupełnić w profilu. `PasswordHash` ustawiamy na losową wartość, bo pole jest wymagane.
 - **E-mail przez Azure Communication Services** (opcja): domena zarządzana przez Azure ma limit 5 maili/min i 10 na godzinę.
 
 ---
@@ -227,7 +227,7 @@ flowchart LR
 **Konto Azure for Students:** 100 USD na 12 miesięcy, bez karty.
 
 - **Przez 12 miesięcy darmowe:** VM B1s / B2pts v2 / B2ats v2 (750 h/mies.).
-- **Bez limitu czasu darmowe:** Cosmos DB free tier, Azure SQL free tier (do 10 baz), Static Web Apps Free, darmowe tiery usług AI.
+- **Bez limitu czasu darmowe:** Cosmos DB free tier, Azure SQL free tier (do 10 baz), darmowe tiery usług AI.
 - **Po wyczerpaniu kredytu** subskrypcja jest wyłączana (bez rachunku, ale aplikacja przestaje działać).
 - **Alerty budżetu w Cost Management** mogą nie być dostępne dla tego typu subskrypcji. Stan kredytu sprawdzamy w Education hub (dane z opóźnieniem do 72 h).
 
@@ -236,7 +236,7 @@ flowchart LR
 | App Service | B1 Linux (0,018 $/h); S1 (0,095 $/h) tylko na test autoskalowania | 12–15 |
 | Azure SQL Database | free tier na start (0 $); Basic (ok. 4,83 $/mies.), jeśli podniesiemy | 0–4,5 |
 | Azure Managed Redis | B0 (0,021 $/h), od T1 | ok. 13–14 |
-| Static Web Apps | Free | 0 |
+| Frontend (druga aplikacja na planie API) | w cenie B1 | 0 |
 | Storage (Blob, Queue, Table, Files) | LRS, małe wolumeny | ok. 1 |
 | Functions | Flex Consumption / Consumption | ok. 0 |
 | Cosmos DB | free tier, 400 RU/s | 0 |
@@ -277,8 +277,8 @@ Ceny dla `polandcentral` z Azure Retail Prices API (10.2026). W wybranym `german
    - **nowy** sekret JWT;
    - klucz Google Books;
    - `RunMigrations=true`.
-3. **Frontend pod chmurę:** poprawka `lib/api.ts`; Static Web Apps (Free) + `staticwebapp.config.json` + `VITE_API_BASE_URL`; **CORS** w `Program.cs`.
-4. **GitHub Actions:** workflow API i workflow Static Web Apps.
+3. **Frontend pod chmurę:** poprawka `lib/api.ts`; druga aplikacja na planie API (Node 22, `pm2 serve --spa`) + `VITE_API_BASE_URL`; **CORS** w `Program.cs`.
+4. **GitHub Actions:** workflow API i workflow frontendu.
 5. **Redis:**
    - Azure Managed Redis B0; `IDistributedCache` z zamiennikiem lokalnym; serwis `redis` w `docker-compose`;
    - cache Google Books, gatunków i statystyk;
@@ -287,11 +287,11 @@ Ceny dla `polandcentral` z Azure Retail Prices API (10.2026). W wybranym `german
    - konto Storage;
    - Function App (.NET 10) z workflowem deploy i pustą funkcją z triggerem kolejki;
    - w API interfejs `IEventPublisher` (jeszcze bez zdarzeń).
-7. **Test całości w chmurze:** rejestracja i logowanie pod adresem Static Web Apps, dodanie książki, przeglądanie, transakcja.
+7. **Test całości w chmurze:** rejestracja i logowanie pod adresem frontendu, dodanie książki, przeglądanie, transakcja.
 
 **Minimum do przekazania:**
 
-- aplikacja działa pod adresem Static Web Apps, z API na App Service i danymi w Azure SQL;
+- aplikacja działa pod adresem frontendu, z API na App Service i danymi w Azure SQL;
 - deploy z `main` jest automatyczny;
 - ponowne wyszukanie tej samej książki trafia w Redis;
 - po kilku błędnych logowaniach API zwraca 429;
@@ -349,7 +349,7 @@ Ceny dla `polandcentral` z Azure Retail Prices API (10.2026). W wybranym `german
 | 3 | VM staging: B2ats v2 (x64), Docker; obrazy API i frontendu budowane w GitHub Actions i trzymane w GHCR; `docker-compose.staging.yml` bez kontenera bazy (baza staging w Azure SQL free tier); SSH tylko kluczem, port 22 dostępny tylko z IP zespołu, porty 1433 i 8080 zamknięte | 0,5 | ok. 1 dzień | Wojciech po T2, do 15.11. Pliki tylko w `azure/vm/` |
 | 4 | Azure Files: udział montowany na VM staging (plik `.env`, logi) | 0,25 | ok. 0,5 dnia | Wojciech, razem z dodatkiem 3 |
 | 5 | Service Bus: topic `transaction-events` z subskrypcjami historii i powiadomień | 0,25 | ok. 0,5 dnia | Jakub, tylko do 15.11 |
-| 6 | Front Door przed Static Web Apps na tydzień demo (jeśli test w dniu 0 przeszedł) | 0,25 | ok. 0,25 dnia | Łukasz, T4 |
+| 6 | Front Door przed frontendem na tydzień demo (jeśli test w dniu 0 przeszedł) | 0,25 | ok. 0,25 dnia | Łukasz, T4 |
 
 ### 6.7 T4: Poprawki, demo, raport (wszyscy, 16.11–22.11, oddanie na ostatnich zajęciach)
 
@@ -379,7 +379,7 @@ T2 i T3 można zamienić według umiejętności: T2 to bardziej backend, Azure S
 | Nie da się utworzyć Azure Managed Redis | Inny dozwolony region; w ostateczności Redis na VM (słabszy argument do punktów) i awans dodatku 3 do rdzenia |
 | Tenant nie pozwala zaprosić gości ani zarejestrować aplikacji | Wdrażanie przez GitHub Actions; rejestracja aplikacji w osobistym katalogu Microsoft; plan B dla Entra ID: tożsamość zarządzana do SQL i Storage |
 | Document Intelligence F0 niedostępny w dozwolonych regionach | Azure AI Vision F0 (Read, wycofywany w 2028) albo Translator; zasób w innym dozwolonym regionie |
-| Logowanie i rejestracja nie działają po wdrożeniu frontendu | Poprawka `lib/api.ts` + test logowania pod adresem Static Web Apps jako warunek końca T1 |
+| Logowanie i rejestracja nie działają po wdrożeniu frontendu | Poprawka `lib/api.ts` + test logowania pod adresem frontendu jako warunek końca T1 |
 | Przejęcie konta przez łączenie po e-mailu albo przez słaby reset hasła | Identyfikacja po `tid` + `oid`, bez łączenia po e-mailu; limit prób w Redis |
 | Komunikaty z kolejki lądują w „poison" | Kodowanie Base64 po stronie klienta albo `messageEncoding: none` |
 | Poślizg T2 blokuje powiadomienia w T3 | Szkielet Functions już w T1; T3 może tymczasowo zapisywać powiadomienia z API |
@@ -391,7 +391,7 @@ T2 i T3 można zamienić według umiejętności: T2 to bardziej backend, Azure S
 
 ## 8. Pytania do prowadzącego
 
-1. Czy Static Web Apps, Application Insights, GitHub Actions i Azure Communication Services mieszczą się w „inne niewymienione"?
+1. Czy Application Insights, GitHub Actions i Azure Communication Services mieszczą się w „inne niewymienione"?
 2. Co jest wymagane, żeby bloby dały 0,5 zamiast 0,25, a Redis pełne 0,5?
 3. Czy elementy uruchamiane czasowo (autoskalowanie na droższym planie, Front Door) mogą być pokazane na zrzutach lub nagraniu, czy muszą działać w dniu oddania?
 
@@ -403,7 +403,6 @@ T2 i T3 można zamienić według umiejętności: T2 to bardziej backend, Azure S
 
 1. Przydział T2 i T3 (Wojciech / Jakub) oraz właściciele dodatków (propozycja w 6.6). Rozpisujemy po zakończeniu T1.
 2. Dokładny dzień oddania (ostatnie zajęcia).
-3. Hosting frontendu. Static Web Apps działa tylko w kilku regionach i żadnego z nich nie ma na naszej liście dozwolonych. Propozycja: statyczna strona w Azure Storage (Blob). Decyzja w kroku 6 instrukcji T1.
 
 **Podjęte:**
 
@@ -412,6 +411,8 @@ T2 i T3 można zamienić według umiejętności: T2 to bardziej backend, Azure S
 - (31.10) Zasoby w portalu zakłada Łukasz, krok po kroku. Kod T1 powstaje na gałęzi `t1/azure-fundament`, a pierwsze wdrożenie idzie po scaleniu jej do `main`.
 - (31.10) Raport składa Łukasz na końcu (T4). Zrzuty ekranu każdy robi na bieżąco w `azure/raport/tN/`.
 - (01.11) Region: **Germany West Central** (`germanywestcentral`). Konto studenckie pozwala tylko na `italynorth`, `austriaeast`, `germanywestcentral`, `denmarkeast` i `switzerlandnorth`. W Austria East i Denmark East cennik nie ma Document Intelligence; Switzerland North jest najdroższy.
+- (01.11) Kolejność wdrożenia: najpierw samo API (PR #23, działa), frontend osobnym PR-em.
+- (01.11) Hosting frontendu: druga aplikacja `app-bookshelf-web-lk47` (Node 22, `pm2 serve --spa`) na planie `asp-bookshelf`, bez dodatkowych kosztów. Static Web Apps zablokowała polityka regionów konta studenckiego (walidacja: *policy violation*). Odrzucony zamiennik: statyczna strona w Azure Storage (kod 404 przy odświeżaniu podstron, klucz konta w sekretach GitHuba).
 
 ---
 
@@ -427,7 +428,7 @@ T2 i T3 można zamienić według umiejętności: T2 to bardziej backend, Azure S
 
 - **Azure SQL Database:** [free tier](https://learn.microsoft.com/azure/azure-sql/database/free-offer), [FAQ free tier](https://learn.microsoft.com/azure/azure-sql/database/free-tier-faq), [geo-replikacja we wszystkich tierach](https://azure.microsoft.com/updates/active-geo-replication-now-available-on-all-azure-sql-database-service-tiers/)
 - **Azure Managed Redis:** [FAQ wygaszania Azure Cache for Redis](https://learn.microsoft.com/azure/azure-cache-for-redis/retirement-faq), [daty blokady tworzenia](https://techcommunity.microsoft.com/blog/azure-managed-redis/-/4458721), [cennik](https://azure.microsoft.com/pricing/details/managed-redis/)
-- **Static Web Apps:** [limity](https://learn.microsoft.com/azure/static-web-apps/quotas), [backend App Service tylko w planie Standard](https://learn.microsoft.com/azure/static-web-apps/apis-app-service)
+- **Frontend na App Service (Node, PM2):** [konfiguracja Node.js w App Service](https://learn.microsoft.com/azure/app-service/configure-language-nodejs)
 - **Autoskalowanie (tier Standard lub wyżej):** [Azure Monitor autoscale](https://learn.microsoft.com/azure/azure-monitor/autoscale/autoscale-get-started)
 - **Azure Functions:** [Flex Consumption](https://learn.microsoft.com/azure/azure-functions/flex-consumption-plan), [kolejki i kodowanie komunikatów](https://learn.microsoft.com/azure/azure-functions/functions-bindings-storage-queue)
 - **Entra ID, weryfikacja claimów (nie używać e-maila do autoryzacji):** [dokumentacja](https://learn.microsoft.com/entra/identity-platform/claims-validation)

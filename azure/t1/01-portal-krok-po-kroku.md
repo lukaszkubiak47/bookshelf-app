@@ -10,7 +10,7 @@
 | Serwer SQL / baza | `sql-bookshelf-lk47` / `BookshelfDB` |
 | Plan App Service / aplikacja API | `asp-bookshelf` / `app-bookshelf-api-lk47` |
 | Application Insights | `appi-bookshelf` |
-| Static Web App (frontend) | `swa-bookshelf` |
+| Web App (frontend) | `app-bookshelf-web-lk47` |
 
 ## 0. Git (u Ciebie lokalnie)
 
@@ -127,23 +127,25 @@ Po utworzeniu:
 3. **Settings → Configuration → General settings**: **Always On: On**, przy okazji sprawdź **HTTPS Only: On** → zapisz i potwierdź restart. Always On usuwa „zimny start". Bazy nie budzi, bo pinguje tylko `/`, a pod tym adresem API nic nie ma i żaden middleware nie łączy się z bazą (sprawdzone 01.11).
 4. **Overview** → **Download publish profile** (plik `.PublishSettings`, to sekret, nie commitujemy go). Trzymaj go w Pobranych do kroku 7, potem usuń. `.gitignore` i tak ignoruje `*.publishsettings`. Gdyby wyciekł: **Reset publish profile** i pobierz nowy.
 
-## 6. Static Web Apps (frontend)
+## 6. Frontend: druga aplikacja na planie API
 
-> ⚠️ Static Web Apps pozwala wybrać tylko kilka regionów (m.in. West Europe, East US 2), a żadnego z nich nie ma na naszej liście dozwolonych. Najpewniej potrzebny będzie zamiennik (propozycja: statyczna strona w Azure Storage). Decyzja w tym kroku.
+> ⛔ Sprawdzone 01.11: Static Web Apps odpada. Region wybiera się na zakładce **Advanced** (do wyboru m.in. West Europe, East US 2), a walidacja kończy się błędem *The template deployment failed because of policy violation*, bo żadnego z tych regionów nie ma na naszej liście dozwolonych. Zamiennik (decyzja 01.11): druga Web App na tym samym planie `asp-bookshelf`. Płacimy za plan, a nie za liczbę aplikacji, więc frontend nic nie dokłada.
 
-**Static Web Apps** → **Create**:
+**App Services** → **Create** → **Web App**:
 
-- Resource group: `rg-bookshelf`, Name: `swa-bookshelf`.
-- Plan type: **Free**.
-- Region (dla Functions/staging): np. **West Europe**. Statyczne pliki i tak idą globalnie.
-- Deployment source: **Other**. Wdrażamy własnym workflowem, więc Azure nie commituje nic do repo.
-
-**Review + create** → **Create** → 📸.
+- **Basics:** Resource group `rg-bookshelf`, Name `app-bookshelf-web-lk47`, Publish **Code**, Runtime stack **Node 22 LTS**, Operating System **Linux**, Region **Germany West Central**. Linux Plan: **istniejący `asp-bookshelf`**, nie *Create new* (nowy plan to kolejne ok. 13 USD/mies.).
+- **Database:** bez bazy. **Deployment:** Continuous deployment **Disable**, Basic authentication **Enable**. **Networking:** bez zmian.
+- **Monitor + secure:** Application Insights **No**. Ta aplikacja tylko podaje gotowe pliki, więc nie ma tu czego mierzyć; żądania do API mierzy Application Insights API.
+- **Review + create:** plan `asp-bookshelf` (B1), Node 22, Linux → **Create** → 📸.
 
 Po utworzeniu:
 
-1. **Overview** → skopiuj **URL** (`https://….azurestaticapps.net`). W App Service → **Environment variables** dodaj `Cors__AllowedOrigins__0` = ten adres, bez `/` na końcu → **Apply**.
-2. **Overview** → **Manage deployment token** → skopiuj token.
+1. **Settings → Configuration → Stack settings → Startup Command:** `pm2 serve /home/site/wwwroot --no-daemon --spa` → zapisz. `--spa` sprawia, że każdy adres (np. odświeżony `/profil`) dostaje `index.html`, a Vue sam wybiera widok.
+2. **General settings:** Always on **On**, HTTPS only **On**, FTP jak w API (FTP Basic Auth odznaczone, FTP state **Disabled**) → zapisz.
+3. **Overview** → skopiuj **Default domain**. W aplikacji **API** → **Environment variables** dodaj `Cors__AllowedOrigins__0` = `https://` + ten adres, bez `/` na końcu → **Apply** → **Confirm**.
+4. **Overview** → **Download publish profile** (sekret; trzymaj w Pobranych do kroku 7, potem usuń).
+
+> Uwaga (01.11): Chrome pokazał przy świeżym adresie frontendu czerwone ostrzeżenie „Niebezpieczna strona”, choć serwer zwracał zwykłą stronę powitalną Microsoftu (HTTP 200), a publiczny raport Google Safe Browsing nie miał o tym adresie żadnych danych. Najpewniej fałszywy alarm ochrony przed phishingiem: logo Microsoftu na nieznanym adresie. Po wdrożeniu naszego frontendu sprawdzamy ponownie; jeśli ostrzeżenie zostanie, zgłaszamy pomyłkę Google: https://safebrowsing.google.com/safebrowsing/report_error/
 
 ## 7. GitHub: sekrety i zmienne dla workflowów
 
@@ -153,15 +155,16 @@ Repo na GitHubie → **Settings → Secrets and variables → Actions**.
 
 | Nazwa | Wartość |
 |---|---|
-| `AZURE_WEBAPP_PUBLISH_PROFILE` | cała zawartość pliku publish profile z kroku 5 |
-| `AZURE_STATIC_WEB_APPS_API_TOKEN` | token z kroku 6 |
+| `AZURE_WEBAPP_PUBLISH_PROFILE` | cała zawartość pliku publish profile API (krok 5) |
+| `AZURE_FRONTEND_PUBLISH_PROFILE` | cała zawartość pliku publish profile frontendu (krok 6) |
 
 **Variables:**
 
 | Nazwa | Wartość |
 |---|---|
 | `AZURE_WEBAPP_NAME` | `app-bookshelf-api-lk47` |
-| `VITE_API_BASE_URL` | `https://` + Default domain API z kroku 5 (bez `/` na końcu) |
+| `AZURE_FRONTEND_APP_NAME` | `app-bookshelf-web-lk47` |
+| `VITE_API_BASE_URL` | `https://` + Default domain API z kroku 5 (bez `/` na końcu i bez `/api`) |
 
 ## 8. Pierwsze wdrożenie
 
@@ -171,7 +174,7 @@ GitHub pokazuje przycisk **Run workflow** tylko dla workflowów, które są już
 
 1. Zrób commity i push gałęzi `t1/azure-fundament`. Workflowy są w `.github/workflows/` (`api.yml`, `frontend.yml`).
 2. GitHub → **Pull requests** → **New pull request** → `main` ← `t1/azure-fundament` → **Create pull request** → **Merge pull request**. Po scaleniu workflowy **API** i **Frontend** ruszą same, bo na `main` trafiły zmiany w `backend/` i `frontend/`. 📸 zielone przebiegi w zakładce **Actions**.
-3. Wejdź na adres Static Web App i sprawdź rejestrację, logowanie, dodanie książki, przeglądanie i transakcję. 📸.
+3. Wejdź na adres frontendu (Default domain `app-bookshelf-web-lk47…`) i sprawdź rejestrację, logowanie, dodanie książki, przeglądanie i transakcję. 📸.
 
 Kolejne wdrożenie bez zmian w kodzie (np. po zmianie zmiennej `VITE_API_BASE_URL`): **Actions** → wybierz workflow → **Run workflow**. Zmiana App Settings w portalu wdrożenia nie wymaga, bo App Service sam się restartuje.
 
