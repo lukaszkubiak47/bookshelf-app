@@ -1,4 +1,5 @@
 using Bookshelf.API.Models.DTOs.Transactions;
+using Bookshelf.API.RateLimiting;
 using Bookshelf.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,7 @@ namespace Bookshelf.API.Controllers
         /// Wyslij prosbe o ksiazke.
         /// </summary>
         [HttpPost]
+        [RateLimit("transaction-create", limit: 20, windowSeconds: 3600)] // per użytkownik
         public async Task<IActionResult> Create([FromBody] CreateTransactionDto dto)
         {
             // Pobierz ID requestera z JWT

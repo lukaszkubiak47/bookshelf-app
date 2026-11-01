@@ -1,10 +1,13 @@
 using Bookshelf.API.Configuration;
 using Bookshelf.API.Data;
 using Bookshelf.API.Middleware;
+using Bookshelf.API.RateLimiting;
 using Bookshelf.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,12 +17,63 @@ builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSet
 builder.Services.Configure<GoogleBooksSettings>(builder.Configuration.GetSection("GoogleBooks"));
 
 // BAZA DANYCH
+// EnableRetryOnFailure: Azure SQL zwraca chwilowe bledy (np. wybudzanie bazy free tier po auto-pauzie) -> EF ponawia zapytanie.
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("Default"),
+        sql => sql.EnableRetryOnFailure()));
+
+// CORS — frontend na Static Web Apps ma inny adres niz API na App Service.
+// Lista dozwolonych adresow w konfiguracji: Cors:AllowedOrigins (w Azure: App Setting Cors__AllowedOrigins__0).
+const string FrontendCorsPolicy = "Frontend";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(FrontendCorsPolicy, policy => policy
+        .WithOrigins(allowedOrigins)
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
+
+// REDIS — cache rozproszony + licznik limitu prób, wspólne dla wszystkich instancji API.
+// Brak ConnectionStrings:Redis (lokalny dev) -> zamienniki w pamięci procesu, aplikacja działa bez Redisa.
+builder.Services.AddMemoryCache();
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+
+if (!string.IsNullOrWhiteSpace(redisConnectionString))
+{
+    var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
+    redisOptions.AbortOnConnectFail = false; // chwilowy brak Redisa przy starcie nie wywraca API
+    var redis = ConnectionMultiplexer.Connect(redisOptions);
+
+    builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.ConnectionMultiplexerFactory = () => Task.FromResult<IConnectionMultiplexer>(redis);
+        options.InstanceName = "bookshelf:";
+    });
+    builder.Services.AddSingleton<IRateLimitStore, RedisRateLimitStore>();
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+    builder.Services.AddSingleton<IRateLimitStore, InMemoryRateLimitStore>();
+}
+
+builder.Services.AddSingleton<ICacheService, CacheService>();
+
+// Za App Service ruch przechodzi przez front-endy Azure: prawdziwy adres klienta i schemat są w X-Forwarded-*.
+// Adresów front-endów nie znamy, więc czyścimy listy zaufanych proxy (domyślny ForwardLimit = 1 bierze ostatni, dopisany przez Azure).
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // SERWISY (DI)
 builder.Services.AddHttpClient();
-builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -82,7 +136,7 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// AUTO-MIGRACJA — tylko w kontenerze (flaga RunMigrations=true z docker-compose).
+// AUTO-MIGRACJA — gdy flaga RunMigrations=true (docker-compose oraz App Settings w Azure).
 // Lokalny dev (LocalDB) NIE ustawia flagi -> migracje dalej recznie: dotnet ef database update.
 if (app.Configuration.GetValue<bool>("RunMigrations"))
 {
@@ -110,6 +164,8 @@ if (app.Configuration.GetValue<bool>("RunMigrations"))
 // Globalna obsługa wyjątków: MUSI być pierwszym middleware w pipeline, więć tego proszę NIE RUSZAĆ!!!!! 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+app.UseForwardedHeaders(); // zaraz po obsłudze wyjątków: adres IP klienta (limit prób) i HTTPS za proxy Azure
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -119,6 +175,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseStaticFiles(); // serwowanie avatarów
+
+app.UseCors(FrontendCorsPolicy); // przed uwierzytelnianiem, zeby preflight (OPTIONS) nie dostawal 401
 
 app.UseAuthentication();
 app.UseAuthorization();

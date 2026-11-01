@@ -3,7 +3,6 @@ using System.Text.Json.Serialization;
 using Bookshelf.API.Configuration;
 using Bookshelf.API.Exceptions;
 using Bookshelf.API.Models.DTOs.Books;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Bookshelf.API.Services
@@ -15,12 +14,12 @@ namespace Bookshelf.API.Services
         private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(24);
         private static readonly TimeSpan HttpTimeout = TimeSpan.FromSeconds(10);
 
-        private readonly IMemoryCache _cache;
+        private readonly ICacheService _cache;
         private readonly HttpClient _http;
         private readonly GoogleBooksSettings _settings;
 
         public GoogleBooksService(
-            IMemoryCache cache,
+            ICacheService cache,
             IHttpClientFactory httpClientFactory,
             IOptions<GoogleBooksSettings> settings)
         {
@@ -39,9 +38,10 @@ namespace Bookshelf.API.Services
             var normalizedQuery = query.Trim();
             var cacheKey = $"google_books_{normalizedQuery.ToLowerInvariant()}";
 
-            // Jesli to samo zapytanie bylo juz wykonane, zwroc wynik z pamieci.
-            if (_cache.TryGetValue(cacheKey, out List<GoogleBookResultDto>? cachedResults))
-                return cachedResults!;
+            // Jesli to samo zapytanie bylo juz wykonane, zwroc wynik z cache (Redis — wspolny dla wszystkich instancji API).
+            var cachedResults = await _cache.GetAsync<List<GoogleBookResultDto>>(cacheKey);
+            if (cachedResults != null)
+                return cachedResults;
 
             var url = BuildSearchUrl(normalizedQuery);
 
@@ -72,7 +72,7 @@ namespace Bookshelf.API.Services
 
             // Cache'ujemy tylko niepuste wyniki, zeby chwilowy brak trafien nie zostal zamrozony na 24h.
             if (results.Count > 0)
-                _cache.Set(cacheKey, results, CacheDuration);
+                await _cache.SetAsync(cacheKey, results, CacheDuration);
 
             return results;
         }

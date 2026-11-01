@@ -8,11 +8,18 @@ namespace Bookshelf.API.Services
 {
     public class BookService : IBookService
     {
-        private readonly AppDbContext _db;
+        private const string GenresCacheKey = "genres";
 
-        public BookService(AppDbContext db)
+        // Slownik gatunkow zmienia sie tylko migracja (seed), wiec moze dlugo lezec w cache.
+        private static readonly TimeSpan GenresCacheDuration = TimeSpan.FromHours(24);
+
+        private readonly AppDbContext _db;
+        private readonly ICacheService _cache;
+
+        public BookService(AppDbContext db, ICacheService cache)
         {
             _db = db;
+            _cache = cache;
         }
 
         public async Task<BookDto> GetByIdAsync(Guid id)
@@ -91,17 +98,20 @@ namespace Bookshelf.API.Services
             return MapToDto(book);
         }
 
-        public async Task<List<GenreDto>> GetGenresAsync()
+        public Task<List<GenreDto>> GetGenresAsync()
         {
             // Gatunki sa seedowane przy migracji i sa publicznym slownikiem dla frontendu.
-            return await _db.Genres
-                .OrderBy(g => g.Name)
-                .Select(g => new GenreDto
-                {
-                    Id = g.Id,
-                    Name = g.Name
-                })
-                .ToListAsync();
+            return _cache.GetOrCreateAsync(
+                GenresCacheKey,
+                () => _db.Genres
+                    .OrderBy(g => g.Name)
+                    .Select(g => new GenreDto
+                    {
+                        Id = g.Id,
+                        Name = g.Name
+                    })
+                    .ToListAsync(),
+                GenresCacheDuration);
         }
 
         private static BookDto MapToDto(Book book)
