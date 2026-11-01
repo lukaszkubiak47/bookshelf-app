@@ -7,15 +7,26 @@ namespace Bookshelf.API.Services
     public class StatsService : IStatsService
     {
         private const string AvailableStatus = "available";
+        private const string CacheKey = "stats";
+
+        // Statystyki strony głównej mogą być lekko nieaktualne — oszczędzamy 4 zapytania do bazy przy każdym wejściu.
+        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
         private readonly AppDbContext _db;
+        private readonly ICacheService _cache;
 
-        public StatsService(AppDbContext db)
+        public StatsService(AppDbContext db, ICacheService cache)
         {
             _db = db;
+            _cache = cache;
         }
 
-        public async Task<StatsDto> GetStatsAsync()
+        public Task<StatsDto> GetStatsAsync()
+        {
+            return _cache.GetOrCreateAsync(CacheKey, CountStatsAsync, CacheDuration);
+        }
+
+        private async Task<StatsDto> CountStatsAsync()
         {
             // Każda statystyka to osobne zapytanie zliczające, bez ładowania encji.
             return new StatsDto

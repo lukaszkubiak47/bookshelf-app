@@ -1,4 +1,4 @@
-# Bookshelf — pelny stack lokalny: MSSQL + API (.NET 8) + web (nginx serwuje Vue + proxy /api).
+# Bookshelf — pelny stack lokalny: MSSQL + Redis + API (.NET 10) + web (nginx serwuje Vue + proxy /api).
 # Uruchomienie: docker compose up --build  (z roota repo). Wejscie: http://localhost:8088
 # Wymaga pliku .env (w roocie) z MSSQL_SA_PASSWORD — gitignored, nie commitowac.
 
@@ -29,11 +29,19 @@ services:
       ASPNETCORE_URLS: "http://+:8080"
       RunMigrations: "true"          # WLACZA auto-migracje przy starcie (gating — tylko tutaj)
       ConnectionStrings__Default: "Server=db,1433;Database=BookshelfDB;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=true;Encrypt=False"
+      GoogleBooks__ApiKey: "${GOOGLE_BOOKS_API_KEY}"   # klucz Google Books z .env (gitignored, nie w repo)
+      ConnectionStrings__Redis: "redis:6379"             # cache + limit prob (w Azure: Azure Managed Redis)
     depends_on:
       db:
         condition: service_healthy   # czeka az healthcheck bazy przejdzie
+      redis:
+        condition: service_started
     ports:
       - "8080:8080"                  # opcjonalne — bezposredni dostep do API
+    networks: [bookshelf-net]
+
+  redis:
+    image: redis:7-alpine           # lokalny odpowiednik Azure Managed Redis
     networks: [bookshelf-net]
 
   web:

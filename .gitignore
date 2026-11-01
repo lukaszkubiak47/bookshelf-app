@@ -437,6 +437,7 @@ dist/
 
 # Claude Code — lokalne pliki kontekstu (w każdym katalogu)
 CLAUDE.md
+/.claude/launch.json
 
 docs/
 
