@@ -92,10 +92,10 @@ Legenda: ✅ rdzeń · ➕ dodatek · ❓ zależy od testu w dniu 0 · ❌ nie r
 | Pozycja (maks.) | Decyzja | Zastosowanie w Bookshelf | Kiedy |
 |---|---|---|---|
 | Aplikacja w chmurze + baza + CRUD (2,5) | ✅ | Frontend i API na App Service (dwie aplikacje na jednym planie B1), dane w Azure SQL Database; istniejący CRUD ofert, profili i transakcji | T1 |
-| Redis cache (0,5) | ✅ | Azure Managed Redis w dwóch rolach: (1) rozproszony cache wyników Google Books, gatunków i statystyk; (2) limit prób logowania, rejestracji, resetu hasła i wysyłania próśb | T1 |
+| Redis cache (0,5) | ✅ | Azure Managed Redis w dwóch rolach: (1) rozproszony cache wyników Google Books, gatunków i statystyk; (2) limit prób logowania, rejestracji, resetu hasła i wysyłania próśb | kod T1, zasób T3 |
 | Bloby (0,25–0,5) | ✅ cel 0,5 | Okładki i avatary przeniesione z bazy do Blob Storage; dostęp przez krótkotrwałe linki SAS; miniatury; reguła cyklu życia | T2 |
 | Kolejki (0,25) | ✅ | Storage Queue: `transaction-events` (zdarzenia transakcji) i `image-jobs` (miniatury) | T2 |
-| Serverless functions (0,25) | ✅ | Azure Functions (.NET 10 isolated): `ProcessTransactionEvent`, `GenerateThumbnail` | szkielet T1, logika T2 |
+| Serverless functions (0,25) | ✅ | Azure Functions (.NET 10 isolated): `ProcessTransactionEvent`, `GenerateThumbnail` | T2 |
 | Tabele (0,25) | ✅ | Table Storage: historia statusów każdej transakcji, widoczna w aplikacji | T2 |
 | Cosmos DB (0,25) | ✅ | Powiadomienia w aplikacji (dzwonek z licznikiem), dokumenty per użytkownik z automatycznym wygasaniem (TTL); free tier | T3 |
 | AI (0,25…) | ✅ | Document Intelligence (model „read", OCR): „Rozpoznaj książkę ze zdjęcia okładki" → wyszukanie w Google Books → podpowiedzi przy dodawaniu | T3 |
@@ -256,20 +256,24 @@ Ceny dla `polandcentral` z Azure Retail Prices API (10.2026). W wybranym `german
 
 1. **W danym tygodniu kod aplikacji na `main` zmienia tylko jego właściciel.** Pozostali w tym czasie przygotowują się albo robią dodatki infrastrukturalne, które nie dotykają kodu aplikacji (pliki tylko w `azure/…`).
 2. **Każdy commituje i pushuje sam.** `main` musi się zawsze budować i działać.
-3. **Zrzuty ekranu i notatki do raportu robimy w trakcie** (`azure/raport/tN/`): portal, konfiguracja, kod, efekt w aplikacji.
-4. **Na koniec tygodnia krótkie przekazanie** (`azure/handover/tN.md`: co działa, jak uruchomić, ustawienia, problemy) + 30 min call dla następnej osoby.
+3. **Zrzuty ekranu i notatki do raportu robimy w trakcie** (portal, konfiguracja, kod, efekt w aplikacji), ale trzymamy je u siebie, nie w repo: repo jest publiczne, a na zrzutach widać m.in. ID subskrypcji i e-maile. `azure/raport/` jest w `.gitignore`.
+4. **Na koniec tygodnia wiadomość do Łukasza:** co zrobione, czego nie, co przechodzi dalej, plus zrzuty. Łukasz weryfikuje tydzień, zanim przekaże pracę następnej osobie.
 
 ### 6.2 Dzień 0 (Łukasz, ok. 2–3 h; pozostali tylko logują się i sprawdzają dostęp)
 
-- Lista dozwolonych regionów (polityka konta studenckiego) i wybór regionu.
-- Zaproszenie Wojciecha i Jakuba, role na subskrypcji.
-- Rejestracja dostawców usług: Web, Sql, Storage, Cache, DocumentDB, CognitiveServices, ServiceBus, Insights, OperationalInsights, AlertsManagement, Compute, Network.
-- **Docelowe** (nie próbne) utworzenie zasobów z darmowymi slotami: Cosmos DB free tier i Document Intelligence F0.
-- Dostępność pozostałych usług sprawdzana bez tworzenia, przez listy SKU i regionów w CLI: Azure Managed Redis B0, Azure SQL Basic, Functions Flex Consumption.
-- Czy można zarejestrować aplikację w Entra ID (potrzebne w T3).
-- Czy da się utworzyć Front Door (dodatek 6). Zasób od razu usuwamy.
+Stan 01.11: ✅ zrobione, → w zakresie innego tygodnia.
+
+- ✅ Lista dozwolonych regionów (polityka konta studenckiego) i wybór regionu.
+- ✅ Wojciech i Jakub mają rolę Contributor na subskrypcji.
+- ✅ Rejestracja dostawców usług: Web, Sql, Storage, Cache, DocumentDB, CognitiveServices, ServiceBus, Insights, OperationalInsights, AlertsManagement, Compute, Network.
+- → T3: **docelowe** (nie próbne) utworzenie zasobów z darmowymi slotami: Cosmos DB free tier i Document Intelligence F0.
+- ✅ Dostępność pozostałych usług (Azure Managed Redis B0, Azure SQL Basic, Functions Flex Consumption): wszystkie mają ceny w Germany West Central; SKU sprawdzamy przy tworzeniu.
+- → T3: czy można zarejestrować aplikację w Entra ID.
+- → T4 (Łukasz): czy da się utworzyć Front Door (dodatek 6). Zasób od razu usuwamy.
 
 ### 6.3 T1: Fundament + Redis + szkielet Functions (Łukasz, 26.10–01.11) · rdzeń 3,0
+
+Stan 01.11: punkty 1–4 i 7 zrobione, aplikacja działa w chmurze (wyszukiwanie Google Books czeka na klucz), kod Redisa jest gotowy. Zasób Redis jest w zakresie T3, a punkt 6 (Storage, Function App, `IEventPublisher`) w zakresie T2.
 
 1. **Azure SQL** (free tier na start) + zapora.
 2. **App Service** (Linux, B1). App Settings:
@@ -298,8 +302,11 @@ Ceny dla `polandcentral` z Azure Retail Prices API (10.2026). W wybranym `german
 - Function App jest wdrożona;
 - przekazanie + zrzuty.
 
-### 6.4 T2: Obrazy w chmurze, zdarzenia i historia (proponuję Wojciech, 02.11–08.11) · rdzeń 1,25
+### 6.4 T2: Obrazy w chmurze, zdarzenia i historia (Wojciech, 02.11–08.11) · rdzeń 1,25
 
+Instrukcja dla wykonawcy: `azure/t2/01-zadania-i-instrukcja.md`.
+
+0. **Fundament:** konto Storage, Function App (.NET 10, Flex Consumption) z workflowem wdrożenia i funkcją z triggerem kolejki, w API `IEventPublisher`.
 1. **Blob:**
    - avatary i okładki w kontenerach `avatars` i `covers`, w bazie tylko nazwa pliku; migracja usuwa kolumny `varbinary`;
    - anonimowy `GET /api/users/{id}/avatar` + istniejący endpoint okładki przekierowują na link SAS; poprawka adresów avatarów we frontendzie (błąd z sekcji 2.2);
@@ -316,8 +323,12 @@ Ceny dla `polandcentral` z Azure Retail Prices API (10.2026). W wybranym `german
 - po akcjach na transakcji historia jest widoczna w aplikacji;
 - zrzuty.
 
-### 6.5 T3: Powiadomienia, AI i logowanie Microsoft (proponuję Jakub, 09.11–15.11; 11.11 święto) · rdzeń 0,75
+### 6.5 T3: Powiadomienia, AI i logowanie Microsoft (Jakub, 09.11–15.11; 11.11 święto) · rdzeń 0,75 + Redis 0,5
 
+0. **Na start:**
+   - klucz Google Books w App Settings API (do tego czasu wyszukiwanie Google Books w chmurze nie działa);
+   - Redis: Azure Managed Redis B0, `ConnectionStrings__Redis` w API, test cache i limitu prób (429); kod jest gotowy;
+   - Cosmos DB free tier i Document Intelligence F0 (docelowe zasoby) oraz sprawdzenie rejestracji aplikacji w Entra ID.
 1. **Cosmos DB:**
    - kontener `notifications` (partycja `/userId`, TTL 30 dni);
    - zapis powiadomienia w `ProcessTransactionEvent`, a gdyby funkcja nie była gotowa, tymczasowo z API;
@@ -345,7 +356,7 @@ Ceny dla `polandcentral` z Azure Retail Prices API (10.2026). W wybranym `german
 | # | Dodatek | Pkt | Nakład | Kto, do kiedy |
 |---|---|---|---|---|
 | 1 | Geo-replikacja Azure SQL (czytelna kopia w 2. regionie, pokaz odczytu z kopii) | 0,15 | ok. 0,25 dnia | Łukasz, do 08.11. Tylko portal |
-| 2 | Autoskalowanie: B1 → S1, reguły CPU 1–3 instancje, test k6 na endpoint obciążający CPU (np. logowanie z BCrypt, z limitem prób podniesionym dla konta testowego), zrzuty metryk, powrót na B1. Po T2, gdy obrazy nie obciążają już bazy | 0,15 | ok. 0,5 dnia | Łukasz, do 15.11 |
+| 2 | Autoskalowanie: B1 → S1, reguły CPU 1–3 instancje, test k6 na endpoint obciążający CPU (np. logowanie z BCrypt, z limitem prób podniesionym dla konta testowego), zrzuty metryk, powrót na B1. Po T2, gdy obrazy nie obciążają już bazy | 0,15 | ok. 0,5 dnia | Jakub, do 15.11 |
 | 3 | VM staging: B2ats v2 (x64), Docker; obrazy API i frontendu budowane w GitHub Actions i trzymane w GHCR; `docker-compose.staging.yml` bez kontenera bazy (baza staging w Azure SQL free tier); SSH tylko kluczem, port 22 dostępny tylko z IP zespołu, porty 1433 i 8080 zamknięte | 0,5 | ok. 1 dzień | Wojciech po T2, do 15.11. Pliki tylko w `azure/vm/` |
 | 4 | Azure Files: udział montowany na VM staging (plik `.env`, logi) | 0,25 | ok. 0,5 dnia | Wojciech, razem z dodatkiem 3 |
 | 5 | Service Bus: topic `transaction-events` z subskrypcjami historii i powiadomień | 0,25 | ok. 0,5 dnia | Jakub, tylko do 15.11 |
@@ -362,10 +373,12 @@ Ceny dla `polandcentral` z Azure Retail Prices API (10.2026). W wybranym `german
 
 | Osoba | Rdzeń (pkt) | Dodatki (pkt) | Nakład |
 |---|---|---|---|
-| Łukasz (T1 + dodatki 1, 2, 6) | 3,00 | 0,55 | ok. 4,5 osobodnia |
-| Wojciech (T2 + dodatki 3, 4) | 1,25 | 0,75 | ok. 5 osobodni |
-| Jakub (T3 + dodatek 5) | 0,75 | 0,25 | ok. 4 osobodni |
+| Łukasz (T1, dodatki 1 i 6, weryfikacja i raport) | 2,50 | 0,40 | ok. 4,5 osobodnia |
+| Wojciech (T2, dodatki 3 i 4) | 1,25 | 0,75 | ok. 5,5 osobodnia |
+| Jakub (T3 z Redisem, dodatki 2 i 5) | 1,25 | 0,40 | ok. 5 osobodni |
 | **Razem** | **5,00** | **1,55** | |
+
+Podział z 01.11: T2 obejmuje też konto Storage, Function App i `IEventPublisher`; T3 obejmuje też zasób Redis, sprawdzenia z dnia 0 i dodatek 2. Łukasz weryfikuje T2 i T3 i składa raport.
 
 T2 i T3 można zamienić według umiejętności: T2 to bardziej backend, Azure Storage i Linux (VM), T3 bardziej full-stack (frontend + API + logowanie).
 
@@ -376,13 +389,16 @@ T2 i T3 można zamienić według umiejętności: T2 to bardziej backend, Azure S
 | Ryzyko | Plan B |
 |---|---|
 | Polityka konta studenckiego blokuje region lub usługę | Sprawdzenie w dniu 0; inny dozwolony region; usługi AI w osobnym regionie |
-| Nie da się utworzyć Azure Managed Redis | Inny dozwolony region; w ostateczności Redis na VM (słabszy argument do punktów) i awans dodatku 3 do rdzenia |
+| Nie da się utworzyć Azure Managed Redis | Wcześnie sprawdzić kreatorem do etapu walidacji (bez tworzenia, bez kosztu); inny dozwolony region; w ostateczności Redis na VM (słabszy argument do punktów) i awans dodatku 3 do rdzenia |
+| Darmowa baza zużyje miesięczny limit (100 tys. vCore-sekund) i zatrzyma się do 1.12, czyli przed demo | Raz w tygodniu sprawdzamy „Free amount remaining” w Overview bazy; przy dodatku 1 (ok. 8.11) albo gdy zostanie mniej niż 40% limitu, podnosimy bazę do Basic (ok. 5 USD/mies.) |
+| Google Safe Browsing oznaczył adres frontendu jako phishing (od 01.11, fałszywy alarm) | Zgłoszenie do Google (01.11); jeśli nie zejdzie do ok. 8.11, weryfikacja strony w Google Search Console i prośba o ponowne sprawdzenie; w ostateczności nowa aplikacja frontendu z innym adresem |
+| Plan Flex Consumption niedostępny dla subskrypcji | Function App na istniejącym planie `asp-bookshelf` (bez dopłaty, z Always On) |
 | Tenant nie pozwala zaprosić gości ani zarejestrować aplikacji | Wdrażanie przez GitHub Actions; rejestracja aplikacji w osobistym katalogu Microsoft; plan B dla Entra ID: tożsamość zarządzana do SQL i Storage |
 | Document Intelligence F0 niedostępny w dozwolonych regionach | Azure AI Vision F0 (Read, wycofywany w 2028) albo Translator; zasób w innym dozwolonym regionie |
 | Logowanie i rejestracja nie działają po wdrożeniu frontendu | Poprawka `lib/api.ts` + test logowania pod adresem frontendu jako warunek końca T1 |
 | Przejęcie konta przez łączenie po e-mailu albo przez słaby reset hasła | Identyfikacja po `tid` + `oid`, bez łączenia po e-mailu; limit prób w Redis |
 | Komunikaty z kolejki lądują w „poison" | Kodowanie Base64 po stronie klienta albo `messageEncoding: none` |
-| Poślizg T2 blokuje powiadomienia w T3 | Szkielet Functions już w T1; T3 może tymczasowo zapisywać powiadomienia z API |
+| Poślizg T2 blokuje powiadomienia w T3 | Function App i zdarzenia powstają na początku T2; T3 może tymczasowo zapisywać powiadomienia z API |
 | Wsparcie .NET 8 kończy się 10.11.2026 | Rozwiązane w T1: API na .NET 10 (31.10), Functions też na .NET 10 |
 | Przekroczenie budżetu | Kontrola kredytu w Education hub, B1 na co dzień, wyłączanie VM, tryb oszczędny po demo |
 | Brak materiału do raportu | Zrzuty ekranu są częścią minimum każdego tygodnia |
@@ -401,17 +417,22 @@ T2 i T3 można zamienić według umiejętności: T2 to bardziej backend, Azure S
 
 **Otwarte:**
 
-1. Przydział T2 i T3 (Wojciech / Jakub) oraz właściciele dodatków (propozycja w 6.6). Rozpisujemy po zakończeniu T1.
-2. Dokładny dzień oddania (ostatnie zajęcia).
+1. Dokładny dzień oddania (ostatnie zajęcia).
 
 **Podjęte:**
 
 - (31.10) Baza: na start Azure SQL free tier (0 USD). Do Basic podnosimy dopiero przy geo-replikacji (dodatek 1) albo gdy zacznie brakować darmowego limitu.
 - (31.10) API na .NET 10 już w T1 (zrobione).
 - (31.10) Zasoby w portalu zakłada Łukasz, krok po kroku. Kod T1 powstaje na gałęzi `t1/azure-fundament`, a pierwsze wdrożenie idzie po scaleniu jej do `main`.
-- (31.10) Raport składa Łukasz na końcu (T4). Zrzuty ekranu każdy robi na bieżąco w `azure/raport/tN/`.
+- (31.10) Raport składa Łukasz na końcu (T4). Zrzuty ekranu każdy robi na bieżąco (od 02.11 poza repo, patrz niżej).
 - (01.11) Region: **Germany West Central** (`germanywestcentral`). Konto studenckie pozwala tylko na `italynorth`, `austriaeast`, `germanywestcentral`, `denmarkeast` i `switzerlandnorth`. W Austria East i Denmark East cennik nie ma Document Intelligence; Switzerland North jest najdroższy.
-- (01.11) Kolejność wdrożenia: najpierw samo API (PR #23, działa), frontend osobnym PR-em.
+- (01.11) Kolejność wdrożenia: najpierw samo API (PR #23, działa), frontend osobnym PR-em (PR #24, działa).
+- (01.11) Podział: T2 Wojciech (z kontem Storage, Function App i `IEventPublisher`), T3 Jakub (z zasobem Redis, sprawdzeniami z dnia 0 i dodatkiem 2). Łukasz: weryfikacja, raport, dodatki 1 i 6.
+- (01.11) Tryb pracy: plik z zadaniami T2 → Wojciech pracuje i daje znać, co zrobił → weryfikacja przez Łukasza → plik T3 → Jakub → weryfikacja → T4.
+- (01.11) Wojciech i Jakub mają rolę Contributor na subskrypcji.
+- (02.11) Zrzuty ekranu nie trafiają do repo (publiczne repo, dane osobowe na zrzutach). Każdy wysyła je Łukaszowi na koniec swojego tygodnia razem z informacją, co zrobił.
+- (02.11) Role Wojciecha i Jakuba: Contributor w trybie Active, ważne do 29.01.2027 (tryb Eligible wymagałby aktywacji przed każdą pracą).
+- (02.11) Jakub zaczyna dopiero w T3 (9.11). Klucz Google Books, Redis i sprawdzenia z dnia 0 robi na starcie T3, więc ewentualne blokady tych usług wyjdą dopiero wtedy (plany B w sekcji 7).
 - (01.11) Hosting frontendu: druga aplikacja `app-bookshelf-web-lk47` (Node 22, `pm2 serve --spa`) na planie `asp-bookshelf`, bez dodatkowych kosztów. Static Web Apps zablokowała polityka regionów konta studenckiego (walidacja: *policy violation*). Odrzucony zamiennik: statyczna strona w Azure Storage (kod 404 przy odświeżaniu podstron, klucz konta w sekretach GitHuba).
 
 ---

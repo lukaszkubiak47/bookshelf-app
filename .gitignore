@@ -443,3 +443,7 @@ docs/
 
 # Sekrety lokalne — haslo SA do MSSQL w docker-compose (Etap Docker). NIE commitowac.
 /.env
+
+# Zrzuty ekranu do raportu (ID subskrypcji, e-maile; repo jest publiczne) i PDF-y generowane z dokumentacji
+/azure/raport/
+/azure/**/*.pdf
