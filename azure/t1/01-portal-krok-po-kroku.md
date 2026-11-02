@@ -117,7 +117,7 @@ Po utworzeniu:
    |---|---|
    | `ConnectionStrings__Default` | connection string bazy z wstawionym hasłem (jak go przygotować: pod tabelą) |
    | `JwtSettings__SecretKey` | **nowy** losowy sekret. W Git Bash: `openssl rand -base64 48` |
-   | `GoogleBooks__ApiKey` | klucz Google Books. Opcjonalny: bez niego wyszukiwanie też działa, tylko Google szybciej je ogranicza. Doda go Jakub, gdy dostanie dostęp (krok 10) |
+   | `GoogleBooks__ApiKey` | klucz Google Books. W praktyce wymagany: bez klucza Google odpowiada 429 „Queries per day”, bo zapytania bez klucza dzielą jeden wspólny, wyczerpany limit (sprawdzone 01.11), a nasze API zwraca wtedy 503. Doda go Jakub, gdy dostanie dostęp (krok 10) |
    | `RunMigrations` | `true` |
 
    Connection string: baza `BookshelfDB` → **Settings → Connection strings** → **ADO.NET (SQL authentication)** → skopiuj → wklej do nowej karty Notatnika → **Ctrl+H**: znajdź `{your_password}`, zamień na hasło z menedżera haseł → skopiuj całość jako wartość ustawienia → zamknij tę kartę (**Ctrl+W**) i wybierz **Nie zapisuj**. Samo zamknięcie okna nie wystarczy, bo Notatnik w Windows 11 przywraca niezapisane karty. Warianty *Microsoft Entra password* i *Microsoft Entra integrated* logują człowieka (hasłem konta uczelnianego albo kontem Windows w domenie organizacji), więc API ich nie użyje.
@@ -145,7 +145,7 @@ Po utworzeniu:
 3. **Overview** → skopiuj **Default domain**. W aplikacji **API** → **Environment variables** dodaj `Cors__AllowedOrigins__0` = `https://` + ten adres, bez `/` na końcu → **Apply** → **Confirm**.
 4. **Overview** → **Download publish profile** (sekret; trzymaj w Pobranych do kroku 7, potem usuń).
 
-> Uwaga (01.11): Chrome pokazał przy świeżym adresie frontendu czerwone ostrzeżenie „Niebezpieczna strona”, choć serwer zwracał zwykłą stronę powitalną Microsoftu (HTTP 200), a publiczny raport Google Safe Browsing nie miał o tym adresie żadnych danych. Najpewniej fałszywy alarm ochrony przed phishingiem: logo Microsoftu na nieznanym adresie. Po wdrożeniu naszego frontendu sprawdzamy ponownie; jeśli ostrzeżenie zostanie, zgłaszamy pomyłkę Google: https://safebrowsing.google.com/safebrowsing/report_error/
+> Uwaga (01.11): Chrome pokazał przy świeżym adresie frontendu czerwone ostrzeżenie „Niebezpieczna strona”, choć serwer zwracał zwykłą stronę powitalną Microsoftu (HTTP 200), a publiczny raport Google Safe Browsing nie miał o tym adresie żadnych danych. Najpewniej fałszywy alarm ochrony przed phishingiem: logo Microsoftu na nieznanym adresie. Po wdrożeniu naszego frontendu ostrzeżenie zostało, a raport Safe Browsing pokazał już „niektóre strony niebezpieczne: phishing”. Zgłaszamy pomyłkę Google: https://safebrowsing.google.com/safebrowsing/report_error/ (gdyby nie pomogło: weryfikacja strony w Google Search Console i prośba o ponowne sprawdzenie).
 
 ## 7. GitHub: sekrety i zmienne dla workflowów
 
@@ -180,6 +180,8 @@ Kolejne wdrożenie bez zmian w kodzie (np. po zmianie zmiennej `VITE_API_BASE_UR
 
 ## 9. Azure Managed Redis (po udanym pierwszym wdrożeniu)
 
+> Zasób Redis tworzy Jakub w T3 (decyzja 01.11). Instrukcja zostaje tu jako ściąga.
+
 Kod jest gotowy: bez Redisa API działa na zamiennikach w pamięci, a po dodaniu connection stringa samo przełącza się na Redis.
 
 **Azure Managed Redis** → **Create**:
@@ -203,7 +205,9 @@ Po utworzeniu:
 
 3. Test: wyszukaj tę samą książkę w Google Books dwa razy (drugie wyszukiwanie z cache), a potem 11 razy wpisz złe hasło przy logowaniu (11. próba daje komunikat „Zbyt wiele prób"). 📸.
 
-## 10. (Opcjonalnie dziś) dostęp dla zespołu
+## 10. Dostęp dla zespołu (zrobione 01.11)
+
+> W kreatorze roli jest zakładka **Assignment type**. Wybierz **Active** z datą końca po ocenie (np. 31.01.2027). Domyślne *Eligible* oznacza, że przed każdą pracą trzeba aktywować rolę w Privileged Identity Management.
 
 > Subskrypcja jest w katalogu uczelni: University of Gdansk (for Students), `studms.ug.edu.pl`. Jeśli Wojciech i Jakub mają konta studenckie UG, prawdopodobnie już są w tym katalogu. Wtedy pomijasz zaproszenie (punkt 1) i od razu nadajesz rolę. Zapraszanie gości może być w katalogu uczelni zablokowane.
 
