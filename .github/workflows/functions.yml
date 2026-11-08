@@ -1,0 +1,34 @@
+# Funkcje (Bookshelf.Functions, .NET 10 isolated) -> Azure Function App (Flex Consumption).
+# Wymaga: secret AZURE_FUNCTIONAPP_PUBLISH_PROFILE, variable AZURE_FUNCTIONAPP_NAME (Settings -> Secrets and variables -> Actions).
+# Automatycznie po pushu na main (zmiany w backend/Bookshelf.Functions/). Recznie: Actions -> Run workflow.
+
+name: Functions -> Azure Function App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/Bookshelf.Functions/**'
+      - '.github/workflows/functions.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish
+        run: dotnet publish backend/Bookshelf.Functions/Bookshelf.Functions.csproj -c Release -o "${{ runner.temp }}/func"
+
+      - name: Deploy do Function App
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ vars.AZURE_FUNCTIONAPP_NAME }}
+          package: ${{ runner.temp }}/func
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+          sku: flexconsumption # tylko dla Flex Consumption; przy planie B (App Service) usun te linie
