@@ -3,6 +3,8 @@ using Bookshelf.API.Data;
 using Bookshelf.API.Middleware;
 using Bookshelf.API.RateLimiting;
 using Bookshelf.API.Services;
+using Azure.Storage.Queues;
+using Bookshelf.API.Services.Events;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -63,6 +65,25 @@ else
 
 builder.Services.AddSingleton<ICacheService, CacheService>();
 
+// STORAGE — kolejka zdarzeń transakcji (historia w Functions, w T3 powiadomienia).
+// Brak ConnectionStrings:Storage -> zamiennik, który tylko loguje; API działa bez Azure.
+var storageConnection = builder.Configuration.GetConnectionString("Storage");
+
+if (!string.IsNullOrWhiteSpace(storageConnection))
+{
+    // Base64 jest wymagane: QueueTrigger w Functions oczekuje Base64,
+    // bez tego komunikaty lądują w kolejce transaction-events-poison.
+    var queue = new QueueClient(storageConnection, "transaction-events",
+        new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 });
+
+    queue.CreateIfNotExists(); // w Azure już istnieje (utworzona w portalu), w Azurite powstanie przy starcie
+    builder.Services.AddSingleton(queue);
+    builder.Services.AddSingleton<IEventPublisher, QueueEventPublisher>();
+}
+else
+{
+    builder.Services.AddSingleton<IEventPublisher, LoggingEventPublisher>();
+}
 // Za App Service ruch przechodzi przez front-endy Azure: prawdziwy adres klienta i schemat są w X-Forwarded-*.
 // Adresów front-endów nie znamy, więc czyścimy listy zaufanych proxy (domyślny ForwardLimit = 1 bierze ostatni, dopisany przez Azure).
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
