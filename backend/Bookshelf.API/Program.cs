@@ -4,6 +4,8 @@ using Bookshelf.API.Middleware;
 using Bookshelf.API.RateLimiting;
 using Bookshelf.API.Services;
 using Azure.Storage.Queues;
+using Azure.Storage.Blobs;
+using Bookshelf.API.Services.Storage;
 using Bookshelf.API.Services.Events;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -76,13 +78,26 @@ if (!string.IsNullOrWhiteSpace(storageConnection))
     var queue = new QueueClient(storageConnection, "transaction-events",
         new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 });
 
-    queue.CreateIfNotExists(); // w Azure już istnieje (utworzona w portalu), w Azurite powstanie przy starcie
+    // Pomijane przy "dotnet ef" (migracje) — narzędzie uruchamia Program.cs, a Azurite nie musi wtedy działać
+    if (!EF.IsDesignTime)
+        queue.CreateIfNotExists(); // w Azure już istnieje (utworzona w portalu), w Azurite powstanie przy starcie
     builder.Services.AddSingleton(queue);
     builder.Services.AddSingleton<IEventPublisher, QueueEventPublisher>();
+
+    // Obrazy: kontenery tworzone przy starcie (w Azure już istnieją, w Azurite powstaną).
+    var blobService = new BlobServiceClient(storageConnection);
+    if (!EF.IsDesignTime)
+    {
+        blobService.GetBlobContainerClient("avatars").CreateIfNotExists();
+        blobService.GetBlobContainerClient("covers").CreateIfNotExists();
+    }
+    builder.Services.AddSingleton(blobService);
+    builder.Services.AddSingleton<IImageStorage, BlobImageStorage>();
 }
 else
 {
     builder.Services.AddSingleton<IEventPublisher, LoggingEventPublisher>();
+    builder.Services.AddSingleton<IImageStorage, UnavailableImageStorage>();
 }
 // Za App Service ruch przechodzi przez front-endy Azure: prawdziwy adres klienta i schemat są w X-Forwarded-*.
 // Adresów front-endów nie znamy, więc czyścimy listy zaufanych proxy (domyślny ForwardLimit = 1 bierze ostatni, dopisany przez Azure).

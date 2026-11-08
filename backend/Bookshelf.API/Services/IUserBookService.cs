@@ -26,7 +26,7 @@ namespace Bookshelf.API.Services
 
         Task<UserBookDto> UploadCoverAsync(Guid userId, Guid userBookId, IFormFile file);
 
-        Task<(byte[] Data, string ContentType)> GetCoverImageAsync(Guid userBookId);
+        Task<Uri> GetCoverReadUriAsync(Guid userBookId);
 
         Task DeleteCoverAsync(Guid userId, Guid userBookId);
 

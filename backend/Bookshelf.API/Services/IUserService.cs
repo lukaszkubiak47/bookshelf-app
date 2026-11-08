@@ -20,6 +20,6 @@ namespace Bookshelf.API.Services
         Task<UserDto> SetAvatarPresetAsync(Guid userId, AvatarPresetDto dto);
 
         // Zwraca dane binarne avatara oraz Content-Type do odpowiedzi plikowej.
-        Task<(byte[] Data, string ContentType)> GetAvatarImageAsync(Guid userId);
+        Task<Uri> GetAvatarReadUriAsync(Guid userId);
     }
 }

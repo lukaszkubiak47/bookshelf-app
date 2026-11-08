@@ -34,7 +34,8 @@ namespace Bookshelf.API.Models.Entities
         [MaxLength(2000)]
         public string? Description { get; set; } // opis specyficzny dla tej oferty; null => fallback na Book.Description
 
-        public byte[]? CustomCoverImageData { get; set; }
+        [MaxLength(200)]
+        public string? CustomCoverBlobName { get; set; } // nazwa pliku w kontenerze "covers"; null = okładka z katalogu
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

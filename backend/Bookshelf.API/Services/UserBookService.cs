@@ -3,21 +3,24 @@ using Bookshelf.API.Exceptions;
 using Bookshelf.API.Models.DTOs.Common;
 using Bookshelf.API.Models.DTOs.UserBooks;
 using Bookshelf.API.Models.Entities;
+using Bookshelf.API.Services.Storage;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bookshelf.API.Services
 {
     public class UserBookService : IUserBookService
-    {
+    {   
         private const int MaxCoverSizeBytes = 5 * 1024 * 1024;
         private static readonly string[] AllowedCoverContentTypes = ["image/jpeg", "image/png"];
         private const string AvailableStatus = "available";
 
         private readonly AppDbContext _db;
+        private readonly IImageStorage _images;
 
-        public UserBookService(AppDbContext db)
+        public UserBookService(AppDbContext db, IImageStorage images)
         {
             _db = db;
+            _images = images;
         }
 
         public async Task<PagedResult<UserBookDto>> GetAllAsync(
@@ -267,31 +270,35 @@ namespace Bookshelf.API.Services
             if (!AllowedCoverContentTypes.Contains(file.ContentType))
                 throw new BadRequestException("Dozwolone formaty okładki: JPG, PNG");
 
-            using var memoryStream = new MemoryStream();
-            await file.CopyToAsync(memoryStream);
-            userBook.CustomCoverImageData = memoryStream.ToArray();
+            // Nowy plik do kontenera "covers", prefiks = id oferty
+            var previousBlob = userBook.CustomCoverBlobName;
+            userBook.CustomCoverBlobName = await _images.UploadAsync("covers", userBook.Id.ToString(), file);
 
             await _db.SaveChangesAsync();
+            await _images.DeleteAsync("covers", previousBlob);
+
             return MapToDto(userBook);
         }
 
-        public async Task<(byte[] Data, string ContentType)> GetCoverImageAsync(Guid userBookId)
+        public async Task<Uri> GetCoverReadUriAsync(Guid userBookId)
         {
             var userBook = await _db.UserBooks
                 .AsNoTracking()
                 .FirstOrDefaultAsync(ub => ub.Id == userBookId);
 
-            if (userBook?.CustomCoverImageData == null || userBook.CustomCoverImageData.Length == 0)
+            if (string.IsNullOrEmpty(userBook?.CustomCoverBlobName))
                 throw new NotFoundException("Oferta nie ma własnej okładki");
 
-            return (userBook.CustomCoverImageData, GetImageContentType(userBook.CustomCoverImageData));
+            return _images.GetReadUri("covers", userBook.CustomCoverBlobName);
         }
 
         public async Task DeleteCoverAsync(Guid userId, Guid userBookId)
         {
             var userBook = await GetOwnedUserBookAsync(userId, userBookId);
-            userBook.CustomCoverImageData = null;
+            var previousBlob = userBook.CustomCoverBlobName;
+            userBook.CustomCoverBlobName = null;
             await _db.SaveChangesAsync();
+            await _images.DeleteAsync("covers", previousBlob);
         }
 
         public async Task DeleteAsync(Guid userId, Guid userBookId)
@@ -349,24 +356,10 @@ namespace Bookshelf.API.Services
 
         private static string? ResolveCoverUrl(UserBook ub)
         {
-            if (ub.CustomCoverImageData != null && ub.CustomCoverImageData.Length > 0)
+            if (!string.IsNullOrEmpty(ub.CustomCoverBlobName))
                 return $"/api/userbooks/{ub.Id}/cover/image";
 
             return ub.Book.CoverUrl;
-        }
-
-        private static string GetImageContentType(byte[] data)
-        {
-            if (data.Length >= 8 &&
-                data[0] == 0x89 &&
-                data[1] == 0x50 &&
-                data[2] == 0x4E &&
-                data[3] == 0x47)
-            {
-                return "image/png";
-            }
-
-            return "image/jpeg";
         }
 
         private static UserBookDto MapToDto(UserBook ub)
@@ -379,7 +372,7 @@ namespace Bookshelf.API.Services
                 Price = ub.Price,
                 ExchangeCondition = ub.ExchangeCondition,
                 ExchangeDetails = ub.ExchangeDetails,
-                HasCustomCover = ub.CustomCoverImageData != null,
+                HasCustomCover = ub.CustomCoverBlobName != null,
                 CreatedAt = ub.CreatedAt,
                 Book = new BookInfoDto
                 {

@@ -100,8 +100,8 @@ namespace Bookshelf.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetCoverImage(Guid id)
         {
-            var result = await _service.GetCoverImageAsync(id);
-            return File(result.Data, result.ContentType);
+            var uri = await _service.GetCoverReadUriAsync(id);
+            return Redirect(uri.ToString());
         }
 
         /// <summary>
