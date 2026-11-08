@@ -447,3 +447,6 @@ docs/
 # Zrzuty ekranu do raportu (ID subskrypcji, e-maile; repo jest publiczne) i PDF-y generowane z dokumentacji
 /azure/raport/
 /azure/**/*.pdf
+
+# Azure Functions — lokalne ustawienia (moga zawierac sekrety)
+local.settings.json
