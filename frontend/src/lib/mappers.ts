@@ -5,7 +5,7 @@
  * Tu też: URL okładek/avatarów, kolory zastępcze okładek, format dat względnych.
  *
  * Eksporty: mapUserBookToCard, mapTransactionToShelfItem, mapUserBookToListed, mapUserToProfile,
- *   mapBookSearchResult, coverImageUrl, avatarImageUrl, realCoverUrl, realAvatarUrl, coverColor, seedFromGuid.
+ *   mapBookSearchResult, coverImageUrl, avatarImageUrl, realCoverUrl, thumbCoverUrl, realAvatarUrl, coverColor, seedFromGuid.
  * Backend: brak bezpośrednich wywołań — dane wejściowe z lib/types.ts.
  */
 import type { TransactionDto, UserBookDto } from './types'
@@ -39,6 +39,12 @@ export function avatarImageUrl(user: { id: string; avatarUrl?: string | null }):
 // Realny URL okładki albo null (bez fallbacku na losowy obrazek) — kafelek-zastępczy renderuje komponent.
 export function realCoverUrl(coverUrl?: string | null): string | null {
   return coverUrl ? resolveApiUrl(coverUrl) : null
+}
+
+// Miniatura na listach: własna okładka (/cover/image) dostaje ?size=thumb, okładki z katalogu bez zmian.
+export function thumbCoverUrl(coverUrl?: string | null): string | null {
+  if (coverUrl?.includes('/cover/image')) return resolveApiUrl(`${coverUrl}?size=thumb`)
+  return realCoverUrl(coverUrl)
 }
 
 // Realny URL avatara (preset -> pravatar, własny -> resolve) albo null, gdy użytkownik nie ma avatara.
@@ -80,7 +86,7 @@ export function mapUserBookToCard(dto: UserBookDto) {
     owner: dto.owner.username,
     av: avSeed,
     img: imgSeed,
-    coverUrl: realCoverUrl(dto.book.coverUrl),
+    coverUrl: thumbCoverUrl(dto.book.coverUrl),
     avatarUrl: realAvatarUrl(dto.owner),
     isbn: dto.book.isbn ?? '',
     desc: dto.book.description ?? '',

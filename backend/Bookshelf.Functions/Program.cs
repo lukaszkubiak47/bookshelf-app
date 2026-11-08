@@ -1,6 +1,7 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Azure.Data.Tables;
+using Azure.Storage.Blobs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,8 +23,14 @@ builder.Logging.Services.Configure<LoggerFilterOptions>(options =>
 });
 
 // Tabela historii transakcji: to samo konto Storage co kolejka (ustawienie StorageConnection).
-var history = new TableClient(builder.Configuration["StorageConnection"], "TransactionHistory");
+var storageConnection = builder.Configuration["StorageConnection"];
+var history = new TableClient(storageConnection, "TransactionHistory");
 history.CreateIfNotExists(); // w Azure już istnieje (krok 1.1), w Azurite powstanie
 builder.Services.AddSingleton(history);
+
+// Miniatury: odczyt z covers, zapis do thumbnails
+var blobs = new BlobServiceClient(storageConnection);
+blobs.GetBlobContainerClient("thumbnails").CreateIfNotExists();
+builder.Services.AddSingleton(blobs);
 
 builder.Build().Run();

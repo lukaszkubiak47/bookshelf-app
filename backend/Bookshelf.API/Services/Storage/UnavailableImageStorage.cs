@@ -12,5 +12,7 @@ namespace Bookshelf.API.Services.Storage
 
         public Uri GetReadUri(string container, string blobName) =>
             throw new NotFoundException("Obraz niedostępny: brak konfiguracji Storage");
+
+        public Task<bool> ExistsAsync(string container, string blobName) => Task.FromResult(false);
     }
 }
