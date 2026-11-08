@@ -8,13 +8,18 @@
  * Backend: /api/transactions, /received, /sent, /{id}/accept|reject|finish|contact.
  */
 import { apiRequest } from './client'
-import type { TransactionDto, TransactionContact } from './types'
+import type { TransactionDto, TransactionContact, TransactionHistoryEntry } from './types'
 
 /** Wywołania REST pod kontroler Transactions */
 export const transactionsApi = {
   // Dane kontaktowe drugiej strony — działa tylko dla accepted/done i tylko dla strony transakcji.
   getContact(id: string) {
     return apiRequest<TransactionContact>(`/api/transactions/${id}/contact`, { auth: true })
+  },
+
+  // Oś czasu transakcji (zapisywana przez funkcję z kolejki) — tylko dla strony transakcji.
+  getHistory(id: string) {
+    return apiRequest<TransactionHistoryEntry[]>(`/api/transactions/${id}/history`, { auth: true })
   },
 
   // Wyślij prośbę o ofertę. Typ transakcji backend dziedziczy z oferty — wystarczy userBookId.

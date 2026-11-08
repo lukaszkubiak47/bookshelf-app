@@ -24,5 +24,8 @@ namespace Bookshelf.API.Services
 
         // Zwraca dane kontaktowe DRUGIEJ strony (tylko dla strony transakcji i statusu accepted/done).
         Task<TransactionContactDto> GetContactAsync(Guid currentUserId, Guid transactionId);
+
+        // Oś czasu transakcji (tylko dla strony transakcji). Bez Storage zwraca pustą listę.
+        Task<List<TransactionHistoryEntryDto>> GetHistoryAsync(Guid currentUserId, Guid transactionId);
     }
 }

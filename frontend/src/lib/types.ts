@@ -96,6 +96,13 @@ export interface TransactionContact {
   email: string
 }
 
+/** Wpis osi czasu transakcji (GET /api/transactions/{id}/history) */
+export interface TransactionHistoryEntry {
+  type: string
+  occurredAt: string
+  actorUserId: string
+}
+
 export interface TransactionDto {
   id: string
   type: string
