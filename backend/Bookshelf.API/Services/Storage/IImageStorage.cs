@@ -11,5 +11,8 @@ namespace Bookshelf.API.Services.Storage
 
         // Krótki link SAS (tylko odczyt, 15 min) do wydania obrazu przeglądarce.
         Uri GetReadUri(string container, string blobName);
+
+        // Czy plik istnieje (np. czy funkcja zdążyła już zrobić miniaturę).
+        Task<bool> ExistsAsync(string container, string blobName);
     }
 }

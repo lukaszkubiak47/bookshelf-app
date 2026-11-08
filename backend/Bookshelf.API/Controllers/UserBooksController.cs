@@ -98,9 +98,10 @@ namespace Bookshelf.API.Controllers
         /// </summary>
         [HttpGet("{id:guid}/cover/image")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetCoverImage(Guid id)
+        public async Task<IActionResult> GetCoverImage(Guid id, [FromQuery] string? size = null)
         {
-            var uri = await _service.GetCoverReadUriAsync(id);
+            // ?size=thumb -> miniatura (jeśli już jest), bez parametru -> oryginał
+            var uri = await _service.GetCoverReadUriAsync(id, thumbnail: size == "thumb");
             return Redirect(uri.ToString());
         }
 

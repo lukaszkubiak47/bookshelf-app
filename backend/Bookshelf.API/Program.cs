@@ -95,6 +95,18 @@ if (!string.IsNullOrWhiteSpace(storageConnection))
     builder.Services.AddSingleton(blobService);
     builder.Services.AddSingleton<IImageStorage, BlobImageStorage>();
 
+    // Miniatury: zadania do kolejki image-jobs, wyniki w kontenerze thumbnails (robi je funkcja GenerateThumbnail).
+    // Fabryka zamiast AddSingleton(imageJobs): w DI jest już QueueClient dla transaction-events.
+    var imageJobs = new QueueClient(storageConnection, "image-jobs",
+        new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 });
+    if (!EF.IsDesignTime)
+    {
+        imageJobs.CreateIfNotExists();
+        blobService.GetBlobContainerClient("thumbnails").CreateIfNotExists();
+    }
+    builder.Services.AddSingleton<IImageJobQueue>(sp =>
+        new QueueImageJobQueue(imageJobs, sp.GetRequiredService<ILogger<QueueImageJobQueue>>()));
+
     // Historia transakcji: czytamy tabelę, którą wypełnia funkcja ProcessTransactionEvent
     var history = new TableClient(storageConnection, "TransactionHistory");
     if (!EF.IsDesignTime)
@@ -105,6 +117,7 @@ else
 {
     builder.Services.AddSingleton<IEventPublisher, LoggingEventPublisher>();
     builder.Services.AddSingleton<IImageStorage, UnavailableImageStorage>();
+    builder.Services.AddSingleton<IImageJobQueue, NoImageJobQueue>();
 }
 // Za App Service ruch przechodzi przez front-endy Azure: prawdziwy adres klienta i schemat są w X-Forwarded-*.
 // Adresów front-endów nie znamy, więc czyścimy listy zaufanych proxy (domyślny ForwardLimit = 1 bierze ostatni, dopisany przez Azure).

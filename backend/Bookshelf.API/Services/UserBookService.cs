@@ -16,11 +16,13 @@ namespace Bookshelf.API.Services
 
         private readonly AppDbContext _db;
         private readonly IImageStorage _images;
+        private readonly IImageJobQueue _imageJobs;
 
-        public UserBookService(AppDbContext db, IImageStorage images)
+        public UserBookService(AppDbContext db, IImageStorage images, IImageJobQueue imageJobs)
         {
             _db = db;
             _images = images;
+            _imageJobs = imageJobs;
         }
 
         public async Task<PagedResult<UserBookDto>> GetAllAsync(
@@ -276,11 +278,15 @@ namespace Bookshelf.API.Services
 
             await _db.SaveChangesAsync();
             await _images.DeleteAsync("covers", previousBlob);
+            await _images.DeleteAsync("thumbnails", previousBlob); // stara miniatura (ta sama nazwa co stary oryginał)
+
+            // Funkcja zrobi miniaturę w tle; do tego czasu lista pokazuje oryginał
+            await _imageJobs.EnqueueAsync(new ImageJob("covers", userBook.CustomCoverBlobName));
 
             return MapToDto(userBook);
         }
 
-        public async Task<Uri> GetCoverReadUriAsync(Guid userBookId)
+        public async Task<Uri> GetCoverReadUriAsync(Guid userBookId, bool thumbnail = false)
         {
             var userBook = await _db.UserBooks
                 .AsNoTracking()
@@ -288,6 +294,10 @@ namespace Bookshelf.API.Services
 
             if (string.IsNullOrEmpty(userBook?.CustomCoverBlobName))
                 throw new NotFoundException("Oferta nie ma własnej okładki");
+
+            // Miniatura, jeśli funkcja już ją zrobiła; inaczej oryginał
+            if (thumbnail && await _images.ExistsAsync("thumbnails", userBook.CustomCoverBlobName))
+                return _images.GetReadUri("thumbnails", userBook.CustomCoverBlobName);
 
             return _images.GetReadUri("covers", userBook.CustomCoverBlobName);
         }
@@ -299,6 +309,7 @@ namespace Bookshelf.API.Services
             userBook.CustomCoverBlobName = null;
             await _db.SaveChangesAsync();
             await _images.DeleteAsync("covers", previousBlob);
+            await _images.DeleteAsync("thumbnails", previousBlob);
         }
 
         public async Task DeleteAsync(Guid userId, Guid userBookId)

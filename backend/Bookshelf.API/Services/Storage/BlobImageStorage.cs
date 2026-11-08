@@ -50,5 +50,8 @@ namespace Bookshelf.API.Services.Storage
                 ? new Uri(_publicBlobUrl.TrimEnd('/') + url[internalBase.Length..])
                 : sasUri;
         }
+
+        public async Task<bool> ExistsAsync(string container, string blobName) =>
+            (await blobService.GetBlobContainerClient(container).GetBlobClient(blobName).ExistsAsync()).Value;
     }
 }
