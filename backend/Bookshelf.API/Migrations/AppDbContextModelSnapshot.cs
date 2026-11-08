@@ -17,7 +17,7 @@ namespace Bookshelf.API.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -188,8 +188,9 @@ namespace Bookshelf.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<byte[]>("AvatarImageData")
-                        .HasColumnType("varbinary(max)");
+                    b.Property<string>("AvatarBlobName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("AvatarUrl")
                         .HasMaxLength(500)
@@ -251,8 +252,9 @@ namespace Bookshelf.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<byte[]>("CustomCoverImageData")
-                        .HasColumnType("varbinary(max)");
+                    b.Property<string>("CustomCoverBlobName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(2000)

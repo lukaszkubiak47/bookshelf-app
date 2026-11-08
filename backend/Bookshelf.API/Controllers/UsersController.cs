@@ -93,18 +93,15 @@ namespace Bookshelf.API.Controllers
         }
 
         /// <summary>
-        /// Pobierz własny avatar binarny.
+        /// Avatar dowolnego użytkownika: przekierowanie 302 na krótki link SAS do Blob Storage.
+        /// Anonimowy, bo <img> nie wysyła tokenu.
         /// </summary>
-        [HttpGet("me/avatar/image")]
-        public async Task<IActionResult> GetAvatarImage()
+        [HttpGet("{id:guid}/avatar")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAvatar(Guid id)
         {
-            // Pobierz ID użytkownika z JWT
-            var userId = GetCurrentUserId();
-
-            // Serwis zwraca bajty obrazu i Content-Type
-            var result = await _service.GetAvatarImageAsync(userId);
-
-            return File(result.Data, result.ContentType);
+            var uri = await _service.GetAvatarReadUriAsync(id);
+            return Redirect(uri.ToString());
         }
 
         private Guid GetCurrentUserId()

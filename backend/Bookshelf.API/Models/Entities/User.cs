@@ -34,7 +34,8 @@ namespace Bookshelf.API.Models.Entities
         [MaxLength(500)]
         public string? AvatarUrl { get; set; }
 
-        public byte[]? AvatarImageData { get; set; }
+        [MaxLength(200)]
+        public string? AvatarBlobName { get; set; } // nazwa pliku w kontenerze "avatars"; null = brak wgranego avatara
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

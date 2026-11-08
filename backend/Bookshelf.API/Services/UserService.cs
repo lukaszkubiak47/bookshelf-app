@@ -2,6 +2,7 @@ using Bookshelf.API.Data;
 using Bookshelf.API.Exceptions;
 using Bookshelf.API.Models.DTOs.Users;
 using Bookshelf.API.Models.Entities;
+using Bookshelf.API.Services.Storage;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bookshelf.API.Services
@@ -12,10 +13,12 @@ namespace Bookshelf.API.Services
         private static readonly string[] AllowedAvatarContentTypes = ["image/jpeg", "image/png"];
 
         private readonly AppDbContext _db;
+        private readonly IImageStorage _images;
 
-        public UserService(AppDbContext db)
+        public UserService(AppDbContext db, IImageStorage images)
         {
             _db = db;
+            _images = images;
         }
 
         public async Task<UserDto> GetMeAsync(Guid userId)
@@ -90,16 +93,19 @@ namespace Bookshelf.API.Services
             if (!AllowedAvatarContentTypes.Contains(file.ContentType))
                 throw new BadRequestException("Dozwolone formaty avatara: JPG, PNG");
 
-            // Przepisz przesłany plik do tablicy bajtów
-            using var memoryStream = new MemoryStream();
-            await file.CopyToAsync(memoryStream);
+            // Nowy plik do kontenera "avatars", prefiks = id użytkownika
+            var previousBlob = user.AvatarBlobName;
+            user.AvatarBlobName = await _images.UploadAsync("avatars", user.Id.ToString(), file);
 
-            // Zapisz dane binarne avatara i ustaw URL na endpoint pobierający obraz
-            user.AvatarImageData = memoryStream.ToArray();
-            user.AvatarUrl = "/api/users/me/avatar/image";
+            // Publiczny adres avatara KONKRETNEGO użytkownika (działa też na cudzych kartach)
+            user.AvatarUrl = $"/api/users/{user.Id}/avatar";
 
             // Zapisz zmiany i zwróć zaktualizowany profil
             await _db.SaveChangesAsync();
+
+            // Stary plik usuwamy dopiero po zapisie, żeby baza nigdy nie wskazywała na usunięty blob
+            await _images.DeleteAsync("avatars", previousBlob);
+
             return await MapToDtoAsync(user);
         }
 
@@ -109,25 +115,25 @@ namespace Bookshelf.API.Services
             var user = await GetUserOrThrowAsync(userId);
 
             // Ustaw ścieżkę do avatara presetowego i usuń ewentualny upload binarny
+            var previousBlob = user.AvatarBlobName;
             user.AvatarUrl = $"/avatars/preset-{dto.PresetId}.png";
-            user.AvatarImageData = null;
+            user.AvatarBlobName = null;
 
-            // Zapisz zmiany i zwróć zaktualizowany profil
+            // Zapisz zmiany, potem usuń wgrany wcześniej plik
             await _db.SaveChangesAsync();
+            await _images.DeleteAsync("avatars", previousBlob);
             return await MapToDtoAsync(user);
         }
 
-        public async Task<(byte[] Data, string ContentType)> GetAvatarImageAsync(Guid userId)
+        public async Task<Uri> GetAvatarReadUriAsync(Guid userId)
         {
-            // Pobierz użytkownika, którego avatar ma zostać zwrócony jako plik
             var user = await GetUserOrThrowAsync(userId);
 
-            // Jeśli użytkownik wybrał preset albo nie ma avatara, nie mamy danych binarnych do zwrócenia
-            if (user.AvatarImageData == null || user.AvatarImageData.Length == 0)
+            // Preset albo brak avatara -> nie ma pliku w Blob Storage
+            if (string.IsNullOrEmpty(user.AvatarBlobName))
                 throw new NotFoundException("Uzytkownik nie ma wgranego avatara");
 
-            // Zwróć bajty obrazu razem z typem MIME
-            return (user.AvatarImageData, GetAvatarContentType(user.AvatarImageData));
+            return _images.GetReadUri("avatars", user.AvatarBlobName);
         }
 
         private async Task<User> GetUserOrThrowAsync(Guid userId)
@@ -164,22 +170,6 @@ namespace Bookshelf.API.Services
                 BooksCount = booksCount,
                 TransactionsCount = transactionsCount
             };
-        }
-
-        private static string GetAvatarContentType(byte[] data)
-        {
-            // Content-Type nie ma osobnej kolumny w bazie, więc rozpoznajemy PNG po sygnaturze pliku
-            if (data.Length >= 8 &&
-                data[0] == 0x89 &&
-                data[1] == 0x50 &&
-                data[2] == 0x4E &&
-                data[3] == 0x47)
-            {
-                return "image/png";
-            }
-
-            // Jeśli to nie PNG, traktujemy plik jako JPG, bo tylko JPG/PNG przechodzą walidację uploadu
-            return "image/jpeg";
         }
     }
 }
