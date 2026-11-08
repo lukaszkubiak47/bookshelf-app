@@ -2,6 +2,8 @@ using Bookshelf.API.Data;
 using Bookshelf.API.Exceptions;
 using Bookshelf.API.Models.DTOs.Transactions;
 using Bookshelf.API.Models.Entities;
+using Bookshelf.API.Models.Events;
+using Bookshelf.API.Services.Events;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bookshelf.API.Services
@@ -20,10 +22,14 @@ namespace Bookshelf.API.Services
         private const string SoldStatus = "sold";
 
         private readonly AppDbContext _db;
+        private readonly IEventPublisher _events;
+        private readonly ILogger<TransactionService> _logger;
 
-        public TransactionService(AppDbContext db)
+        public TransactionService(AppDbContext db, IEventPublisher events, ILogger<TransactionService> logger)
         {
             _db = db;
+            _events = events;
+            _logger = logger;
         }
 
         public async Task<TransactionDto> CreateAsync(Guid requesterId, CreateTransactionDto dto)
@@ -85,6 +91,10 @@ namespace Bookshelf.API.Services
 
             // Pobierz transakcję ponownie z relacjami potrzebnymi do mapowania DTO
             var created = await GetTransactionWithDetailsOrThrowAsync(transaction.Id);
+
+            // Requested: od proszącego do właściciela
+            await PublishSafeAsync(BuildEvent("Requested", created, requesterId, userBook.UserId));
+
             return MapToDto(created);
         }
 
@@ -187,6 +197,11 @@ namespace Bookshelf.API.Services
             await _db.SaveChangesAsync();
             await SetOfferStatusAsync(transaction.UserBookId, offerStatus);
 
+            // Zdarzenia dopiero po obu zapisach (prośby + status oferty)
+            await PublishSafeAsync(BuildEvent("Accepted", transaction, ownerId, transaction.RequesterId));
+            foreach (var other in otherPendingTransactions)
+                await PublishSafeAsync(BuildEvent("AutoRejectedOnAccept", other, ownerId, other.RequesterId, transaction.UserBook.Book.Title));
+
             var updated = await GetTransactionWithDetailsOrThrowAsync(transaction.Id);
             return MapToDto(updated);
         }
@@ -204,6 +219,9 @@ namespace Bookshelf.API.Services
             transaction.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
+
+            // Rejected: od właściciela do proszącego
+            await PublishSafeAsync(BuildEvent("Rejected", transaction, ownerId, transaction.RequesterId));
 
             var updated = await GetTransactionWithDetailsOrThrowAsync(transaction.Id);
             return MapToDto(updated);
@@ -238,8 +256,34 @@ namespace Bookshelf.API.Services
             await _db.SaveChangesAsync();
             await SetOfferStatusAsync(transaction.UserBookId, offerStatus);
 
+            // Zdarzenia dopiero po obu zapisach (prośby + status oferty)
+            await PublishSafeAsync(BuildEvent("Finished", transaction, ownerId, transaction.RequesterId));
+            foreach (var other in otherPending)
+                await PublishSafeAsync(BuildEvent("AutoRejectedOnFinish", other, ownerId, other.RequesterId, transaction.UserBook.Book.Title));
+
             var updated = await GetTransactionWithDetailsOrThrowAsync(transaction.Id);
             return MapToDto(updated);
+        }
+
+        // Błąd kolejki nie może zepsuć akcji użytkownika: zmiana w bazie już jest zapisana, tylko logujemy ostrzeżenie
+        private async Task PublishSafeAsync(TransactionEvent evt)
+        {
+            try { await _events.PublishAsync(evt); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Nie udało się wysłać zdarzenia {Type}", evt.Type); }
+        }
+
+        // bookTitle podajemy dla automatycznie odrzuconych próśb, bo ich UserBook nie jest wczytany
+        private static TransactionEvent BuildEvent(string type, TransactionRequest transaction, Guid actorUserId, Guid recipientUserId, string? bookTitle = null)
+        {
+            return new TransactionEvent(
+                EventId: Guid.NewGuid(),
+                TransactionId: transaction.Id,
+                Type: type,
+                ActorUserId: actorUserId,
+                RecipientUserId: recipientUserId,
+                UserBookId: transaction.UserBookId,
+                BookTitle: bookTitle ?? transaction.UserBook?.Book?.Title,
+                OccurredAt: DateTime.UtcNow);
         }
 
         private async Task SetOfferStatusAsync(Guid userBookId, string status)

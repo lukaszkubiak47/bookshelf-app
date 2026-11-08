@@ -19,7 +19,7 @@ namespace Bookshelf.API.Services
         // Odrzuca prosbe bez zmiany dostepnosci oferty.
         Task<TransactionDto> RejectAsync(Guid ownerId, Guid transactionId);
 
-        // Konczy zaakceptowana transakcje i przywraca oferte jako dostepna.
+        // Konczy zaakceptowana transakcje: oferta dostaje status sold (sprzedaz) albo completed (wypozyczenie/wymiana).
         Task<TransactionDto> FinishAsync(Guid ownerId, Guid transactionId);
 
         // Zwraca dane kontaktowe DRUGIEJ strony (tylko dla strony transakcji i statusu accepted/done).
