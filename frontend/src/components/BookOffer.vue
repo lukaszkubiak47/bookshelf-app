@@ -108,6 +108,36 @@
     }
   }
 
+  /** Historia transakcji — ładowana dopiero po kliknięciu "Historia". */
+  const isHistoryOpen = ref(false);
+  const historyLoading = ref(false);
+  const history = ref<{ type: string; occurredAt: string }[]>([]);
+
+  const historyLabels: Record<string, string> = {
+    Requested: 'Prośba wysłana',
+    Accepted: 'Zaakceptowana',
+    Rejected: 'Odrzucona',
+    Finished: 'Zakończona',
+    AutoRejectedOnAccept: 'Odrzucona automatycznie (zaakceptowano inną prośbę)',
+    AutoRejectedOnFinish: 'Odrzucona automatycznie (transakcja zakończona)',
+  };
+
+  async function toggleHistory() {
+    isHistoryOpen.value = !isHistoryOpen.value;
+    if (!isHistoryOpen.value) return;
+    historyLoading.value = true;
+    try {
+      history.value = await transactionsApi.getHistory(props.item.id);
+    } catch {
+      history.value = [];
+    } finally {
+      historyLoading.value = false;
+    }
+  }
+
+  const formatHistoryDate = (iso: string) =>
+    new Date(iso).toLocaleString('pl-PL', { dateStyle: 'short', timeStyle: 'short' });
+
   onMounted(() => {
     loadContact();
   });
@@ -253,6 +283,19 @@
       </div>
     </div>
 
+    <div v-if="!isListed" class="history-section">
+      <button class="btn-history" @click="toggleHistory">
+        {{ isHistoryOpen ? 'Ukryj historię' : 'Historia' }}
+      </button>
+      <div v-if="isHistoryOpen" class="history-list">
+        <div v-if="historyLoading" class="history-empty">Ładowanie…</div>
+        <div v-else-if="history.length === 0" class="history-empty">Brak wpisów historii</div>
+        <div v-else v-for="(h, i) in history" :key="i" class="history-row">
+          <span class="history-date">{{ formatHistoryDate(h.occurredAt) }}</span>
+          <span>{{ historyLabels[h.type] ?? h.type }}</span>
+        </div>
+      </div>
+    </div>
     <div v-if="(item.status === 'accepted' || item.status === 'done') && contact" class="contact-section">
       <div class="contact-head">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
@@ -362,5 +405,46 @@
     color: var(--text-2, #7a6652);
     font-weight: 600;
     font-size: 10px;
+  }
+
+  .history-section {
+    margin-top: 8px;
+  }
+
+  .btn-history {
+    background: none;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: .75;
+  }
+
+    .btn-history:hover {
+      opacity: 1;
+    }
+
+  .history-list {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+  }
+
+  .history-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .history-date {
+    opacity: .6;
+    min-width: 110px;
+  }
+
+  .history-empty {
+    opacity: .6;
+    font-style: italic;
   }
 </style>

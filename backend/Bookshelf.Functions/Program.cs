@@ -1,5 +1,6 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
+using Azure.Data.Tables;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -19,5 +20,10 @@ builder.Logging.Services.Configure<LoggerFilterOptions>(options =>
         r.ProviderName == "Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider");
     if (rule is not null) options.Rules.Remove(rule);
 });
+
+// Tabela historii transakcji: to samo konto Storage co kolejka (ustawienie StorageConnection).
+var history = new TableClient(builder.Configuration["StorageConnection"], "TransactionHistory");
+history.CreateIfNotExists(); // w Azure już istnieje (krok 1.1), w Azurite powstanie
+builder.Services.AddSingleton(history);
 
 builder.Build().Run();

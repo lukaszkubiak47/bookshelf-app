@@ -5,6 +5,7 @@ using Bookshelf.API.Models.Entities;
 using Bookshelf.API.Models.Events;
 using Bookshelf.API.Services.Events;
 using Microsoft.EntityFrameworkCore;
+using Azure.Data.Tables;
 
 namespace Bookshelf.API.Services
 {
@@ -24,6 +25,15 @@ namespace Bookshelf.API.Services
         private readonly AppDbContext _db;
         private readonly IEventPublisher _events;
         private readonly ILogger<TransactionService> _logger;
+        private readonly TableClient? _history;
+
+        public TransactionService(AppDbContext db, IEventPublisher events, ILogger<TransactionService> logger, TableClient? history = null)
+        {
+            _db = db;
+            _events = events;
+            _logger = logger;
+            _history = history;
+        }
 
         public TransactionService(AppDbContext db, IEventPublisher events, ILogger<TransactionService> logger)
         {
@@ -149,6 +159,39 @@ namespace Bookshelf.API.Services
                 Username = other.Username,
                 Email = other.Email
             };
+        }
+
+        public async Task<List<TransactionHistoryEntryDto>> GetHistoryAsync(Guid currentUserId, Guid transactionId)
+        {
+            var transaction = await _db.TransactionRequests
+                .AsNoTracking()
+                .Include(t => t.UserBook)
+                .FirstOrDefaultAsync(t => t.Id == transactionId);
+
+            if (transaction == null)
+                throw new NotFoundException("Nie znaleziono transakcji");
+
+            // Historię widzi tylko proszący albo właściciel oferty
+            if (currentUserId != transaction.RequesterId && currentUserId != transaction.UserBook.UserId)
+                throw new ForbiddenException("Historia dostępna tylko dla stron transakcji");
+
+            if (_history == null)
+                return new List<TransactionHistoryEntryDto>();
+
+            var entries = new List<TransactionHistoryEntryDto>();
+            var partition = transactionId.ToString();
+
+            await foreach (var e in _history.QueryAsync<TableEntity>(e => e.PartitionKey == partition))
+            {
+                entries.Add(new TransactionHistoryEntryDto
+                {
+                    Type = e.GetString("Type") ?? string.Empty,
+                    OccurredAt = e.GetDateTimeOffset("OccurredAt")?.UtcDateTime ?? DateTime.MinValue,
+                    ActorUserId = Guid.TryParse(e.GetString("ActorUserId"), out var actor) ? actor : Guid.Empty
+                });
+            }
+
+            return entries.OrderBy(x => x.OccurredAt).ToList();
         }
 
         public async Task<TransactionDto> AcceptAsync(Guid ownerId, Guid transactionId, AcceptTransactionDto dto)

@@ -113,6 +113,17 @@ namespace Bookshelf.API.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Oś czasu transakcji — tylko dla strony transakcji.
+        /// </summary>
+        [HttpGet("{id:guid}/history")]
+        public async Task<IActionResult> GetHistory(Guid id)
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetHistoryAsync(userId, id);
+            return Ok(result);
+        }
+
         private Guid GetCurrentUserId()
         {
             // ClaimTypes.NameIdentifier jest ustawiany podczas generowania JWT w TokenService

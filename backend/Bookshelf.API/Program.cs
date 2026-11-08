@@ -5,6 +5,7 @@ using Bookshelf.API.RateLimiting;
 using Bookshelf.API.Services;
 using Azure.Storage.Queues;
 using Azure.Storage.Blobs;
+using Azure.Data.Tables;
 using Bookshelf.API.Services.Storage;
 using Bookshelf.API.Services.Events;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -93,6 +94,12 @@ if (!string.IsNullOrWhiteSpace(storageConnection))
     }
     builder.Services.AddSingleton(blobService);
     builder.Services.AddSingleton<IImageStorage, BlobImageStorage>();
+
+    // Historia transakcji: czytamy tabelę, którą wypełnia funkcja ProcessTransactionEvent
+    var history = new TableClient(storageConnection, "TransactionHistory");
+    if (!EF.IsDesignTime)
+        history.CreateIfNotExists();
+    builder.Services.AddSingleton(history);
 }
 else
 {
