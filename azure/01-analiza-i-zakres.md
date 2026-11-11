@@ -306,6 +306,8 @@ Stan 01.11: punkty 1–4 i 7 zrobione, aplikacja działa w chmurze (wyszukiwanie
 
 Instrukcja dla wykonawcy: `azure/t2/01-zadania-i-instrukcja.md`.
 
+Stan 11.11 (weryfikacja): kroki 0–5 zrobione i działają w chmurze (PR #26–#33): obrazy w Blob z linkami SAS, cudze avatary, zdarzenia z 6 ścieżek, historia w Table Storage, Function App z automatycznym wdrożeniem, miniatury. Do poprawy: `SixLabors.ImageSharp` 3.1.12 → 3.2.0 (znane luki). Do potwierdzenia zrzutem: reguła cyklu życia i historia w aplikacji. Dodatki 3–4 jeszcze nie ruszone.
+
 0. **Fundament:** konto Storage, Function App (.NET 10, Flex Consumption) z workflowem wdrożenia i funkcją z triggerem kolejki, w API `IEventPublisher`.
 1. **Blob:**
    - avatary i okładki w kontenerach `avatars` i `covers`, w bazie tylko nazwa pliku; migracja usuwa kolumny `varbinary`;
@@ -325,6 +327,8 @@ Instrukcja dla wykonawcy: `azure/t2/01-zadania-i-instrukcja.md`.
 
 ### 6.5 T3: Powiadomienia, AI i logowanie Microsoft (Jakub, 09.11–15.11; 11.11 święto) · rdzeń 0,75 + Redis 0,5
 
+Instrukcja dla wykonawcy: `azure/t3/01-zadania-i-instrukcja.md`.
+
 0. **Na start:**
    - klucz Google Books w App Settings API (do tego czasu wyszukiwanie Google Books w chmurze nie działa);
    - Redis: Azure Managed Redis B0, `ConnectionStrings__Redis` w API, test cache i limitu prób (429); kod jest gotowy;
@@ -342,7 +346,7 @@ Instrukcja dla wykonawcy: `azure/t2/01-zadania-i-instrukcja.md`.
    - tabela `ExternalLogins` (`tid` + `oid`), bez łączenia kont po e-mailu.
 
    Plan B, gdyby rejestracja aplikacji była zablokowana: logowanie API do Azure SQL i Storage tożsamością zarządzaną (bez haseł).
-4. **(dodatek 5, tylko jeśli zostanie czas do 15.11)** Service Bus zamiast kolejki zdarzeń. W T4 już tego nie zaczynamy.
+4. **Autoskalowanie (dodatek 2) i Service Bus (dodatek 5)** zamiast kolejki zdarzeń: w pliku T3 jako zwykłe zadania (decyzja 11.11).
 
 **Minimum do przekazania:**
 
@@ -356,10 +360,10 @@ Instrukcja dla wykonawcy: `azure/t2/01-zadania-i-instrukcja.md`.
 | # | Dodatek | Pkt | Nakład | Kto, do kiedy |
 |---|---|---|---|---|
 | 1 | Geo-replikacja Azure SQL (czytelna kopia w 2. regionie, pokaz odczytu z kopii) | 0,15 | ok. 0,25 dnia | Łukasz, do 08.11. Tylko portal |
-| 2 | Autoskalowanie: B1 → S1, reguły CPU 1–3 instancje, test k6 na endpoint obciążający CPU (np. logowanie z BCrypt, z limitem prób podniesionym dla konta testowego), zrzuty metryk, powrót na B1. Po T2, gdy obrazy nie obciążają już bazy | 0,15 | ok. 0,5 dnia | Jakub, do 15.11 |
+| 2 | Autoskalowanie: B1 → S1, reguły CPU 1–3 instancje, test k6 na endpoint obciążający CPU (np. logowanie z BCrypt, z limitem prób podniesionym dla konta testowego), zrzuty metryk, powrót na B1. Po T2, gdy obrazy nie obciążają już bazy | 0,15 | ok. 0,5 dnia | Jakub, w planie T3 (do 15.11) |
 | 3 | VM staging: B2ats v2 (x64), Docker; obrazy API i frontendu budowane w GitHub Actions i trzymane w GHCR; `docker-compose.staging.yml` bez kontenera bazy (baza staging w Azure SQL free tier); SSH tylko kluczem, port 22 dostępny tylko z IP zespołu, porty 1433 i 8080 zamknięte | 0,5 | ok. 1 dzień | Wojciech po T2, do 15.11. Pliki tylko w `azure/vm/` |
 | 4 | Azure Files: udział montowany na VM staging (plik `.env`, logi) | 0,25 | ok. 0,5 dnia | Wojciech, razem z dodatkiem 3 |
-| 5 | Service Bus: topic `transaction-events` z subskrypcjami historii i powiadomień | 0,25 | ok. 0,5 dnia | Jakub, tylko do 15.11 |
+| 5 | Service Bus: topic `transaction-events` z subskrypcjami historii i powiadomień | 0,25 | ok. 0,5 dnia | Jakub, w planie T3 (do 15.11) |
 | 6 | Front Door przed frontendem na tydzień demo (jeśli test w dniu 0 przeszedł) | 0,25 | ok. 0,25 dnia | Łukasz, T4 |
 
 ### 6.7 T4: Poprawki, demo, raport (wszyscy, 16.11–22.11, oddanie na ostatnich zajęciach)
@@ -390,6 +394,7 @@ T2 i T3 można zamienić według umiejętności: T2 to bardziej backend, Azure S
 |---|---|
 | Polityka konta studenckiego blokuje region lub usługę | Sprawdzenie w dniu 0; inny dozwolony region; usługi AI w osobnym regionie |
 | Nie da się utworzyć Azure Managed Redis | Wcześnie sprawdzić kreatorem do etapu walidacji (bez tworzenia, bez kosztu); inny dozwolony region; w ostateczności Redis na VM (słabszy argument do punktów) i awans dodatku 3 do rdzenia |
+| Pierwsze zapytanie po uśpieniu bazy kończy się błędem 500, bo wybudzanie trwa dłużej niż ponawianie EF (ok. 30 s; zaobserwowane 11.11) | Podniesienie bazy do Basic (bez usypiania, razem z dodatkiem 1); doraźnie dłuższe ponawianie w `EnableRetryOnFailure` albo „rozgrzanie” aplikacji przed demo |
 | Darmowa baza zużyje miesięczny limit (100 tys. vCore-sekund) i zatrzyma się do 1.12, czyli przed demo | Raz w tygodniu sprawdzamy „Free amount remaining” w Overview bazy; przy dodatku 1 (ok. 8.11) albo gdy zostanie mniej niż 40% limitu, podnosimy bazę do Basic (ok. 5 USD/mies.) |
 | Google Safe Browsing oznaczył adres frontendu jako phishing (od 01.11, fałszywy alarm) | Zgłoszenie do Google (01.11); jeśli nie zejdzie do ok. 8.11, weryfikacja strony w Google Search Console i prośba o ponowne sprawdzenie; w ostateczności nowa aplikacja frontendu z innym adresem |
 | Plan Flex Consumption niedostępny dla subskrypcji | Function App na istniejącym planie `asp-bookshelf` (bez dopłaty, z Always On) |
@@ -432,6 +437,7 @@ T2 i T3 można zamienić według umiejętności: T2 to bardziej backend, Azure S
 - (01.11) Wojciech i Jakub mają rolę Contributor na subskrypcji.
 - (02.11) Zrzuty ekranu nie trafiają do repo (publiczne repo, dane osobowe na zrzutach). Każdy wysyła je Łukaszowi na koniec swojego tygodnia razem z informacją, co zrobił.
 - (02.11) Role Wojciecha i Jakuba: Contributor w trybie Active, ważne do 29.01.2027 (tryb Eligible wymagałby aktywacji przed każdą pracą).
+- (11.11) T2 zweryfikowane (stan w 6.4). Autoskalowanie i Service Bus są w pliku T3 zwykłymi zadaniami Jakuba, a nie dodatkami „jeśli zostanie czas”.
 - (02.11) Jakub zaczyna dopiero w T3 (9.11). Klucz Google Books, Redis i sprawdzenia z dnia 0 robi na starcie T3, więc ewentualne blokady tych usług wyjdą dopiero wtedy (plany B w sekcji 7).
 - (01.11) Hosting frontendu: druga aplikacja `app-bookshelf-web-lk47` (Node 22, `pm2 serve --spa`) na planie `asp-bookshelf`, bez dodatkowych kosztów. Static Web Apps zablokowała polityka regionów konta studenckiego (walidacja: *policy violation*). Odrzucony zamiennik: statyczna strona w Azure Storage (kod 404 przy odświeżaniu podstron, klucz konta w sekretach GitHuba).
 
