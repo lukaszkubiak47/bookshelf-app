@@ -8,6 +8,8 @@ using Azure.Storage.Blobs;
 using Azure.Data.Tables;
 using Bookshelf.API.Services.Storage;
 using Bookshelf.API.Services.Events;
+using Bookshelf.API.Services.Notifications;
+using Microsoft.Azure.Cosmos;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -119,6 +121,25 @@ else
     builder.Services.AddSingleton<IImageStorage, UnavailableImageStorage>();
     builder.Services.AddSingleton<IImageJobQueue, NoImageJobQueue>();
 }
+
+// COSMOS DB — powiadomienia (zapisuje je funkcja ProcessTransactionEvent, API tylko czyta i oznacza jako przeczytane).
+// Brak ConnectionStrings:Cosmos -> zamiennik zwracający pustą listę.
+var cosmosConnection = builder.Configuration.GetConnectionString("Cosmos");
+
+if (!string.IsNullOrWhiteSpace(cosmosConnection))
+{
+    var cosmos = new CosmosClient(cosmosConnection);
+    var notifications = cosmos.GetContainer(
+        builder.Configuration["Cosmos:Database"] ?? "bookshelf",
+        builder.Configuration["Cosmos:Container"] ?? "notifications");
+    builder.Services.AddSingleton(cosmos);
+    builder.Services.AddSingleton<INotificationService>(new CosmosNotificationService(notifications));
+}
+else
+{
+    builder.Services.AddSingleton<INotificationService, NoNotificationService>();
+}
+
 // Za App Service ruch przechodzi przez front-endy Azure: prawdziwy adres klienta i schemat są w X-Forwarded-*.
 // Adresów front-endów nie znamy, więc czyścimy listy zaufanych proxy (domyślny ForwardLimit = 1 bierze ostatni, dopisany przez Azure).
 builder.Services.Configure<ForwardedHeadersOptions>(options =>

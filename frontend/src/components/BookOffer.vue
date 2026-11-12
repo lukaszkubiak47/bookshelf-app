@@ -9,6 +9,7 @@
   import { ref, computed, onMounted } from 'vue';
   import { coverColor } from '../lib/mappers';
   import { transactionsApi } from '../lib/transactions';
+  import { historyLabels } from '../lib/transactionLabels';
   import {
     offerBrowseLabel,
     offerListedBadgeClass,
@@ -112,15 +113,6 @@
   const isHistoryOpen = ref(false);
   const historyLoading = ref(false);
   const history = ref<{ type: string; occurredAt: string }[]>([]);
-
-  const historyLabels: Record<string, string> = {
-    Requested: 'Prośba wysłana',
-    Accepted: 'Zaakceptowana',
-    Rejected: 'Odrzucona',
-    Finished: 'Zakończona',
-    AutoRejectedOnAccept: 'Odrzucona automatycznie (zaakceptowano inną prośbę)',
-    AutoRejectedOnFinish: 'Odrzucona automatycznie (transakcja zakończona)',
-  };
 
   async function toggleHistory() {
     isHistoryOpen.value = !isHistoryOpen.value;

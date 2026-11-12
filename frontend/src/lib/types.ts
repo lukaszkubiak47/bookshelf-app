@@ -103,6 +103,20 @@ export interface TransactionHistoryEntry {
   actorUserId: string
 }
 
+export interface NotificationItem {
+  id: string
+  type: string
+  transactionId: string
+  bookTitle?: string | null
+  createdAt: string
+  isRead: boolean
+}
+
+export interface NotificationList {
+  items: NotificationItem[]
+  unreadCount: number
+}
+
 export interface TransactionDto {
   id: string
   type: string

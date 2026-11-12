@@ -89,6 +89,18 @@ html {
     display: none;
   }
 
+  /* Lista powiadomień na całą szerokość paska (dzwonek jest blisko prawej krawędzi) */
+  .nav-notif-wrap {
+    position: static;
+  }
+
+  .nav-notif-panel {
+    top: calc(var(--nav-h) - 4px);
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+
   .nav-actions .btn {
     padding: 8px 12px;
     font-size: 13px;
