@@ -11,6 +11,7 @@
   import { userBooksApi } from '../lib/userBooks';
   import { mapBookSearchResult, seedFromGuid, coverColor } from '../lib/mappers';
   import { ApiError } from '../lib/client';
+  import { resizeImage } from '../lib/resizeImage';
   import { useWizardStepTransition } from '../composables/useWizardStepTransition';
   import { usePageAnimations } from '../composables/useAnimations';
 
@@ -60,6 +61,12 @@
   const previewUrl = ref(null);
   const fileInput = ref(null);
 
+  /* Rozpoznawanie okładki ze zdjęcia (Document Intelligence -> Google Books) */
+  const photoInput = ref(null);
+  const isRecognizing = ref(false);
+  // Tekst odczytany ze zdjęcia; pusty = wyniki pochodzą ze zwykłego wyszukiwania
+  const recognizedQuery = ref('');
+
   /* ────── LOGIKA METOD ────── */
   const runSearch = async () => {
     if (!searchQuery.value.trim()) return;
@@ -67,6 +74,7 @@
     showResults.value = false;
     form.selectedBook = null;
     submitError.value = '';
+    recognizedQuery.value = '';
 
     try {
       const results = await booksApi.search(searchQuery.value.trim());
@@ -86,7 +94,41 @@
     searchResults.value = [];
     showResults.value = false;
     submitError.value = '';
+    recognizedQuery.value = '';
   });
+
+  const openPhotoPicker = () => {
+    photoInput.value?.click();
+  };
+
+  // Zdjęcie okładki: zmniejszenie w przeglądarce (limit 4 MB) -> API odczytuje tekst i szuka w Google Books.
+  // Wyniki trafiają do tej samej listy co zwykłe wyszukiwanie, więc wybór książki działa jak dotąd.
+  const runRecognize = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = ''; // to samo zdjęcie wybrane drugi raz też wywoła change
+    if (!file) return;
+
+    isLoading.value = true;
+    isRecognizing.value = true;
+    showResults.value = false;
+    form.selectedBook = null;
+    submitError.value = '';
+
+    try {
+      const image = await resizeImage(file);
+      const res = await booksApi.recognize(image);
+      searchResults.value = res.results.map(mapBookSearchResult);
+      recognizedQuery.value = res.query;
+      showResults.value = true;
+    } catch (err) {
+      searchResults.value = [];
+      recognizedQuery.value = '';
+      submitError.value = err instanceof ApiError ? err.message : 'Nie udało się rozpoznać książki ze zdjęcia';
+    } finally {
+      isLoading.value = false;
+      isRecognizing.value = false;
+    }
+  };
 
   // Wynik Google: stage'ujemy do wspólnego kształtu. genreId puste — użytkownik wybierze gatunek w kroku 2.
   const selectBook = (book) => {
@@ -292,12 +334,18 @@
           </div>
           <button class="btn btn-filled" @click="runSearch" :disabled="isLoading" style="flex-shrink:0">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><line x1="16.5" y1="16.5" x2="22" y2="22" /></svg>
-            {{ isLoading ? 'Szukam…' : 'Szukaj' }}
+            {{ isLoading && !isRecognizing ? 'Szukam…' : 'Szukaj' }}
           </button>
+          <button class="btn btn-outline" @click="openPhotoPicker" :disabled="isLoading" style="flex-shrink:0" title="Zrób albo wybierz zdjęcie okładki">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
+            {{ isRecognizing ? 'Rozpoznaję…' : 'Rozpoznaj ze zdjęcia' }}
+          </button>
+          <input ref="photoInput" type="file" accept="image/*" capture="environment" hidden @change="runRecognize">
         </div>
 
         <div v-if="showResults && !isLoading" class="results-section">
-          <div class="results-label">{{ searchResults.length }} wyników dla „{{ searchQuery }}”</div>
+          <div v-if="recognizedQuery" class="results-label">{{ searchResults.length }} wyników dla tekstu ze zdjęcia: „{{ recognizedQuery }}”</div>
+          <div v-else class="results-label">{{ searchResults.length }} wyników dla „{{ searchQuery }}”</div>
           <div class="results-list">
             <div v-for="b in searchResults" :key="b.googleBooksId" class="result-row" @click="selectBook(b)">
               <img v-if="coverOk(b)" :src="b.coverUrl" :alt="b.title" class="result-cover" @error="markCoverFailed(b.googleBooksId)">
@@ -325,7 +373,7 @@
         </div>
 
         <div v-if="isLoading" class="results-section">
-          <div class="results-label">Szukam…</div>
+          <div class="results-label">{{ isRecognizing ? 'Odczytuję tekst ze zdjęcia…' : 'Szukam…' }}</div>
           <div class="results-list">
             <div v-for="i in 4" :key="i" class="skel-row">
               <div class="skel skel-cover"></div>
