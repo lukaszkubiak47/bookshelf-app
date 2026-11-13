@@ -43,18 +43,34 @@ builder.Services.AddCors(options =>
         .AllowAnyMethod());
 });
 
+// Błędy konfiguracji wykryte przed zbudowaniem aplikacji (logger jest dostępny dopiero po builder.Build()).
+// Zapisujemy tylko typ wyjątku: komunikat parsera może zawierać fragment connection stringa, czyli klucz.
+var startupWarnings = new List<string>();
+
 // REDIS — cache rozproszony + licznik limitu prób, wspólne dla wszystkich instancji API.
 // Brak ConnectionStrings:Redis (lokalny dev) -> zamienniki w pamięci procesu, aplikacja działa bez Redisa.
+// Błędny connection string -> to samo + ostrzeżenie w logu, zamiast awarii całego API przy starcie.
 builder.Services.AddMemoryCache();
 var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+IConnectionMultiplexer? redis = null;
 
 if (!string.IsNullOrWhiteSpace(redisConnectionString))
 {
-    var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
-    redisOptions.AbortOnConnectFail = false; // chwilowy brak Redisa przy starcie nie wywraca API
-    var redis = ConnectionMultiplexer.Connect(redisOptions);
+    try
+    {
+        var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
+        redisOptions.AbortOnConnectFail = false; // chwilowy brak Redisa przy starcie nie wywraca API
+        redis = ConnectionMultiplexer.Connect(redisOptions);
+    }
+    catch (Exception ex)
+    {
+        startupWarnings.Add($"ConnectionStrings:Redis ma nieprawidłowy format ({ex.GetType().Name}) — używam cache i limitu prób w pamięci");
+    }
+}
 
-    builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
+if (redis is not null)
+{
+    builder.Services.AddSingleton(redis);
     builder.Services.AddStackExchangeRedisCache(options =>
     {
         options.ConnectionMultiplexerFactory = () => Task.FromResult<IConnectionMultiplexer>(redis);
@@ -123,12 +139,24 @@ else
 }
 
 // COSMOS DB — powiadomienia (zapisuje je funkcja ProcessTransactionEvent, API tylko czyta i oznacza jako przeczytane).
-// Brak ConnectionStrings:Cosmos -> zamiennik zwracający pustą listę.
+// Brak ConnectionStrings:Cosmos albo błędny format -> zamiennik zwracający pustą listę (błędny: z ostrzeżeniem w logu).
 var cosmosConnection = builder.Configuration.GetConnectionString("Cosmos");
+CosmosClient? cosmos = null;
 
 if (!string.IsNullOrWhiteSpace(cosmosConnection))
 {
-    var cosmos = new CosmosClient(cosmosConnection);
+    try
+    {
+        cosmos = new CosmosClient(cosmosConnection); // parsuje connection string, ale jeszcze się nie łączy
+    }
+    catch (Exception ex)
+    {
+        startupWarnings.Add($"ConnectionStrings:Cosmos ma nieprawidłowy format ({ex.GetType().Name}) — powiadomienia wyłączone");
+    }
+}
+
+if (cosmos is not null)
+{
     var notifications = cosmos.GetContainer(
         builder.Configuration["Cosmos:Database"] ?? "bookshelf",
         builder.Configuration["Cosmos:Container"] ?? "notifications");
@@ -212,6 +240,9 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+foreach (var warning in startupWarnings)
+    app.Logger.LogWarning("Konfiguracja: {Warning}", warning);
 
 // AUTO-MIGRACJA — gdy flaga RunMigrations=true (docker-compose oraz App Settings w Azure).
 // Lokalny dev (LocalDB) NIE ustawia flagi -> migracje dalej recznie: dotnet ef database update.
