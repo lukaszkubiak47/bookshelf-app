@@ -35,24 +35,15 @@ blobs.GetBlobContainerClient("thumbnails").CreateIfNotExists();
 builder.Services.AddSingleton(blobs);
 
 // Powiadomienia: Cosmos DB, kontener z ustawienia CosmosContainer (notifications w Azure, notifications-dev lokalnie).
-// Brak CosmosConnection albo błędny format -> funkcja dalej zapisuje historię, a powiadomienia pomija.
-// Błędny format nie może wywrócić całego Function App (historia i miniatury przestałyby działać).
+// Brak CosmosConnection -> funkcja dalej zapisuje historię, a powiadomienia pomija.
 var cosmosConnection = builder.Configuration["CosmosConnection"];
 Container? notifications = null;
 if (!string.IsNullOrWhiteSpace(cosmosConnection))
 {
-    try
-    {
-        var cosmos = new CosmosClient(cosmosConnection);
-        notifications = cosmos.GetContainer(
-            builder.Configuration["CosmosDatabase"] ?? "bookshelf",
-            builder.Configuration["CosmosContainer"] ?? "notifications");
-    }
-    catch (Exception ex)
-    {
-        // Tylko typ wyjątku: komunikat może zawierać fragment klucza
-        Console.Error.WriteLine($"CosmosConnection ma nieprawidłowy format ({ex.GetType().Name}) — powiadomienia wyłączone");
-    }
+    var cosmos = new CosmosClient(cosmosConnection);
+    notifications = cosmos.GetContainer(
+        builder.Configuration["CosmosDatabase"] ?? "bookshelf",
+        builder.Configuration["CosmosContainer"] ?? "notifications");
 }
 builder.Services.AddSingleton(new Bookshelf.Functions.NotificationsContainer(notifications));
 
