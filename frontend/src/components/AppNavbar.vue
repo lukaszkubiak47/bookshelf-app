@@ -4,17 +4,92 @@
    * Użycie: App.vue — ukryte na /logowanie.
    * Brak propsów; stan z authStore (avatar, username, isLoggedIn).
    * Mobilne menu hamburger + dropdown profilu z wylogowaniem.
+   * Dzwonek powiadomień (Cosmos DB przez /api/notifications), odświeżany co 45 s, gdy zalogowany.
    */
-  import { ref, computed } from 'vue';
+  import { ref, computed, watch, onBeforeUnmount } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '../stores/auth';
   import { avatarImageUrl } from '../lib/mappers';
+  import { notificationsApi } from '../lib/notifications';
+  import { notificationLabels, labelFor } from '../lib/transactionLabels';
 
   const auth = useAuthStore();
   const router = useRouter();
 
   const menuOpen = ref(false);
   const mobileNavOpen = ref(false);
+
+  /** Powiadomienia: lista, licznik nieprzeczytanych i odświeżanie w tle */
+  const NOTIFICATIONS_REFRESH_MS = 45_000;
+  const notifOpen = ref(false);
+  const notifications = ref([]);
+  const unreadCount = ref(0);
+  let notifTimer = null;
+
+  const unreadBadge = computed(() => (unreadCount.value > 9 ? '9+' : String(unreadCount.value)));
+
+  async function loadNotifications() {
+    try {
+      const res = await notificationsApi.getAll();
+      notifications.value = res.items;
+      unreadCount.value = res.unreadCount;
+    } catch {
+      // Brak sieci albo wygasła sesja: zostawiamy poprzedni stan, kolejna próba za 45 s.
+    }
+  }
+
+  function stopNotifications() {
+    if (notifTimer) clearInterval(notifTimer);
+    notifTimer = null;
+  }
+
+  // Start po zalogowaniu, stop i wyczyszczenie po wylogowaniu
+  watch(() => auth.isLoggedIn, (loggedIn) => {
+    stopNotifications();
+    if (loggedIn) {
+      loadNotifications();
+      notifTimer = setInterval(() => {
+        if (!document.hidden) loadNotifications(); // karta w tle: nie odpytujemy API
+      }, NOTIFICATIONS_REFRESH_MS);
+    } else {
+      notifications.value = [];
+      unreadCount.value = 0;
+      notifOpen.value = false;
+    }
+  }, { immediate: true });
+
+  onBeforeUnmount(stopNotifications);
+
+  const toggleNotifications = (event) => {
+    event.stopPropagation();
+    notifOpen.value = !notifOpen.value;
+    if (notifOpen.value) {
+      menuOpen.value = false;
+      loadNotifications();
+    }
+  };
+
+  const closeNotifications = () => {
+    notifOpen.value = false;
+  };
+
+  async function openNotification(n) {
+    if (!n.isRead) {
+      n.isRead = true;
+      unreadCount.value = Math.max(0, unreadCount.value - 1);
+      try {
+        await notificationsApi.markRead(n.id);
+      } catch {
+        // Nie udało się zapisać: przy następnym odświeżeniu wróci jako nieprzeczytane.
+      }
+    }
+    closeNotifications();
+    closeMobileNav();
+    router.push('/polka');
+  }
+
+  const formatNotificationDate = (iso) =>
+    new Date(iso).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
   const displayName = computed(() => {
     const u = auth.user;
@@ -30,6 +105,7 @@
   const toggleMenu = (event) => {
     event.stopPropagation();
     menuOpen.value = !menuOpen.value;
+    if (menuOpen.value) notifOpen.value = false;
   };
 
   const closeMenu = () => {
@@ -74,6 +150,38 @@
 
     <!-- Zalogowany: dropdown profilu | Gość: przyciski logowania i rejestracji -->
     <div class="nav-actions">
+      <div v-if="auth.isLoggedIn"
+           v-click-outside="closeNotifications"
+           class="nav-notif-wrap"
+           :class="{ open: notifOpen }">
+        <button type="button"
+                class="nav-notif-btn"
+                aria-haspopup="true"
+                :aria-expanded="notifOpen"
+                :aria-label="unreadCount ? `Powiadomienia, nieprzeczytane: ${unreadCount}` : 'Powiadomienia'"
+                @click="toggleNotifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <span v-if="unreadCount > 0" class="nav-notif-badge" aria-hidden="true">{{ unreadBadge }}</span>
+        </button>
+        <div class="nav-dropdown nav-notif-panel">
+          <div class="dd-head">
+            <strong>Powiadomienia</strong>
+          </div>
+          <p v-if="notifications.length === 0" class="notif-empty">Brak powiadomień</p>
+          <ul v-else class="notif-list">
+            <li v-for="n in notifications" :key="n.id">
+              <button type="button" class="notif-item" :class="{ unread: !n.isRead }" @click="openNotification(n)">
+                <span class="notif-text">{{ labelFor(notificationLabels, n.type) }}</span>
+                <span v-if="n.bookTitle" class="notif-book">„{{ n.bookTitle }}”</span>
+                <span class="notif-date">{{ formatNotificationDate(n.createdAt) }}</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
       <div v-if="auth.isLoggedIn"
            v-click-outside="closeMenu"
            class="nav-avatar-wrap"

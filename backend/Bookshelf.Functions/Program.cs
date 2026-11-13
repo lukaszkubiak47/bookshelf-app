@@ -2,6 +2,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -32,5 +33,18 @@ builder.Services.AddSingleton(history);
 var blobs = new BlobServiceClient(storageConnection);
 blobs.GetBlobContainerClient("thumbnails").CreateIfNotExists();
 builder.Services.AddSingleton(blobs);
+
+// Powiadomienia: Cosmos DB, kontener z ustawienia CosmosContainer (notifications w Azure, notifications-dev lokalnie).
+// Brak CosmosConnection -> funkcja dalej zapisuje historię, a powiadomienia pomija.
+var cosmosConnection = builder.Configuration["CosmosConnection"];
+Container? notifications = null;
+if (!string.IsNullOrWhiteSpace(cosmosConnection))
+{
+    var cosmos = new CosmosClient(cosmosConnection);
+    notifications = cosmos.GetContainer(
+        builder.Configuration["CosmosDatabase"] ?? "bookshelf",
+        builder.Configuration["CosmosContainer"] ?? "notifications");
+}
+builder.Services.AddSingleton(new Bookshelf.Functions.NotificationsContainer(notifications));
 
 builder.Build().Run();
