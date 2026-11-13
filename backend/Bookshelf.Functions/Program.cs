@@ -47,7 +47,7 @@ if (!string.IsNullOrWhiteSpace(cosmosConnection))
 }
 builder.Services.AddSingleton(new Bookshelf.Functions.NotificationsContainer(notifications));
 
-// Zapis historii i powiadomień: wspólny dla funkcji na kolejce Storage i na Service Bus
+// Zapis historii i powiadomień dla funkcji na Service Bus
 builder.Services.AddSingleton<Bookshelf.Functions.TransactionEventStore>();
 
 builder.Build().Run();

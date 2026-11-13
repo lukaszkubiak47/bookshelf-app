@@ -1,6 +1,6 @@
 namespace Bookshelf.API.Models.Events
 {
-    // Zdarzenie zmiany statusu prośby o transakcję, wysyłane do kolejki "transaction-events".
+    // Zdarzenie zmiany statusu prośby o transakcję, wysyłane do topicu Service Bus "transaction-events".
     // Format jest kontraktem z Functions (historia) i z T3 (powiadomienia), więc zmieniaj go ostrożnie.
     public record TransactionEvent(
         Guid EventId,          // unikalny identyfikator zdarzenia (ochrona przed duplikatem w historii)
