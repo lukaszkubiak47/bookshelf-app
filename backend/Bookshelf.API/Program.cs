@@ -75,40 +75,28 @@ else
 builder.Services.AddSingleton<ICacheService, CacheService>();
 
 // ZDARZENIA TRANSAKCJI — dokąd API wysyła zdarzenia (odbierają je funkcje: historia + powiadomienia).
-// 1. ConnectionStrings:ServiceBus -> topic transaction-events (każda subskrypcja dostaje każde zdarzenie);
-// 2. inaczej ConnectionStrings:Storage -> kolejka transaction-events (stary sposób, zostaje jako zapas);
-// 3. inaczej zamiennik, który tylko loguje; API działa bez Azure.
+// ConnectionStrings:ServiceBus -> topic transaction-events (subskrypcje history i notifications);
+// brak -> zamiennik, który tylko loguje (lokalnie bez Service Bus historia i powiadomienia nie powstają).
 var serviceBusConnection = builder.Configuration.GetConnectionString("ServiceBus");
-var useServiceBus = !string.IsNullOrWhiteSpace(serviceBusConnection);
 
-if (useServiceBus)
+if (!string.IsNullOrWhiteSpace(serviceBusConnection))
 {
     var serviceBus = new ServiceBusClient(serviceBusConnection);
     builder.Services.AddSingleton(serviceBus);
     builder.Services.AddSingleton<IEventPublisher>(
         new ServiceBusEventPublisher(serviceBus.CreateSender("transaction-events")));
 }
+else
+{
+    builder.Services.AddSingleton<IEventPublisher, LoggingEventPublisher>();
+}
 
-// STORAGE — obrazy, miniatury, historia transakcji; kolejka zdarzeń tylko bez Service Bus.
+// STORAGE — obrazy, miniatury, historia transakcji.
 // Brak ConnectionStrings:Storage -> zamienniki; API działa bez Azure.
 var storageConnection = builder.Configuration.GetConnectionString("Storage");
 
 if (!string.IsNullOrWhiteSpace(storageConnection))
 {
-    if (!useServiceBus)
-    {
-        // Base64 jest wymagane: QueueTrigger w Functions oczekuje Base64,
-        // bez tego komunikaty lądują w kolejce transaction-events-poison.
-        var queue = new QueueClient(storageConnection, "transaction-events",
-            new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 });
-
-        // Pomijane przy "dotnet ef" (migracje) — narzędzie uruchamia Program.cs, a Azurite nie musi wtedy działać
-        if (!EF.IsDesignTime)
-            queue.CreateIfNotExists(); // w Azure już istnieje (utworzona w portalu), w Azurite powstanie przy starcie
-        builder.Services.AddSingleton(queue);
-        builder.Services.AddSingleton<IEventPublisher, QueueEventPublisher>();
-    }
-
     // Obrazy: kontenery tworzone przy starcie (w Azure już istnieją, w Azurite powstaną).
     var blobService = new BlobServiceClient(storageConnection);
     if (!EF.IsDesignTime)
@@ -120,7 +108,6 @@ if (!string.IsNullOrWhiteSpace(storageConnection))
     builder.Services.AddSingleton<IImageStorage, BlobImageStorage>();
 
     // Miniatury: zadania do kolejki image-jobs, wyniki w kontenerze thumbnails (robi je funkcja GenerateThumbnail).
-    // Fabryka zamiast AddSingleton(imageJobs): w DI jest już QueueClient dla transaction-events.
     var imageJobs = new QueueClient(storageConnection, "image-jobs",
         new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 });
     if (!EF.IsDesignTime)
@@ -131,7 +118,7 @@ if (!string.IsNullOrWhiteSpace(storageConnection))
     builder.Services.AddSingleton<IImageJobQueue>(sp =>
         new QueueImageJobQueue(imageJobs, sp.GetRequiredService<ILogger<QueueImageJobQueue>>()));
 
-    // Historia transakcji: czytamy tabelę, którą wypełnia funkcja ProcessTransactionEvent
+    // Historia transakcji: czytamy tabelę, którą wypełnia funkcja ProcessTransactionHistory (Service Bus)
     var history = new TableClient(storageConnection, "TransactionHistory");
     if (!EF.IsDesignTime)
         history.CreateIfNotExists();
@@ -139,13 +126,11 @@ if (!string.IsNullOrWhiteSpace(storageConnection))
 }
 else
 {
-    if (!useServiceBus)
-        builder.Services.AddSingleton<IEventPublisher, LoggingEventPublisher>();
     builder.Services.AddSingleton<IImageStorage, UnavailableImageStorage>();
     builder.Services.AddSingleton<IImageJobQueue, NoImageJobQueue>();
 }
 
-// COSMOS DB — powiadomienia (zapisuje je funkcja ProcessTransactionEvent, API tylko czyta i oznacza jako przeczytane).
+// COSMOS DB — powiadomienia (zapisuje je funkcja ProcessTransactionNotification, API tylko czyta i oznacza jako przeczytane).
 // Brak ConnectionStrings:Cosmos -> zamiennik zwracający pustą listę.
 var cosmosConnection = builder.Configuration.GetConnectionString("Cosmos");
 

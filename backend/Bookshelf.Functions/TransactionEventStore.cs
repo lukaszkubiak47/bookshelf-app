@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace Bookshelf.Functions
 {
     // Zapis skutków zdarzenia transakcji: historia (Table Storage) i powiadomienie (Cosmos DB).
-    // Wspólne dla starej funkcji na kolejce Storage i nowych funkcji na Service Bus, żeby działały identycznie.
+    // Używane przez funkcje na Service Bus (TransactionEventSubscribers).
     public class TransactionEventStore(
         TableClient history,
         NotificationsContainer notifications,
