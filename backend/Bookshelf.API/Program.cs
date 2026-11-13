@@ -9,6 +9,9 @@ using Azure.Data.Tables;
 using Bookshelf.API.Services.Storage;
 using Bookshelf.API.Services.Events;
 using Bookshelf.API.Services.Notifications;
+using Bookshelf.API.Services.Recognition;
+using Azure;
+using Azure.AI.DocumentIntelligence;
 using Microsoft.Azure.Cosmos;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -159,6 +162,21 @@ builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<IGoogleBooksService, GoogleBooksService>();
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
+
+// DOCUMENT INTELLIGENCE — rozpoznanie książki ze zdjęcia okładki (POST /api/books/recognize).
+// Brak DocumentIntelligence:Endpoint/Key -> zamiennik zwracający 503, reszta API działa.
+var diEndpoint = builder.Configuration["DocumentIntelligence:Endpoint"];
+var diKey = builder.Configuration["DocumentIntelligence:Key"];
+
+if (!string.IsNullOrWhiteSpace(diEndpoint) && !string.IsNullOrWhiteSpace(diKey))
+{
+    builder.Services.AddSingleton(new DocumentIntelligenceClient(new Uri(diEndpoint), new AzureKeyCredential(diKey)));
+    builder.Services.AddScoped<IBookRecognitionService, DocumentIntelligenceRecognitionService>();
+}
+else
+{
+    builder.Services.AddScoped<IBookRecognitionService, UnavailableRecognitionService>();
+}
 
 // AUTENTYKACJA JWT
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;

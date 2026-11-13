@@ -63,6 +63,12 @@ export interface GoogleBookResult {
   isbn?: string | null
 }
 
+/** Rozpoznanie okładki: tekst odczytany ze zdjęcia (zapytanie) i wyniki Google Books */
+export interface BookRecognitionResult {
+  query: string
+  results: GoogleBookResult[]
+}
+
 /** Oferty użytkowników (UserBooks) */
 export interface UserBookDto {
   id: string

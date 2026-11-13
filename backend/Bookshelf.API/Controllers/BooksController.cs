@@ -1,5 +1,7 @@
 using Bookshelf.API.Models.DTOs.Books;
+using Bookshelf.API.RateLimiting;
 using Bookshelf.API.Services;
+using Bookshelf.API.Services.Recognition;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,11 +13,29 @@ namespace Bookshelf.API.Controllers
     {
         private readonly IGoogleBooksService _googleBooksService;
         private readonly IBookService _bookService;
+        private readonly IBookRecognitionService _recognitionService;
 
-        public BooksController(IGoogleBooksService googleBooksService, IBookService bookService)
+        public BooksController(
+            IGoogleBooksService googleBooksService,
+            IBookService bookService,
+            IBookRecognitionService recognitionService)
         {
             _googleBooksService = googleBooksService;
             _bookService = bookService;
+            _recognitionService = recognitionService;
+        }
+
+        /// <summary>
+        /// Rozpoznaj ksiazke ze zdjecia okladki (JPG/PNG do 4 MB): tekst z Document Intelligence -> Google Books.
+        /// </summary>
+        [HttpPost("recognize")]
+        [Authorize]
+        [RateLimit("book-recognize", limit: 10, windowSeconds: 3600)] // chroni darmowe 500 stron/mies. (F0)
+        [RequestSizeLimit(5 * 1024 * 1024)]
+        public async Task<IActionResult> Recognize(IFormFile file)
+        {
+            var result = await _recognitionService.RecognizeAsync(file);
+            return Ok(result);
         }
 
         /// <summary>
