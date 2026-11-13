@@ -4,6 +4,7 @@ using Bookshelf.API.Middleware;
 using Bookshelf.API.RateLimiting;
 using Bookshelf.API.Services;
 using Azure.Storage.Queues;
+using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using Azure.Data.Tables;
 using Bookshelf.API.Services.Storage;
@@ -73,22 +74,40 @@ else
 
 builder.Services.AddSingleton<ICacheService, CacheService>();
 
-// STORAGE — kolejka zdarzeń transakcji (historia w Functions, w T3 powiadomienia).
-// Brak ConnectionStrings:Storage -> zamiennik, który tylko loguje; API działa bez Azure.
+// ZDARZENIA TRANSAKCJI — dokąd API wysyła zdarzenia (odbierają je funkcje: historia + powiadomienia).
+// 1. ConnectionStrings:ServiceBus -> topic transaction-events (każda subskrypcja dostaje każde zdarzenie);
+// 2. inaczej ConnectionStrings:Storage -> kolejka transaction-events (stary sposób, zostaje jako zapas);
+// 3. inaczej zamiennik, który tylko loguje; API działa bez Azure.
+var serviceBusConnection = builder.Configuration.GetConnectionString("ServiceBus");
+var useServiceBus = !string.IsNullOrWhiteSpace(serviceBusConnection);
+
+if (useServiceBus)
+{
+    var serviceBus = new ServiceBusClient(serviceBusConnection);
+    builder.Services.AddSingleton(serviceBus);
+    builder.Services.AddSingleton<IEventPublisher>(
+        new ServiceBusEventPublisher(serviceBus.CreateSender("transaction-events")));
+}
+
+// STORAGE — obrazy, miniatury, historia transakcji; kolejka zdarzeń tylko bez Service Bus.
+// Brak ConnectionStrings:Storage -> zamienniki; API działa bez Azure.
 var storageConnection = builder.Configuration.GetConnectionString("Storage");
 
 if (!string.IsNullOrWhiteSpace(storageConnection))
 {
-    // Base64 jest wymagane: QueueTrigger w Functions oczekuje Base64,
-    // bez tego komunikaty lądują w kolejce transaction-events-poison.
-    var queue = new QueueClient(storageConnection, "transaction-events",
-        new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 });
+    if (!useServiceBus)
+    {
+        // Base64 jest wymagane: QueueTrigger w Functions oczekuje Base64,
+        // bez tego komunikaty lądują w kolejce transaction-events-poison.
+        var queue = new QueueClient(storageConnection, "transaction-events",
+            new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 });
 
-    // Pomijane przy "dotnet ef" (migracje) — narzędzie uruchamia Program.cs, a Azurite nie musi wtedy działać
-    if (!EF.IsDesignTime)
-        queue.CreateIfNotExists(); // w Azure już istnieje (utworzona w portalu), w Azurite powstanie przy starcie
-    builder.Services.AddSingleton(queue);
-    builder.Services.AddSingleton<IEventPublisher, QueueEventPublisher>();
+        // Pomijane przy "dotnet ef" (migracje) — narzędzie uruchamia Program.cs, a Azurite nie musi wtedy działać
+        if (!EF.IsDesignTime)
+            queue.CreateIfNotExists(); // w Azure już istnieje (utworzona w portalu), w Azurite powstanie przy starcie
+        builder.Services.AddSingleton(queue);
+        builder.Services.AddSingleton<IEventPublisher, QueueEventPublisher>();
+    }
 
     // Obrazy: kontenery tworzone przy starcie (w Azure już istnieją, w Azurite powstaną).
     var blobService = new BlobServiceClient(storageConnection);
@@ -120,7 +139,8 @@ if (!string.IsNullOrWhiteSpace(storageConnection))
 }
 else
 {
-    builder.Services.AddSingleton<IEventPublisher, LoggingEventPublisher>();
+    if (!useServiceBus)
+        builder.Services.AddSingleton<IEventPublisher, LoggingEventPublisher>();
     builder.Services.AddSingleton<IImageStorage, UnavailableImageStorage>();
     builder.Services.AddSingleton<IImageJobQueue, NoImageJobQueue>();
 }
